@@ -33,6 +33,43 @@ export const STATIC_ORDERS: readonly Order[] = [
   },
   { id: "umai", text: "大将、うまいね", reading: "たいしょう、うまいね" },
   { id: "kaedama", text: "替え玉ください", reading: "かえだまください" },
+  // 並（よみ 2〜7 字）向けの短い注文
+  { id: "shio-only", text: "塩", reading: "しお" },
+  { id: "rice", text: "ライス", reading: "らいす" },
+  { id: "okawari", text: "おかわり", reading: "おかわり" },
+  { id: "katame", text: "硬めで", reading: "かためで" },
+  { id: "mizu", text: "水ください", reading: "みずください" },
+  // 特盛り（よみ 9 字以上）向けの長い注文
+  {
+    id: "ninniku",
+    text: "ニンニク入れますか",
+    reading: "にんにくいれますか",
+  },
+  {
+    id: "kaedama-barikata",
+    text: "替え玉バリカタでください",
+    reading: "かえだまばりかたでください",
+  },
+  {
+    id: "nomihoshi",
+    text: "スープまで飲み干しました",
+    reading: "すーぷまでのみほしました",
+  },
+  {
+    id: "chashu-oomori",
+    text: "チャーシュー麺の大盛りで",
+    reading: "ちゃーしゅーめんのおおもりで",
+  },
+  {
+    id: "gyoza-beer",
+    text: "餃子と瓶ビールください",
+    reading: "ぎょうざとびんびーるください",
+  },
+  {
+    id: "yasai-mashimashi",
+    text: "野菜マシマシでお願いします",
+    reading: "やさいましましでおねがいします",
+  },
 ];
 
 export class StaticOrderRepository implements OrderRepository {

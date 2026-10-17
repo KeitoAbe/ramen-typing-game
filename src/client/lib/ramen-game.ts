@@ -1,3 +1,4 @@
+import type { Course } from "@/client/lib/ramen-course";
 import {
   emptyPlayStats,
   orderPrice,
@@ -11,12 +12,12 @@ import {
 } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
 
-export const TIME_LIMIT_MS = 60_000;
-
 export type RamenGameState =
+  /** 券売機の前で食券を選んでいる */
   | { status: "ready" }
   | {
       status: "playing";
+      course: Course;
       orders: readonly Order[];
       /** いま出ている注文の orders 内の位置 */
       orderIndex: number;
@@ -25,13 +26,15 @@ export type RamenGameState =
       endsAt: number;
       remainingMs: number;
     }
-  | { status: "closed"; stats: PlayStats };
+  | { status: "closed"; course: Course; stats: PlayStats };
 
 export type RamenGameAction =
-  /** orders は出す順に並べたもの（シャッフルは呼び出し側で行う） */
-  | { type: "start"; orders: readonly Order[]; now: number }
+  /** orders は出す順に並べたもの（コースでの絞り込みとシャッフルは呼び出し側で行う） */
+  | { type: "start"; course: Course; orders: readonly Order[]; now: number }
   | { type: "key"; key: string; now: number }
-  | { type: "tick"; now: number };
+  | { type: "tick"; now: number }
+  /** 券売機に戻る */
+  | { type: "reset" };
 
 export const initialRamenGameState: RamenGameState = { status: "ready" };
 
@@ -48,8 +51,8 @@ export function shuffleOrders(
   return result;
 }
 
-function close(stats: PlayStats): RamenGameState {
-  return { status: "closed", stats };
+function close(course: Course, stats: PlayStats): RamenGameState {
+  return { status: "closed", course, stats };
 }
 
 export function ramenGameReducer(
@@ -62,24 +65,27 @@ export function ramenGameReducer(
       if (!first) return state;
       return {
         status: "playing",
+        course: action.course,
         orders: action.orders,
         orderIndex: 0,
         typing: createTypingState(first.reading),
         stats: emptyPlayStats,
-        endsAt: action.now + TIME_LIMIT_MS,
-        remainingMs: TIME_LIMIT_MS,
+        endsAt: action.now + action.course.timeLimitMs,
+        remainingMs: action.course.timeLimitMs,
       };
     }
+    case "reset":
+      return initialRamenGameState;
     case "tick": {
       if (state.status !== "playing") return state;
       const remainingMs = Math.max(0, state.endsAt - action.now);
-      if (remainingMs === 0) return close(state.stats);
+      if (remainingMs === 0) return close(state.course, state.stats);
       return { ...state, remainingMs };
     }
     case "key": {
       if (state.status !== "playing") return state;
       // 時間切れのあとに届いたキーは受け付けない
-      if (action.now >= state.endsAt) return close(state.stats);
+      if (action.now >= state.endsAt) return close(state.course, state.stats);
       const { state: typing, accepted } = inputKey(state.typing, action.key);
       if (!accepted) {
         return {

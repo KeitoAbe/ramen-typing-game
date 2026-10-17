@@ -2,11 +2,16 @@
 
 import { useEffect, useReducer } from "react";
 import { RamenResult } from "@/client/components/ramen-game/ramen-result";
+import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
+import {
+  COURSES,
+  type Course,
+  ordersForCourse,
+} from "@/client/lib/ramen-course";
 import {
   initialRamenGameState,
   ramenGameReducer,
   shuffleOrders,
-  TIME_LIMIT_MS,
 } from "@/client/lib/ramen-game";
 import { summarizePlay } from "@/client/lib/ramen-result";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
@@ -39,33 +44,26 @@ export function RamenGame({ orders }: Props) {
     };
   }, [isPlaying]);
 
-  const start = () => {
-    dispatch({ type: "start", orders: shuffleOrders(orders), now: Date.now() });
+  const start = (course: Course) => {
+    dispatch({
+      type: "start",
+      course,
+      orders: shuffleOrders(ordersForCourse(orders, course)),
+      now: Date.now(),
+    });
   };
 
   if (state.status === "ready") {
-    return (
-      <section className="flex flex-col items-center gap-6">
-        <p className="text-zinc-600 dark:text-zinc-400">
-          カウンターに出てくる注文をローマ字で打って、丼を平らげよう。
-        </p>
-        <button
-          type="button"
-          onClick={start}
-          className="rounded-md bg-red-700 px-6 py-3 font-semibold text-white hover:bg-red-800"
-        >
-          のれんをくぐる
-        </button>
-      </section>
-    );
+    return <TicketMachine courses={COURSES} onSelect={start} />;
   }
 
   if (state.status === "closed") {
     // 閉店は時間切れでしか起きないので、プレイ時間は制限時間に等しい
     return (
       <RamenResult
-        result={summarizePlay(state.stats, TIME_LIMIT_MS)}
-        onReplay={start}
+        course={state.course}
+        result={summarizePlay(state.stats, state.course.timeLimitMs)}
+        onReplay={() => dispatch({ type: "reset" })}
       />
     );
   }
