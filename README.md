@@ -1,4 +1,4 @@
-# typing-game
+# ramen-typing-game
 
 タイピングゲーム。ループエンジニアリング（AI エージェントが Issue を自律実装し、CI と CodeRabbit が通れば自動マージする開発手法）で開発する。
 
