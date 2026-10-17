@@ -1,14 +1,28 @@
 @import "tailwindcss";
 
+/*
+ * 昭和レトロな夜の屋台の配色。OS のダークモードにかかわらず同じ見た目にする。
+ * 券売機・結果・演出の画面もこの色と書体を使う
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-yatai-night: #1b2340;
+  --color-yatai-night-deep: #11162b;
+  --color-yatai-lantern: #d9412b;
+  --color-yatai-lantern-dark: #a92f1f;
+  --color-yatai-amber: #f5b942;
+  --color-yatai-wood: #8a5a33;
+  --color-yatai-wood-dark: #5e3b20;
+  --color-yatai-wood-light: #c08a55;
+  --color-yatai-kinari: #f3e6c8;
+  --color-yatai-sumi: #2a1f1a;
+
+  /* 見出し・数字・看板 / 本文と注文の文 / ローマ字 */
+  --font-display: var(--font-dela-gothic-one);
+  --font-sans: var(--font-zen-maru-gothic);
   --font-mono: var(--font-geist-mono);
 
   /* 丼の演出。prefers-reduced-motion のときは motion-safe: で付けないようにする */
@@ -67,15 +81,8 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-yatai-night-deep);
+  color: var(--color-yatai-kinari);
+  font-family: var(--font-sans), sans-serif;
 }

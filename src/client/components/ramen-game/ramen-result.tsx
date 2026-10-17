@@ -35,41 +35,41 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
     <section className="flex flex-col items-center gap-6">
       <p className="text-4xl font-bold">閉店</p>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-zinc-600 dark:text-zinc-400">お会計</p>
+        <p className="text-yatai-kinari/75">お会計</p>
         <p className="text-4xl font-semibold">
           {result.bill.toLocaleString("ja-JP")} 円
         </p>
-        <p className="text-zinc-600 dark:text-zinc-400">
+        <p className="text-yatai-kinari/75">
           食券: {course.name}（{course.price.toLocaleString("ja-JP")} 円）
         </p>
         <p
-          className={`text-2xl font-bold ${balance >= 0 ? "text-red-700 dark:text-red-400" : "text-blue-700 dark:text-blue-400"}`}
+          className={`text-2xl font-bold ${balance >= 0 ? "text-yatai-amber" : "text-sky-300"}`}
         >
           {formatBalance(balance)}
         </p>
         {/* 記録は表示のあとに済むので、出たときに読み上げる */}
         <div aria-live="polite" className="flex flex-col items-center gap-1">
           {personalBest?.isUpdated && (
-            <p className="rounded-full bg-amber-500 px-3 py-1 text-sm font-bold text-white">
+            <p className="rounded-full bg-yatai-amber px-3 py-1 text-sm font-bold text-yatai-sumi">
               自己ベスト更新！
             </p>
           )}
           {personalBest && (
-            <p className="text-zinc-600 dark:text-zinc-400">
+            <p className="text-yatai-kinari/75">
               {course.name}の自己ベスト: {formatBalance(personalBest.best)}
             </p>
           )}
         </div>
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-zinc-600 dark:text-zinc-400">称号</p>
+        <p className="text-yatai-kinari/75">称号</p>
         <p className="text-3xl font-bold">{title.name}</p>
-        <p className="text-zinc-600 dark:text-zinc-400">「{title.remark}」</p>
+        <p className="text-yatai-kinari/75">「{title.remark}」</p>
       </div>
       <dl className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-2 text-lg">
         {rows.map((row) => (
           <div key={row.label} className="contents">
-            <dt className="text-zinc-600 dark:text-zinc-400">{row.label}</dt>
+            <dt className="text-yatai-kinari/75">{row.label}</dt>
             <dd className="text-right font-semibold">{row.value}</dd>
           </div>
         ))}
@@ -77,7 +77,7 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
       <button
         type="button"
         onClick={onReplay}
-        className="rounded-md bg-red-700 px-6 py-3 font-semibold text-white hover:bg-red-800"
+        className="rounded-md bg-yatai-lantern px-6 py-3 font-semibold text-yatai-kinari hover:bg-yatai-lantern-dark"
       >
         もう一杯
       </button>
