@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { SOGGY_START_RATIO, soggyLimitMs } from "@/client/lib/ramen-bowl";
 import {
   COURSES,
   type Course,
+  courseBalance,
   ordersForCourse,
 } from "@/client/lib/ramen-course";
 import {
@@ -15,7 +16,12 @@ import {
   shuffleOrders,
 } from "@/client/lib/ramen-game";
 import { KAEDAMA_GAUGE_MAX, playTimeMs } from "@/client/lib/ramen-kaedama";
-import { summarizePlay } from "@/client/lib/ramen-result";
+import {
+  browserStorage,
+  type PersonalBestRecord,
+  recordPersonalBest,
+} from "@/client/lib/ramen-personal-best";
+import { type PlayStats, summarizePlay } from "@/client/lib/ramen-result";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
 
@@ -27,6 +33,25 @@ type Props = {
 export function RamenGame({ orders }: Props) {
   const [state, dispatch] = useReducer(ramenGameReducer, initialRamenGameState);
   const isPlaying = state.status === "playing";
+  const [personalBest, setPersonalBest] = useState<PersonalBestRecord | null>(
+    null,
+  );
+  // 同じプレイを二度記録しないための目印（StrictMode で effect が二度走っても更新判定を崩さない）
+  const recordedStatsRef = useRef<PlayStats | null>(null);
+
+  // 閉店したら、そのコースの自己ベストと比べて保存する。localStorage を使うので effect で行う
+  useEffect(() => {
+    if (state.status !== "closed") return;
+    if (recordedStatsRef.current === state.stats) return;
+    recordedStatsRef.current = state.stats;
+    setPersonalBest(
+      recordPersonalBest(
+        browserStorage(),
+        state.course.id,
+        courseBalance(state.stats.bill, state.course),
+      ),
+    );
+  }, [state]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -68,7 +93,11 @@ export function RamenGame({ orders }: Props) {
           state.stats,
           playTimeMs(state.course.timeLimitMs, state.stats.kaedamaCount),
         )}
-        onReplay={() => dispatch({ type: "reset" })}
+        personalBest={personalBest}
+        onReplay={() => {
+          setPersonalBest(null);
+          dispatch({ type: "reset" });
+        }}
       />
     );
   }
