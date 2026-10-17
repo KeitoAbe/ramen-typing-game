@@ -43,13 +43,18 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
   ];
 
   return (
-    <section className="absolute inset-0">
+    // 効果音の札と看板の文字は最小の大きさ（px）で止まり、狭い舞台では舞台の幅ほど縮まない。
+    // そこで看板の上端は「効果音の札の下端」、吹き出しの上端は「看板の下端」より下に来るよう、
+    // 札と看板の寸法（SoundToggle / StageSign / GameStage の corner）から計算した値を下限にする。
+    // 1024px 以上の幅では % の値のほうが大きいので、位置は変わらない
+    // - 札の下端 + 隙間: 置き場所 1.5cqw + 上下の余白 0.6cqw + 影 0.3cqw + 隙間 0.5cqw + 上下の枠 + 文字の行の高さ
+    <section className="absolute inset-0 [--sign-top:max(9.5%,calc(2.9cqw+max(4px,0.5cqw)+1.5*max(11px,1.2cqw)))]">
       {/* 伝票と札が読みやすいよう、屋台の絵を夜の色で少し沈める */}
       <YataiScene />
       <div aria-hidden="true" className="absolute inset-0 bg-yatai-night/45" />
 
       {/* 屋台の屋根に載せた看板。右上の効果音の札と重ならないよう、その下・吹き出しの上に置く */}
-      <div className="absolute top-[9.5%] left-[60%] flex w-[36%] justify-center">
+      <div className="absolute top-(--sign-top) left-[60%] flex w-[36%] justify-center">
         <StageSign />
       </div>
 
@@ -124,8 +129,8 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
         </div>
       </div>
 
-      {/* 店主のひとこと: 頭の上の吹き出し */}
-      <div className="absolute top-[22%] left-[61%] w-[35%] rounded-[1.4cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[1.4cqw] py-[0.8cqw] text-yatai-sumi">
+      {/* 店主のひとこと: 頭の上の吹き出し。看板の下端（文字の行の高さ + 上下の余白 1.6cqw + 上下の枠 0.8cqw）に隙間 0.5cqw をあけて置く */}
+      <div className="absolute top-[max(22%,calc(var(--sign-top)+1.25*max(20px,3.2cqw)+2.9cqw))] left-[61%] w-[35%] rounded-[1.4cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[1.4cqw] py-[0.8cqw] text-yatai-sumi">
         <p className="text-[1.1cqw] font-bold">店主</p>
         <p className="text-[1.6cqw] leading-snug font-bold">
           「{title.remark}」
