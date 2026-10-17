@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import {
   initialRamenGameState,
   ramenGameReducer,
   shuffleOrders,
+  TIME_LIMIT_MS,
 } from "@/client/lib/ramen-game";
+import { summarizePlay } from "@/client/lib/ramen-result";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
 
@@ -58,21 +61,12 @@ export function RamenGame({ orders }: Props) {
   }
 
   if (state.status === "closed") {
+    // 閉店は時間切れでしか起きないので、プレイ時間は制限時間に等しい
     return (
-      <section className="flex flex-col items-center gap-4">
-        <p className="text-4xl font-bold">閉店</p>
-        <p className="text-xl">
-          平らげた杯数:{" "}
-          <span className="font-semibold">{state.servedCount}</span> 杯
-        </p>
-        <button
-          type="button"
-          onClick={start}
-          className="rounded-md bg-red-700 px-6 py-3 font-semibold text-white hover:bg-red-800"
-        >
-          もう一度
-        </button>
-      </section>
+      <RamenResult
+        result={summarizePlay(state.stats, TIME_LIMIT_MS)}
+        onReplay={start}
+      />
     );
   }
 
@@ -89,7 +83,7 @@ export function RamenGame({ orders }: Props) {
         </p>
         <p>
           平らげた杯数:{" "}
-          <span className="font-semibold">{state.servedCount}</span> 杯
+          <span className="font-semibold">{state.stats.servedCount}</span> 杯
         </p>
       </div>
       <div className="flex flex-col items-center gap-3 rounded-lg border border-zinc-300 px-6 py-10 dark:border-zinc-700">
