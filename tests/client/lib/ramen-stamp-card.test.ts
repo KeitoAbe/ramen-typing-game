@@ -29,6 +29,7 @@ function play(overrides: Partial<PlayResult> = {}): PlayResult {
         correctKeyCount: 50,
         missCount: 5,
         kaedamaCount: 0,
+        specialServedCount: 0,
       },
       60_000,
     ),
