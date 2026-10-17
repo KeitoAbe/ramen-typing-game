@@ -36,6 +36,7 @@ describe("summarizePlay", () => {
         bill: 1200,
         correctKeyCount: 90,
         missCount: 10,
+        kaedamaCount: 2,
       },
       60_000,
     );
@@ -45,6 +46,7 @@ describe("summarizePlay", () => {
       bill: 1200,
       correctKeyCount: 90,
       missCount: 10,
+      kaedamaCount: 2,
       accuracy: 0.9,
       keysPerSecond: 1.5,
     });

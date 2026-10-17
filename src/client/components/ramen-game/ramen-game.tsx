@@ -14,6 +14,7 @@ import {
   ramenGameReducer,
   shuffleOrders,
 } from "@/client/lib/ramen-game";
+import { KAEDAMA_GAUGE_MAX, playTimeMs } from "@/client/lib/ramen-kaedama";
 import { summarizePlay } from "@/client/lib/ramen-result";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
@@ -59,11 +60,14 @@ export function RamenGame({ orders }: Props) {
   }
 
   if (state.status === "closed") {
-    // 閉店は時間切れでしか起きないので、プレイ時間は制限時間に等しい
+    // 閉店は時間切れでしか起きないので、プレイ時間は制限時間に替え玉で延びた分を足したもの
     return (
       <RamenResult
         course={state.course}
-        result={summarizePlay(state.stats, state.course.timeLimitMs)}
+        result={summarizePlay(
+          state.stats,
+          playTimeMs(state.course.timeLimitMs, state.stats.kaedamaCount),
+        )}
         onReplay={() => dispatch({ type: "reset" })}
       />
     );
@@ -123,6 +127,32 @@ export function RamenGame({ orders }: Props) {
               style={{ width: `${freshness * 100}%` }}
             />
           </div>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          替え玉ゲージ（ミスなしで {KAEDAMA_GAUGE_MAX} 打で制限時間が延びる）
+          <span
+            aria-live="polite"
+            className="ml-2 font-bold text-red-700 dark:text-red-400"
+          >
+            {state.isKaedamaNoticeShown ? "替え玉！" : ""}
+          </span>
+        </p>
+        <div
+          role="progressbar"
+          aria-label="替え玉ゲージ"
+          aria-valuemin={0}
+          aria-valuemax={KAEDAMA_GAUGE_MAX}
+          aria-valuenow={state.kaedamaGauge}
+          className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+        >
+          <div
+            className="h-full bg-amber-500"
+            style={{
+              width: `${(state.kaedamaGauge / KAEDAMA_GAUGE_MAX) * 100}%`,
+            }}
+          />
         </div>
       </div>
     </section>

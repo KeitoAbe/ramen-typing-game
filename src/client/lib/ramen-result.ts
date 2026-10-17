@@ -15,6 +15,8 @@ export type PlayStats = {
   correctKeyCount: number;
   /** ミスタイプ数 */
   missCount: number;
+  /** 替え玉の回数（替え玉ゲージが満タンになった回数） */
+  kaedamaCount: number;
 };
 
 export type PlayResult = PlayStats & {
@@ -30,6 +32,7 @@ export const emptyPlayStats: PlayStats = {
   bill: 0,
   correctKeyCount: 0,
   missCount: 0,
+  kaedamaCount: 0,
 };
 
 /** 丼の定価。よみが長いほど高い（完食までの時間による増減は ramen-bowl で行う） */
