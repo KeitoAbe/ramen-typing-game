@@ -33,6 +33,56 @@
   --animate-bowl-discarded: bowl-discarded 0.6s ease-in both;
   --animate-kaedama-pop: kaedama-pop 0.4s ease-out both;
 
+  /* 屋台の演出。同じく motion-safe: で付ける */
+  --animate-lantern-sway: lantern-sway 3.6s ease-in-out infinite alternate;
+  --animate-steam-waver: steam-waver 1.8s ease-in-out infinite alternate;
+  --animate-ticket-issue: ticket-issue 0.5s ease-out both;
+  --animate-stamp-press: stamp-press 0.35s 0.3s ease-in both;
+
+  /* 提灯が吊り紐を支点にゆっくり揺れる */
+  @keyframes lantern-sway {
+    from {
+      transform: rotate(-3deg);
+    }
+    to {
+      transform: rotate(3deg);
+    }
+  }
+
+  /* 湯気が根元を支点に左右へゆらぐ */
+  @keyframes steam-waver {
+    from {
+      transform: skewX(-8deg) translateY(0);
+    }
+    to {
+      transform: skewX(8deg) translateY(-4%);
+    }
+  }
+
+  /* 食券が取出口から押し出されてくる */
+  @keyframes ticket-issue {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  /* 判子を上から押しつける。濃さは判子に付けた opacity まで戻す */
+  @keyframes stamp-press {
+    0% {
+      opacity: 0;
+      transform: scale(2.2);
+    }
+    70% {
+      transform: scale(0.92);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
   /* カウンターの奥から滑り出てくる */
   @keyframes bowl-serve {
     from {

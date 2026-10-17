@@ -29,6 +29,11 @@ import {
 } from "@/client/lib/ramen-personal-best";
 import { type PlayStats, summarizePlay } from "@/client/lib/ramen-result";
 import {
+  SHOPKEEPER_MOOD_MS,
+  type ShopkeeperMood,
+  shopkeeperMoodOf,
+} from "@/client/lib/ramen-shopkeeper";
+import {
   createSoundPlayer,
   loadSoundEnabled,
   saveSoundEnabled,
@@ -58,9 +63,13 @@ export function RamenGame({ orders }: Props) {
   const [playSound] = useState(createSoundPlayer);
   const [leavingBowl, setLeavingBowl] = useState<LeavingBowl | null>(null);
   const previousStateRef = useRef(state);
+  const [shopkeeperMood, setShopkeeperMood] =
+    useState<ShopkeeperMood>("normal");
+  const moodTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     setIsSoundEnabled(loadSoundEnabled(browserStorage()));
+    return () => window.clearTimeout(moodTimerRef.current);
   }, []);
 
   const toggleSound = () => {
@@ -69,7 +78,7 @@ export function RamenGame({ orders }: Props) {
     saveSoundEnabled(browserStorage(), enabled);
   };
 
-  // 状態の移り変わりから出来事を読み取り、効果音と丼を下げる演出を出す
+  // 状態の移り変わりから出来事を読み取り、効果音・店主の表情・丼を下げる演出を出す
   useEffect(() => {
     const previous = previousStateRef.current;
     previousStateRef.current = state;
@@ -77,6 +86,16 @@ export function RamenGame({ orders }: Props) {
     const events = detectGameEvents(previous, state);
     if (isSoundEnabled) {
       for (const event of events) playSound(event);
+    }
+    // 表情は出来事のたびに付け直し、しばらく何も起きなければ普段の顔に戻す
+    const mood = shopkeeperMoodOf(events);
+    if (mood !== null) {
+      setShopkeeperMood(mood);
+      window.clearTimeout(moodTimerRef.current);
+      moodTimerRef.current = window.setTimeout(
+        () => setShopkeeperMood("normal"),
+        SHOPKEEPER_MOOD_MS,
+      );
     }
     if (previous.status !== "playing" || state.status !== "playing") {
       setLeavingBowl(null);
@@ -177,6 +196,7 @@ export function RamenGame({ orders }: Props) {
       bowlId={bowlIdOf(state.stats)}
       leavingBowl={leavingBowl}
       onLeavingBowlEnd={() => setLeavingBowl(null)}
+      shopkeeperMood={shopkeeperMood}
     />,
   );
 }

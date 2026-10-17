@@ -60,8 +60,8 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
         </h2>
         <p className="text-[1.2cqw] font-bold">本日は閉店しました</p>
 
-        {/* 称号の判子: 伝票の右上に、朱肉で斜めに押す */}
-        <div className="absolute top-[0.8cqw] right-[1.2cqw] flex rotate-[-10deg] flex-col items-center rounded-[0.8cqw] border-[0.4cqw] border-double border-yatai-lantern px-[0.8cqw] py-[0.3cqw] text-yatai-lantern opacity-90 mix-blend-multiply">
+        {/* 称号の判子: 伝票の右上に、朱肉で斜めに押す。押す動きは傾き（rotate）と別の transform で付ける */}
+        <div className="absolute top-[0.8cqw] right-[1.2cqw] flex rotate-[-10deg] flex-col items-center rounded-[0.8cqw] border-[0.4cqw] border-double border-yatai-lantern px-[0.8cqw] py-[0.3cqw] text-yatai-lantern opacity-90 mix-blend-multiply motion-safe:animate-stamp-press">
           <span className="text-[1cqw] leading-tight font-bold">称号</span>
           <span className="font-display text-[1.8cqw] leading-tight">
             {title.name}

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   OUTLINE,
   SUMI,
@@ -7,6 +8,10 @@ import {
 } from "@/client/components/ramen-game/yatai-scene";
 import { StageSign } from "@/client/components/stage/stage-sign";
 import type { Course } from "@/client/lib/ramen-course";
+import { prefersReducedMotion } from "@/client/lib/reduced-motion";
+
+/** 食券が出てきてからプレイを始めるまでの時間。出てくる動き（0.5 秒）のあと少し見せる */
+const TICKET_ISSUE_MS = 750;
 
 /**
  * 券売機の画面の背景。夜空の下、左に赤い券売機、右の奥に屋台を描く。
@@ -155,9 +160,44 @@ type Props = {
 
 /** 開始前の画面。屋台の脇の券売機で食券を買うと、そのコースでプレイが始まる */
 export function TicketMachine({ courses, onSelect }: Props) {
+  // 取出口から出てくる途中の食券。出てくる動きのあとにプレイを始める
+  const [issuedCourse, setIssuedCourse] = useState<Course | null>(null);
+  const issueTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(issueTimerRef.current), []);
+
+  const buy = (course: Course) => {
+    if (issuedCourse !== null) return;
+    // 動きを抑える設定では食券を出さず、すぐに始める
+    if (prefersReducedMotion()) {
+      onSelect(course);
+      return;
+    }
+    setIssuedCourse(course);
+    issueTimerRef.current = window.setTimeout(
+      () => onSelect(course),
+      TICKET_ISSUE_MS,
+    );
+  };
+
   return (
     <section className="absolute inset-0">
       <TicketMachineScene />
+
+      {/* 出てくる食券: 取出口（x 200〜440, y 614〜656）の口から上へ押し出す。口より下は隠す */}
+      {issuedCourse && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-[70%] left-[15.6%] flex h-[21.1%] w-[18.75%] items-end justify-center overflow-hidden"
+        >
+          <div className="flex h-[70%] w-[55%] animate-ticket-issue flex-col items-center justify-center rounded-[0.3cqw] border-[0.25cqw] border-yatai-sumi bg-yatai-kinari text-yatai-sumi">
+            <span className="text-[1cqw] leading-tight font-bold">食券</span>
+            <span className="font-display text-[2.2cqw] leading-tight">
+              {issuedCourse.name}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* 屋台の屋根に載せた看板 */}
       <div className="absolute bottom-[56%] left-[44%] flex w-[56%] justify-center">
@@ -181,7 +221,8 @@ export function TicketMachine({ courses, onSelect }: Props) {
           <li key={course.id} className="flex-1">
             <button
               type="button"
-              onClick={() => onSelect(course)}
+              onClick={() => buy(course)}
+              disabled={issuedCourse !== null}
               className="group flex size-full items-center gap-[1cqw] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-kinari px-[1.2cqw] text-yatai-sumi shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-amber focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
             >
               {/* 選べることを示すランプ。マウスを載せるかフォーカスすると灯る */}

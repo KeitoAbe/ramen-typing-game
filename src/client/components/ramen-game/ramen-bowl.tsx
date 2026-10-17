@@ -110,8 +110,14 @@ export function RamenBowl({ look, freshness, isSoggy }: Props) {
         strokeLinecap="round"
         opacity={0.3 + 0.5 * freshness}
       >
-        {STEAM_PATHS.slice(0, steamCount).map((d) => (
-          <path key={d} d={d} />
+        {/* 根元を支点にゆらがせる。筋ごとに間をずらして、そろって揺れないようにする */}
+        {STEAM_PATHS.slice(0, steamCount).map((d, index) => (
+          <path
+            key={d}
+            d={d}
+            style={{ animationDelay: `${index * -0.6}s` }}
+            className="origin-bottom [transform-box:fill-box] motion-safe:animate-steam-waver"
+          />
         ))}
       </g>
       {/* 丼の縁とスープ、麺、トッピング */}
