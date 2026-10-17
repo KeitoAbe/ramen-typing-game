@@ -1,4 +1,9 @@
 import {
+  emptyPlayStats,
+  orderPrice,
+  type PlayStats,
+} from "@/client/lib/ramen-result";
+import {
   createTypingState,
   inputKey,
   isComplete,
@@ -16,12 +21,11 @@ export type RamenGameState =
       /** いま出ている注文の orders 内の位置 */
       orderIndex: number;
       typing: TypingState;
-      /** 平らげた杯数 */
-      servedCount: number;
+      stats: PlayStats;
       endsAt: number;
       remainingMs: number;
     }
-  | { status: "closed"; servedCount: number };
+  | { status: "closed"; stats: PlayStats };
 
 export type RamenGameAction =
   /** orders は出す順に並べたもの（シャッフルは呼び出し側で行う） */
@@ -44,8 +48,8 @@ export function shuffleOrders(
   return result;
 }
 
-function close(servedCount: number): RamenGameState {
-  return { status: "closed", servedCount };
+function close(stats: PlayStats): RamenGameState {
+  return { status: "closed", stats };
 }
 
 export function ramenGameReducer(
@@ -61,7 +65,7 @@ export function ramenGameReducer(
         orders: action.orders,
         orderIndex: 0,
         typing: createTypingState(first.reading),
-        servedCount: 0,
+        stats: emptyPlayStats,
         endsAt: action.now + TIME_LIMIT_MS,
         remainingMs: TIME_LIMIT_MS,
       };
@@ -69,23 +73,37 @@ export function ramenGameReducer(
     case "tick": {
       if (state.status !== "playing") return state;
       const remainingMs = Math.max(0, state.endsAt - action.now);
-      if (remainingMs === 0) return close(state.servedCount);
+      if (remainingMs === 0) return close(state.stats);
       return { ...state, remainingMs };
     }
     case "key": {
       if (state.status !== "playing") return state;
       // 時間切れのあとに届いたキーは受け付けない
-      if (action.now >= state.endsAt) return close(state.servedCount);
+      if (action.now >= state.endsAt) return close(state.stats);
       const { state: typing, accepted } = inputKey(state.typing, action.key);
-      if (!accepted) return state;
-      if (!isComplete(typing)) return { ...state, typing };
+      if (!accepted) {
+        return {
+          ...state,
+          stats: { ...state.stats, missCount: state.stats.missCount + 1 },
+        };
+      }
+      const stats = {
+        ...state.stats,
+        correctKeyCount: state.stats.correctKeyCount + 1,
+      };
+      if (!isComplete(typing)) return { ...state, typing, stats };
       // 打ち終えたら次の注文へ。最後まで出したら最初に戻る
+      const served = state.orders[state.orderIndex];
       const orderIndex = (state.orderIndex + 1) % state.orders.length;
       return {
         ...state,
         orderIndex,
         typing: createTypingState(state.orders[orderIndex].reading),
-        servedCount: state.servedCount + 1,
+        stats: {
+          ...stats,
+          servedCount: stats.servedCount + 1,
+          bill: stats.bill + orderPrice(served),
+        },
       };
     }
   }
