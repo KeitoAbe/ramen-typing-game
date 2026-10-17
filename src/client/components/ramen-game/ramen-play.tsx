@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
   EmptyBowlIcon,
   RamenBowl,
@@ -185,8 +186,16 @@ export function RamenPlay({
       <div
         className={`${WOOD_PLATE} absolute top-[81%] left-[26.5%] flex h-[16.5%] w-[47%] flex-col items-center justify-center`}
       >
-        <p className="text-[2.6cqw] leading-tight font-bold">{order.text}</p>
-        <p className="text-[1.3cqw] leading-tight">{order.reading}</p>
+        {/* 注文の切り替わりだけを読み上げる。1 打ごとに変わるローマ字は含めない */}
+        <div aria-live="polite" className="flex flex-col items-center">
+          {/* 丼ごとに作り直して、同じ注文が続いても新しい注文として読み上げさせる */}
+          <Fragment key={bowlId}>
+            <p className="text-[2.6cqw] leading-tight font-bold">
+              {order.text}
+            </p>
+            <p className="text-[1.3cqw] leading-tight">{order.reading}</p>
+          </Fragment>
+        </div>
         <p className="font-mono text-[2cqw] leading-tight tracking-wide">
           <span className="text-yatai-lantern underline decoration-[0.15cqw] underline-offset-[0.3cqw]">
             {typedRomaji(state.typing)}
