@@ -160,8 +160,9 @@ export function RamenPlay({
 
       {leavingBowl && (
         // 動きを抑える設定では animationend が来ず残ってしまうので、下げる丼ごと出さない
+        // 丼が替わった直後は出す丼と同じ番号になるので、接頭辞を付けてキーを分ける
         <div
-          key={leavingBowl.id}
+          key={`leaving-${leavingBowl.id}`}
           aria-hidden="true"
           onAnimationEnd={onLeavingBowlEnd}
           className={`${BOWL_POSITION} pointer-events-none hidden motion-safe:block ${leavingBowl.reason === "eaten" ? "motion-safe:animate-bowl-eaten" : "motion-safe:animate-bowl-discarded"}`}
@@ -175,7 +176,7 @@ export function RamenPlay({
       )}
       {/* 丼が替わるたびに作り直して、カウンターに出てくる演出をやり直す */}
       <div
-        key={bowlId}
+        key={`serving-${bowlId}`}
         className={`${BOWL_POSITION} motion-safe:animate-bowl-serve`}
       >
         <RamenBowl
