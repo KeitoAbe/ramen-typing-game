@@ -223,18 +223,20 @@ export function TicketMachine({ courses, onSelect }: Props) {
               type="button"
               onClick={() => buy(course)}
               disabled={issuedCourse !== null}
-              className="group flex size-full items-center gap-[1cqw] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-kinari px-[1.2cqw] text-yatai-sumi shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-amber focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
+              className="group flex size-full items-center gap-[0.8cqw] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-kinari px-[1.2cqw] text-yatai-sumi shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-amber focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
             >
               {/* 選べることを示すランプ。マウスを載せるかフォーカスすると灯る */}
               <span
                 aria-hidden="true"
                 className="size-[1.4cqw] shrink-0 rounded-full border-[0.25cqw] border-yatai-sumi bg-yatai-wood-dark group-hover:bg-yatai-lantern group-focus-visible:bg-yatai-lantern"
               />
-              <span className="font-display text-[2.8cqw] leading-none">
+              {/* 品名と値段は折り返さない。Dela Gothic One は数字の幅が広いので、
+                  値段が 6 桁（例: 200,000 円）になっても収まる大きさにしている */}
+              <span className="shrink-0 font-display text-[2.6cqw] leading-none whitespace-nowrap">
                 {course.name}
               </span>
-              <span className="ml-auto flex flex-col items-end leading-tight">
-                <span className="font-display text-[1.9cqw]">
+              <span className="ml-auto flex shrink-0 flex-col items-end leading-tight whitespace-nowrap">
+                <span className="font-display text-[1.8cqw]">
                   {course.price.toLocaleString("ja-JP")}
                   <span className="text-[1.2cqw]"> 円</span>
                 </span>
