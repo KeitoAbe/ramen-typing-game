@@ -273,6 +273,25 @@ export function RamenPlay({
           ))}
         </div>
       </div>
+      {/* 日本語入力の案内: 屋根より上の夜空に掲げる札。読み上げられるよう、入れ物は常に置いておく */}
+      <div
+        aria-live="polite"
+        className="absolute top-[1.5cqw] left-1/2 -translate-x-1/2"
+      >
+        {state.isImeNoticeShown && (
+          <p
+            className={`${WOOD_PLATE} flex flex-col items-center px-[1.2cqw] py-[0.5cqw] whitespace-nowrap`}
+          >
+            <span className="text-[1.8cqw] leading-tight font-bold text-yatai-lantern">
+              日本語入力がオンになっています
+            </span>
+            <span className="text-[1.4cqw] leading-tight font-bold">
+              半角英数（IME オフ）に切り替えて打ってください
+            </span>
+          </p>
+        )}
+      </div>
+
       {/* 替え玉の知らせ: 店主の顔の右に出す吹き出し */}
       <div
         aria-live="polite"
