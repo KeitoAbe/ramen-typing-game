@@ -57,15 +57,18 @@ export function recordPersonalBest(
   balance: number,
 ): PersonalBestRecord {
   let bests: PersonalBests = {};
+  // 読めなかったときに書き込むと、ほかのコースの記録を消してしまうので書き込まない
+  let canWrite = true;
   try {
     bests = parsePersonalBests(
       storage?.getItem(PERSONAL_BEST_STORAGE_KEY) ?? null,
     );
   } catch {
     // 読めなければ記録が無いものとして扱う
+    canWrite = false;
   }
   const record = compareWithPersonalBest(balance, bests[courseId]);
-  if (record.isUpdated) {
+  if (record.isUpdated && canWrite) {
     try {
       storage?.setItem(
         PERSONAL_BEST_STORAGE_KEY,

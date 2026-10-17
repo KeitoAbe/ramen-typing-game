@@ -96,6 +96,8 @@ export function RamenGame({ orders }: Props) {
         personalBest={personalBest}
         onReplay={() => {
           setPersonalBest(null);
+          // 入力のないプレイは毎回同じ emptyPlayStats で閉店するので、目印も戻しておく
+          recordedStatsRef.current = null;
           dispatch({ type: "reset" });
         }}
       />

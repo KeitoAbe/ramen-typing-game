@@ -112,6 +112,21 @@ describe("recordPersonalBest", () => {
     });
   });
 
+  it("読み取りに失敗したときは、保存済みの記録を上書きしない", () => {
+    const setItem = jest.fn();
+    const storage: PersonalBestStorage = {
+      getItem: () => {
+        throw new Error("SecurityError");
+      },
+      setItem,
+    };
+    expect(recordPersonalBest(storage, "nami", 100)).toEqual({
+      best: 100,
+      isUpdated: true,
+    });
+    expect(setItem).not.toHaveBeenCalled();
+  });
+
   it("読み書きで例外が出ても、記録が無いものとして続ける", () => {
     const storage: PersonalBestStorage = {
       getItem: () => {
