@@ -38,6 +38,7 @@ describe("summarizePlay", () => {
         correctKeyCount: 90,
         missCount: 10,
         kaedamaCount: 2,
+        maxStreak: 2,
       },
       60_000,
     );
@@ -49,6 +50,7 @@ describe("summarizePlay", () => {
       correctKeyCount: 90,
       missCount: 10,
       kaedamaCount: 2,
+      maxStreak: 2,
       accuracy: 0.9,
       keysPerSecond: 1.5,
     });
