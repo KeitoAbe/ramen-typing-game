@@ -105,7 +105,7 @@ export function RamenGame({ orders }: Props) {
     </GameStage>
   );
 
-  // 券売機と結果の画面は、看板の下に中身を並べる。舞台に収まらない分は舞台の中でスクロールする
+  // 結果の画面は、看板の下に中身を並べる。舞台に収まらない分は舞台の中でスクロールする
   const withSign = (screen: ReactNode) =>
     onStage(
       <div className="absolute inset-0 flex flex-col items-center gap-6 overflow-y-auto px-[4cqw] py-[3cqw]">
@@ -156,7 +156,8 @@ export function RamenGame({ orders }: Props) {
   };
 
   if (state.status === "ready") {
-    return withSign(<TicketMachine courses={COURSES} onSelect={start} />);
+    // 券売機の画面は看板も絵の中に置くので、舞台いっぱいに描く
+    return onStage(<TicketMachine courses={COURSES} onSelect={start} />);
   }
 
   if (state.status === "closed") {
