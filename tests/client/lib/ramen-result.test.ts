@@ -32,6 +32,7 @@ describe("summarizePlay", () => {
     const result = summarizePlay(
       {
         servedCount: 3,
+        specialServedCount: 1,
         discardedCount: 1,
         bill: 1200,
         correctKeyCount: 90,
@@ -42,6 +43,7 @@ describe("summarizePlay", () => {
     );
     expect(result).toEqual({
       servedCount: 3,
+      specialServedCount: 1,
       discardedCount: 1,
       bill: 1200,
       correctKeyCount: 90,

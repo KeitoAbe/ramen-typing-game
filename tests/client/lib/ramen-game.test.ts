@@ -300,6 +300,112 @@ describe("ramenGameReducer", () => {
     });
   });
 
+  describe("店主のおすすめ（特別な丼）", () => {
+    /** 特別な丼になる乱数と、ならない乱数 */
+    const SPECIAL_ROLL = 0;
+    const NORMAL_ROLL = 0.99;
+
+    function startWith(roll: number): RamenGameState {
+      return ramenGameReducer(initialRamenGameState, {
+        type: "start",
+        course,
+        orders,
+        now: 0,
+        roll,
+      });
+    }
+
+    function typeKeysWith(
+      state: RamenGameState,
+      keys: string,
+      now: number,
+      roll: number,
+    ) {
+      let result = state;
+      for (const key of keys) {
+        result = ramenGameReducer(result, { type: "key", key, now, roll });
+      }
+      return result;
+    }
+
+    it("乱数が確率より小さければ最初の丼が特別な丼になり、大きければならない", () => {
+      const special = startWith(SPECIAL_ROLL);
+      if (special.status !== "playing") throw new Error("playing のはず");
+      expect(special.isSpecialBowl).toBe(true);
+
+      const normal = startWith(NORMAL_ROLL);
+      if (normal.status !== "playing") throw new Error("playing のはず");
+      expect(normal.isSpecialBowl).toBe(false);
+    });
+
+    it("乱数を渡さなければ普通の丼が出る", () => {
+      const state = start();
+      if (state.status !== "playing") throw new Error("playing のはず");
+      expect(state.isSpecialBowl).toBe(false);
+    });
+
+    it("平らげると、完食したキーの乱数で次の丼が特別な丼になるかが決まる", () => {
+      const special = typeKeysWith(startWith(NORMAL_ROLL), "shio", 0, 0);
+      if (special.status !== "playing") throw new Error("playing のはず");
+      expect(special.orderIndex).toBe(1);
+      expect(special.isSpecialBowl).toBe(true);
+
+      const normal = typeKeysWith(startWith(SPECIAL_ROLL), "shio", 0, 0.99);
+      if (normal.status !== "playing") throw new Error("playing のはず");
+      expect(normal.isSpecialBowl).toBe(false);
+    });
+
+    it("特別な丼の値段は、同じ経過時間で平らげた普通の丼の 2 倍", () => {
+      for (const elapsedMs of [0, soggyLimitMs(orders[0]) - 1]) {
+        const special = typeKeysWith(
+          startWith(SPECIAL_ROLL),
+          "shio",
+          elapsedMs,
+          NORMAL_ROLL,
+        );
+        const normal = typeKeysWith(
+          startWith(NORMAL_ROLL),
+          "shio",
+          elapsedMs,
+          NORMAL_ROLL,
+        );
+        if (special.status !== "playing" || normal.status !== "playing") {
+          throw new Error("playing のはず");
+        }
+        expect(normal.stats.bill).toBe(bowlPrice(orders[0], elapsedMs));
+        expect(special.stats.bill).toBe(normal.stats.bill * 2);
+        expect(special.stats.specialServedCount).toBe(1);
+        expect(normal.stats.specialServedCount).toBe(0);
+      }
+    });
+
+    it("特別な丼ものびきったら下げられ、お会計にも特別な丼の杯数にも入らない", () => {
+      const halfway = typeKeysWith(startWith(SPECIAL_ROLL), "shi", 0, 0);
+      const discarded = ramenGameReducer(halfway, {
+        type: "tick",
+        now: soggyLimitMs(orders[0]),
+        roll: NORMAL_ROLL,
+      });
+      if (discarded.status !== "playing") throw new Error("playing のはず");
+      expect(discarded.orderIndex).toBe(1);
+      expect(discarded.isSpecialBowl).toBe(false);
+      expect(discarded.stats.discardedCount).toBe(1);
+      expect(discarded.stats.bill).toBe(0);
+      expect(discarded.stats.specialServedCount).toBe(0);
+    });
+
+    it("丼が替わらない tick やキーでは、特別な丼かどうかは変わらない", () => {
+      const ticking = ramenGameReducer(startWith(SPECIAL_ROLL), {
+        type: "tick",
+        now: 100,
+        roll: NORMAL_ROLL,
+      });
+      const typed = typeKeysWith(ticking, "s", 100, NORMAL_ROLL);
+      if (typed.status !== "playing") throw new Error("playing のはず");
+      expect(typed.isSpecialBowl).toBe(true);
+    });
+  });
+
   it("注文が空なら開始しない", () => {
     const state = ramenGameReducer(initialRamenGameState, {
       type: "start",

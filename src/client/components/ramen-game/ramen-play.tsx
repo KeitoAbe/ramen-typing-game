@@ -9,6 +9,7 @@ import { bowlStyleOf } from "@/client/lib/ramen-bowl-style";
 import type { RamenGameState } from "@/client/lib/ramen-game";
 import { KAEDAMA_GAUGE_MAX } from "@/client/lib/ramen-kaedama";
 import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
+import { SPECIAL_BOWL_PRICE_RATE } from "@/client/lib/ramen-special-bowl";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
 
@@ -177,13 +178,27 @@ export function RamenPlay({
       {/* 丼が替わるたびに作り直して、カウンターに出てくる演出をやり直す */}
       <div
         key={`serving-${bowlId}`}
-        className={`${BOWL_POSITION} motion-safe:animate-bowl-serve`}
+        className={`${BOWL_POSITION} motion-safe:animate-bowl-serve ${state.isSpecialBowl ? "drop-shadow-[0_0_1.2cqw_var(--color-yatai-amber)]" : ""}`}
       >
         <RamenBowl
           look={bowlStyleOf(order)}
           freshness={freshness}
           isSoggy={isGettingSoggy}
         />
+        {/* 特別な丼: 丼の上に掲げる赤い札。読み上げは注文の札の側で行う */}
+        {state.isSpecialBowl && (
+          <p
+            aria-hidden="true"
+            className="absolute -top-[2.2cqw] left-1/2 flex -translate-x-1/2 items-baseline gap-[0.6cqw] rounded-[0.6cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-lantern px-[1cqw] py-[0.3cqw] whitespace-nowrap text-yatai-kinari shadow-[0_0.3cqw_0_var(--color-yatai-sumi)]"
+          >
+            <span className="font-display text-[1.8cqw] leading-tight">
+              店主のおすすめ
+            </span>
+            <span className="text-[1.2cqw] font-bold text-yatai-amber">
+              値段 {SPECIAL_BOWL_PRICE_RATE} 倍
+            </span>
+          </p>
+        )}
       </div>
 
       {/* 注文の文・よみ・ローマ字: 丼の手前の木札 */}
@@ -194,6 +209,12 @@ export function RamenPlay({
         <div aria-live="polite" className="flex flex-col items-center">
           {/* 丼ごとに作り直して、同じ注文が続いても新しい注文として読み上げさせる */}
           <Fragment key={bowlId}>
+            {state.isSpecialBowl && (
+              <p className="sr-only">
+                店主のおすすめの特別な丼です。値段が {SPECIAL_BOWL_PRICE_RATE}{" "}
+                倍になります。
+              </p>
+            )}
             <p className="text-[2.6cqw] leading-tight font-bold">
               {order.text}
             </p>
