@@ -1,3 +1,5 @@
+import { YataiScene } from "@/client/components/ramen-game/yatai-scene";
+import { StageSign } from "@/client/components/stage/stage-sign";
 import {
   type Course,
   courseBalance,
@@ -15,6 +17,15 @@ type Props = {
   onReplay: () => void;
 };
 
+/** お得は赤、損は藍で書いて、ひと目で分かるようにする */
+function balanceColor(balance: number): string {
+  return balance >= 0 ? "text-yatai-lantern" : "text-yatai-ai";
+}
+
+/**
+ * 閉店後の結果画面。夜の屋台を背にお会計の伝票を出し、称号を判子で押す。
+ * 右の店主がひとこと添え、自己ベストを更新したら伝票の左に「新記録」ののぼりを立てる
+ */
 export function RamenResult({ course, result, personalBest, onReplay }: Props) {
   const balance = courseBalance(result.bill, course);
   const title = decideTitle(result, course);
@@ -32,55 +43,109 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
   ];
 
   return (
-    <section className="flex flex-col items-center gap-6">
-      <p className="text-4xl font-bold">閉店</p>
-      <div className="flex flex-col items-center gap-1">
-        <p className="text-yatai-kinari/75">お会計</p>
-        <p className="text-4xl font-semibold">
-          {result.bill.toLocaleString("ja-JP")} 円
-        </p>
-        <p className="text-yatai-kinari/75">
-          食券: {course.name}（{course.price.toLocaleString("ja-JP")} 円）
-        </p>
-        <p
-          className={`text-2xl font-bold ${balance >= 0 ? "text-yatai-amber" : "text-sky-300"}`}
-        >
-          {formatBalance(balance)}
-        </p>
+    <section className="absolute inset-0">
+      {/* 伝票と札が読みやすいよう、屋台の絵を夜の色で少し沈める */}
+      <YataiScene />
+      <div aria-hidden="true" className="absolute inset-0 bg-yatai-night/45" />
+
+      {/* 屋台の屋根に載せた看板 */}
+      <div className="absolute top-[3%] left-[60%] flex w-[36%] justify-center">
+        <StageSign />
+      </div>
+
+      {/* お会計の伝票 */}
+      <div className="absolute top-[4%] left-[19%] flex h-[92%] w-[38%] flex-col rounded-[0.3cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[2.2cqw] py-[1.4cqw] text-yatai-sumi shadow-[0.5cqw_0.5cqw_0_rgb(0_0_0/0.4)]">
+        <h2 className="font-display text-[3cqw] leading-tight tracking-[0.4em]">
+          御会計
+        </h2>
+        <p className="text-[1.2cqw] font-bold">本日は閉店しました</p>
+
+        {/* 称号の判子: 伝票の右上に、朱肉で斜めに押す */}
+        <div className="absolute top-[0.8cqw] right-[1.2cqw] flex rotate-[-10deg] flex-col items-center rounded-[0.8cqw] border-[0.4cqw] border-double border-yatai-lantern px-[0.8cqw] py-[0.3cqw] text-yatai-lantern opacity-90 mix-blend-multiply">
+          <span className="text-[1cqw] leading-tight font-bold">称号</span>
+          <span className="font-display text-[1.8cqw] leading-tight">
+            {title.name}
+          </span>
+        </div>
+
+        <dl className="mt-[1cqw] grid grid-cols-[1fr_auto] border-y-[0.25cqw] border-double border-yatai-sumi text-[1.4cqw]">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="col-span-2 grid grid-cols-subgrid border-b-[0.12cqw] border-dashed border-yatai-lantern/50 py-[0.25cqw] last:border-b-0"
+            >
+              <dt className="font-bold">{row.label}</dt>
+              <dd className="text-right font-display">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <dl className="mt-[0.8cqw] grid grid-cols-[auto_1fr] items-baseline gap-x-[1cqw] gap-y-[0.2cqw]">
+          <dt className="text-[1.4cqw] font-bold">食券</dt>
+          <dd className="text-right text-[1.4cqw] font-bold">
+            {course.name}（{course.price.toLocaleString("ja-JP")} 円）
+          </dd>
+          <dt className="text-[1.6cqw] font-bold">お会計</dt>
+          <dd className="text-right font-display text-[3.4cqw] leading-tight">
+            {result.bill.toLocaleString("ja-JP")} 円
+          </dd>
+          <dt className="text-[1.6cqw] font-bold">差し引き</dt>
+          <dd
+            className={`text-right font-display text-[3.4cqw] leading-tight ${balanceColor(balance)}`}
+          >
+            {formatBalance(balance)}
+          </dd>
+        </dl>
+
         {/* 記録は表示のあとに済むので、出たときに読み上げる */}
-        <div aria-live="polite" className="flex flex-col items-center gap-1">
+        <div
+          aria-live="polite"
+          className="mt-auto border-t-[0.12cqw] border-dashed border-yatai-sumi pt-[0.5cqw] text-right text-[1.3cqw] font-bold"
+        >
           {personalBest?.isUpdated && (
-            <p className="rounded-full bg-yatai-amber px-3 py-1 text-sm font-bold text-yatai-sumi">
-              自己ベスト更新！
+            // 伝票の左に立てるのぼり。伝票（位置の基準）からはみ出して置く
+            <p className="absolute top-[6%] right-[calc(100%+3cqw)] flex h-[70%] w-[6.5cqw] flex-col items-center gap-[1cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-lantern py-[1.2cqw] text-yatai-kinari shadow-[0.4cqw_0.4cqw_0_rgb(0_0_0/0.4)]">
+              <span className="font-display text-[3.4cqw] leading-none [writing-mode:vertical-rl]">
+                新記録
+              </span>
+              <span className="text-[1.3cqw] leading-tight [writing-mode:vertical-rl]">
+                自己ベスト更新！
+              </span>
             </p>
           )}
           {personalBest && (
-            <p className="text-yatai-kinari/75">
-              {course.name}の自己ベスト: {formatBalance(personalBest.best)}
+            <p>
+              {course.name}の自己ベスト:{" "}
+              <span className={balanceColor(personalBest.best)}>
+                {formatBalance(personalBest.best)}
+              </span>
             </p>
           )}
         </div>
       </div>
-      <div className="flex flex-col items-center gap-1">
-        <p className="text-yatai-kinari/75">称号</p>
-        <p className="text-3xl font-bold">{title.name}</p>
-        <p className="text-yatai-kinari/75">「{title.remark}」</p>
+
+      {/* 店主のひとこと: 頭の上の吹き出し */}
+      <div className="absolute top-[22%] left-[61%] w-[35%] rounded-[1.4cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[1.4cqw] py-[0.8cqw] text-yatai-sumi">
+        <p className="text-[1.1cqw] font-bold">店主</p>
+        <p className="text-[1.6cqw] leading-snug font-bold">
+          「{title.remark}」
+        </p>
+        <span
+          aria-hidden="true"
+          className="absolute -bottom-[1.3cqw] left-[38%] size-[2cqw] rotate-45 border-r-[0.3cqw] border-b-[0.3cqw] border-yatai-sumi bg-yatai-kinari"
+        />
       </div>
-      <dl className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-2 text-lg">
-        {rows.map((row) => (
-          <div key={row.label} className="contents">
-            <dt className="text-yatai-kinari/75">{row.label}</dt>
-            <dd className="text-right font-semibold">{row.value}</dd>
-          </div>
-        ))}
-      </dl>
-      <button
-        type="button"
-        onClick={onReplay}
-        className="rounded-md bg-yatai-lantern px-6 py-3 font-semibold text-yatai-kinari hover:bg-yatai-lantern-dark"
-      >
-        もう一杯
-      </button>
+
+      {/* もう一杯: カウンターに置いた赤い木札のボタン */}
+      <div className="absolute top-[81%] left-[64%] flex w-[28%] justify-center">
+        <button
+          type="button"
+          onClick={onReplay}
+          className="w-full rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-lantern py-[0.8cqw] font-display text-[2.8cqw] leading-tight tracking-widest text-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-sumi)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-lantern-dark focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
+        >
+          もう一杯
+        </button>
+      </div>
     </section>
   );
 }

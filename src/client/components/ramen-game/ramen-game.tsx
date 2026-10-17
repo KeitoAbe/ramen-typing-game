@@ -9,7 +9,6 @@ import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { GameStage } from "@/client/components/stage/game-stage";
-import { StageSign } from "@/client/components/stage/stage-sign";
 import {
   COURSES,
   type Course,
@@ -105,15 +104,6 @@ export function RamenGame({ orders }: Props) {
     </GameStage>
   );
 
-  // 結果の画面は、看板の下に中身を並べる。舞台に収まらない分は舞台の中でスクロールする
-  const withSign = (screen: ReactNode) =>
-    onStage(
-      <div className="absolute inset-0 flex flex-col items-center gap-6 overflow-y-auto px-[4cqw] py-[3cqw]">
-        <StageSign />
-        {screen}
-      </div>,
-    );
-
   // 閉店したら、そのコースの自己ベストと比べて保存する。localStorage を使うので effect で行う
   useEffect(() => {
     if (state.status !== "closed") return;
@@ -162,7 +152,8 @@ export function RamenGame({ orders }: Props) {
 
   if (state.status === "closed") {
     // 閉店は時間切れでしか起きないので、プレイ時間は制限時間に替え玉で延びた分を足したもの
-    return withSign(
+    // 伝票の画面は看板も絵の中に置くので、舞台いっぱいに描く
+    return onStage(
       <RamenResult
         course={state.course}
         result={summarizePlay(
