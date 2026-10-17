@@ -19,6 +19,8 @@
   --color-yatai-wood-light: #c08a55;
   --color-yatai-kinari: #f3e6c8;
   --color-yatai-sumi: #2a1f1a;
+  /* 伝票の「損」の藍色 */
+  --color-yatai-ai: #2f5d9b;
 
   /* 見出し・数字・看板 / 本文と注文の文 / ローマ字 */
   --font-display: var(--font-dela-gothic-one);
