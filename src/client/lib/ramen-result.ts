@@ -3,6 +3,13 @@ import type { Order } from "@/types/order";
 /** よみ 1 文字あたりの丼の値段（円） */
 export const PRICE_PER_KANA = 100;
 
+/** 平らげた丼の記録 */
+type ServedBowl = {
+  order: Order;
+  /** お会計に足した値段（円） */
+  price: number;
+};
+
 /** 1 プレイのあいだに積み上げる成績 */
 export type PlayStats = {
   /** 平らげた杯数 */
@@ -19,6 +26,16 @@ export type PlayStats = {
   missCount: number;
   /** 替え玉の回数（替え玉ゲージが満タンになった回数） */
   kaedamaCount: number;
+  /** 平らげた丼（平らげた順） */
+  servedBowls: readonly ServedBowl[];
+  /** 打ち間違えたときに打つべきだったキーごとの回数 */
+  missedKeys: Readonly<Record<string, number>>;
+};
+
+/** 打ち間違えの多いキーと、その回数 */
+export type MissedKey = {
+  key: string;
+  count: number;
 };
 
 export type PlayResult = PlayStats & {
@@ -36,6 +53,8 @@ export const emptyPlayStats: PlayStats = {
   correctKeyCount: 0,
   missCount: 0,
   kaedamaCount: 0,
+  servedBowls: [],
+  missedKeys: {},
 };
 
 /** 丼の定価。よみが長いほど高い（完食までの時間による増減は ramen-bowl で行う） */
@@ -51,4 +70,24 @@ export function summarizePlay(stats: PlayStats, playedMs: number): PlayResult {
     keysPerSecond:
       playedMs <= 0 ? 0 : stats.correctKeyCount / (playedMs / 1000),
   };
+}
+
+/** 打ち間違えたキーを数える。key が空（打つべきキーが分からない）なら数えない */
+export function countMissedKey(
+  missedKeys: Readonly<Record<string, number>>,
+  key: string,
+): Readonly<Record<string, number>> {
+  if (key === "") return missedKeys;
+  return { ...missedKeys, [key]: (missedKeys[key] ?? 0) + 1 };
+}
+
+/** 打ち間違えの多いキーを、回数の多い順に limit 個まで返す。同じ回数ならキーの順に並べる */
+export function topMissedKeys(
+  missedKeys: Readonly<Record<string, number>>,
+  limit: number,
+): MissedKey[] {
+  return Object.entries(missedKeys)
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
+    .slice(0, limit);
 }

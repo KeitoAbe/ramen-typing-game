@@ -6,9 +6,12 @@ import {
   formatBalance,
 } from "@/client/lib/ramen-course";
 import type { PersonalBestRecord } from "@/client/lib/ramen-personal-best";
-import type { PlayResult } from "@/client/lib/ramen-result";
+import { type PlayResult, topMissedKeys } from "@/client/lib/ramen-result";
 import type { Stamp } from "@/client/lib/ramen-stamp-card";
 import { decideTitle } from "@/client/lib/ramen-title";
+
+/** 結果画面に出す、打ち間違いの多いキーの数 */
+const MISSED_KEY_RANK_LIMIT = 3;
 
 type Props = {
   course: Course;
@@ -39,6 +42,7 @@ export function RamenResult({
 }: Props) {
   const balance = courseBalance(result.bill, course);
   const title = decideTitle(result, course);
+  const missedKeys = topMissedKeys(result.missedKeys, MISSED_KEY_RANK_LIMIT);
   const rows = [
     { label: "平らげた杯数", value: `${result.servedCount} 杯` },
     {
@@ -88,17 +92,61 @@ export function RamenResult({
           </span>
         </div>
 
-        <dl className="mt-[1cqw] grid grid-cols-[1fr_auto] border-y-[0.25cqw] border-double border-yatai-sumi text-[1.4cqw]">
+        {/* 振り返りの欄を入れる場所をあけるため、成績は 2 列に並べる */}
+        <dl className="mt-[1cqw] grid grid-cols-[1fr_auto_1fr_auto] gap-x-[1.5cqw] border-y-[0.25cqw] border-double border-yatai-sumi text-[1.2cqw]">
           {rows.map((row) => (
             <div
               key={row.label}
-              className="col-span-2 grid grid-cols-subgrid border-b-[0.12cqw] border-dashed border-yatai-lantern/50 py-[0.25cqw] last:border-b-0"
+              className="col-span-2 grid grid-cols-subgrid border-b-[0.12cqw] border-dashed border-yatai-lantern/50 py-[0.25cqw] whitespace-nowrap last:border-b-0"
             >
               <dt className="font-bold">{row.label}</dt>
               <dd className="text-right font-display">{row.value}</dd>
             </div>
           ))}
         </dl>
+
+        {/* 振り返り: 打ち間違いの多いキーと、平らげた丼。丼の一覧は伝票の残りの高さに収め、あふれたら中でスクロールする */}
+        <div className="mt-[0.8cqw] flex min-h-0 flex-1 flex-col text-[1.2cqw]">
+          <div className="flex items-center gap-x-[1cqw] whitespace-nowrap">
+            <h3 className="font-bold">打ち間違いの多いキー</h3>
+            {missedKeys.length === 0 ? (
+              <p className="font-bold text-yatai-lantern">打ち間違いなし</p>
+            ) : (
+              <ol className="flex gap-x-[1cqw]">
+                {missedKeys.map(({ key, count }) => (
+                  <li key={key} className="flex items-center gap-x-[0.3cqw]">
+                    <kbd className="min-w-[1.8cqw] rounded-[0.3cqw] border-[0.12cqw] border-yatai-sumi bg-white/60 px-[0.3cqw] text-center font-display leading-snug">
+                      {key.toUpperCase()}
+                    </kbd>
+                    <span>{count} 回</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          <h3 className="mt-[0.5cqw] font-bold">平らげた丼（出た順）</h3>
+          {result.servedBowls.length === 0 ? (
+            <p>平らげた丼はありません</p>
+          ) : (
+            <ol className="min-h-0 flex-1 overflow-y-auto border-y-[0.12cqw] border-dashed border-yatai-sumi">
+              {result.servedBowls.map((bowl, index) => (
+                // 同じ注文が二度出ることもあるので、平らげた順番で見分ける
+                <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: 一覧は平らげた順に足すだけで、並び替えや削除はない
+                  key={index}
+                  className="grid grid-cols-[2.4cqw_1fr_auto] gap-x-[0.6cqw] py-[0.15cqw] whitespace-nowrap"
+                >
+                  <span className="text-right font-display">{index + 1}</span>
+                  <span className="truncate">{bowl.order.text}</span>
+                  <span className="text-right font-display">
+                    {bowl.price.toLocaleString("ja-JP")} 円
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
 
         <dl className="mt-[0.8cqw] grid grid-cols-[auto_1fr] items-baseline gap-x-[1cqw] gap-y-[0.2cqw]">
           <dt className="text-[1.4cqw] font-bold">食券</dt>
