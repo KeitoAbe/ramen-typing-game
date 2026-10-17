@@ -14,6 +14,8 @@ type ServedBowl = {
 export type PlayStats = {
   /** 平らげた杯数 */
   servedCount: number;
+  /** 平らげた杯数のうち、「店主のおすすめ」の特別な丼の数 */
+  specialServedCount: number;
   /** のびきって下げられた丼の数 */
   discardedCount: number;
   /** お会計（平らげた丼の値段の合計、円） */
@@ -45,6 +47,7 @@ export type PlayResult = PlayStats & {
 
 export const emptyPlayStats: PlayStats = {
   servedCount: 0,
+  specialServedCount: 0,
   discardedCount: 0,
   bill: 0,
   correctKeyCount: 0,

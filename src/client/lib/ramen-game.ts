@@ -11,6 +11,10 @@ import {
   type PlayStats,
 } from "@/client/lib/ramen-result";
 import {
+  isSpecialBowlRoll,
+  specialBowlPriceRate,
+} from "@/client/lib/ramen-special-bowl";
+import {
   createTypingState,
   inputKey,
   isComplete,
@@ -29,6 +33,8 @@ type PlayingState = {
   orderServedAt: number;
   /** いま出ている丼がのびきるまでの残り時間 */
   orderRemainingMs: number;
+  /** いま出ている丼が「店主のおすすめ」の特別な丼か */
+  isSpecialBowl: boolean;
   typing: TypingState;
   stats: PlayStats;
   /** 替え玉で延びた分を含む、閉店の時刻 */
@@ -48,11 +54,22 @@ export type RamenGameState =
   | PlayingState
   | { status: "closed"; course: Course; stats: PlayStats };
 
+/**
+ * 丼を出すときに、特別な丼にするかを決める乱数（0 以上 1 未満）。
+ * reducer を純粋に保つため、乱数は呼び出し側で引いて action に載せる。省略したら普通の丼を出す
+ */
+type BowlRoll = { roll?: number };
+
 export type RamenGameAction =
   /** orders は出す順に並べたもの（コースでの絞り込みとシャッフルは呼び出し側で行う） */
-  | { type: "start"; course: Course; orders: readonly Order[]; now: number }
-  | { type: "key"; key: string; now: number }
-  | { type: "tick"; now: number }
+  | ({
+      type: "start";
+      course: Course;
+      orders: readonly Order[];
+      now: number;
+    } & BowlRoll)
+  | ({ type: "key"; key: string; now: number } & BowlRoll)
+  | ({ type: "tick"; now: number } & BowlRoll)
   /** 券売機に戻る */
   | { type: "reset" };
 
@@ -79,11 +96,16 @@ function currentOrder(state: PlayingState): Order {
   return state.orders[state.orderIndex];
 }
 
+function isSpecialRoll(roll: number | undefined): boolean {
+  return roll !== undefined && isSpecialBowlRoll(roll);
+}
+
 /** 次の丼を出す。最後まで出したら最初に戻る */
 function serveNext(
   state: PlayingState,
   stats: PlayStats,
   now: number,
+  roll: number | undefined,
 ): PlayingState {
   const orderIndex = (state.orderIndex + 1) % state.orders.length;
   const order = state.orders[orderIndex];
@@ -92,18 +114,24 @@ function serveNext(
     orderIndex,
     orderServedAt: now,
     orderRemainingMs: soggyLimitMs(order),
+    isSpecialBowl: isSpecialRoll(roll),
     typing: createTypingState(order.reading),
     stats,
   };
 }
 
 /** のびきっていれば丼を下げて次の丼を出す。お会計には入れない */
-function discardIfSoggy(state: PlayingState, now: number): PlayingState {
+function discardIfSoggy(
+  state: PlayingState,
+  now: number,
+  roll: number | undefined,
+): PlayingState {
   if (!isSoggy(currentOrder(state), now - state.orderServedAt)) return state;
   return serveNext(
     state,
     { ...state.stats, discardedCount: state.stats.discardedCount + 1 },
     now,
+    roll,
   );
 }
 
@@ -150,6 +178,7 @@ export function ramenGameReducer(
         orderIndex: 0,
         orderServedAt: action.now,
         orderRemainingMs: soggyLimitMs(first),
+        isSpecialBowl: isSpecialRoll(action.roll),
         typing: createTypingState(first.reading),
         stats: emptyPlayStats,
         endsAt: action.now + action.course.timeLimitMs,
@@ -166,7 +195,7 @@ export function ramenGameReducer(
       const remainingMs = Math.max(0, state.endsAt - action.now);
       if (remainingMs === 0) return close(state.course, state.stats);
       const next = updateOrderRemaining(
-        discardIfSoggy(state, action.now),
+        discardIfSoggy(state, action.now, action.roll),
         action.now,
       );
       return {
@@ -181,7 +210,7 @@ export function ramenGameReducer(
       if (action.now >= state.endsAt) return close(state.course, state.stats);
       // tick より先にキーが届いても、のびきった丼には打たせず、残り時間も今の時刻に合わせる
       const current = updateOrderRemaining(
-        discardIfSoggy(state, action.now),
+        discardIfSoggy(state, action.now, action.roll),
         action.now,
       );
       const { state: typing, accepted } = inputKey(current.typing, action.key);
@@ -214,18 +243,24 @@ export function ramenGameReducer(
       );
       const { stats } = afterKey;
       if (!isComplete(typing)) return afterKey;
-      // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ
+      // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ。
+      // 特別な丼は、その値段にさらに倍率をかける
       const order = currentOrder(current);
-      const price = bowlPrice(order, action.now - current.orderServedAt);
+      const price =
+        bowlPrice(order, action.now - current.orderServedAt) *
+        specialBowlPriceRate(current.isSpecialBowl);
       return serveNext(
         afterKey,
         {
           ...stats,
           servedCount: stats.servedCount + 1,
+          specialServedCount:
+            stats.specialServedCount + (current.isSpecialBowl ? 1 : 0),
           bill: stats.bill + price,
           servedBowls: [...stats.servedBowls, { order, price }],
         },
         action.now,
+        action.roll,
       );
     }
   }

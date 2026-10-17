@@ -33,10 +33,10 @@ describe("StaticOrderRepository", () => {
 
   it.each(
     COURSES.map((course) => [course.name, course]),
-  )("%s のコースに出せる注文が 10 件以上ある", (_name, course) => {
+  )("%s のコースに出せる注文が 30 件以上ある", (_name, course) => {
     expect(
       ordersForCourse(STATIC_ORDERS, course).length,
-    ).toBeGreaterThanOrEqual(10);
+    ).toBeGreaterThanOrEqual(30);
   });
 
   it("id が重複しない", () => {

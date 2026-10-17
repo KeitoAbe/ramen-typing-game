@@ -143,10 +143,15 @@ export function RamenGame({ orders }: Props) {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.key.length !== 1) return;
       event.preventDefault();
-      dispatch({ type: "key", key: event.key.toLowerCase(), now: Date.now() });
+      dispatch({
+        type: "key",
+        key: event.key.toLowerCase(),
+        now: Date.now(),
+        roll: Math.random(),
+      });
     };
     const timer = window.setInterval(() => {
-      dispatch({ type: "tick", now: Date.now() });
+      dispatch({ type: "tick", now: Date.now(), roll: Math.random() });
     }, 100);
     window.addEventListener("keydown", handleKeyDown);
     return () => {
@@ -161,6 +166,7 @@ export function RamenGame({ orders }: Props) {
       course,
       orders: shuffleOrders(ordersForCourse(orders, course)),
       now: Date.now(),
+      roll: Math.random(),
     });
   };
 
