@@ -8,6 +8,7 @@ import { SOGGY_START_RATIO, soggyLimitMs } from "@/client/lib/ramen-bowl";
 import { bowlStyleOf } from "@/client/lib/ramen-bowl-style";
 import type { RamenGameState } from "@/client/lib/ramen-game";
 import { KAEDAMA_GAUGE_MAX } from "@/client/lib/ramen-kaedama";
+import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
 
@@ -38,6 +39,7 @@ type Props = {
   bowlId: number;
   leavingBowl: LeavingBowl | null;
   onLeavingBowlEnd: () => void;
+  shopkeeperMood: ShopkeeperMood;
 };
 
 /** プレイ画面。夜の屋台のカウンターに丼が出てくる */
@@ -46,6 +48,7 @@ export function RamenPlay({
   bowlId,
   leavingBowl,
   onLeavingBowlEnd,
+  shopkeeperMood,
 }: Props) {
   const order = state.orders[state.orderIndex];
   const freshness = state.orderRemainingMs / soggyLimitMs(order);
@@ -58,7 +61,7 @@ export function RamenPlay({
 
   return (
     <section className="absolute inset-0">
-      <YataiScene />
+      <YataiScene shopkeeperMood={shopkeeperMood} />
 
       {/* 残り時間: 左の柱に掛けた木札の時計 */}
       <div
@@ -248,20 +251,25 @@ export function RamenPlay({
           ))}
         </div>
       </div>
-      <p
+      {/* 替え玉の知らせ: 店主の顔の右に出す吹き出し */}
+      <div
         aria-live="polite"
-        className="absolute top-[72%] left-[75.5%] w-[21.5%] text-center font-display text-[3cqw] text-yatai-amber [text-shadow:0.25cqw_0.25cqw_0_var(--color-yatai-sumi)]"
+        className="absolute top-[52%] left-[75.4%] w-[14.4%]"
       >
         {state.isKaedamaNoticeShown && (
           // 替え玉のたびに作り直して、飛び出す演出をやり直す
-          <span
+          <p
             key={state.stats.kaedamaCount}
-            className="inline-block motion-safe:animate-kaedama-pop"
+            className="relative origin-left rounded-[1.2cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[0.8cqw] py-[0.5cqw] text-center font-display text-[1.6cqw] leading-tight text-yatai-lantern motion-safe:animate-kaedama-pop"
           >
-            替え玉！
-          </span>
+            へい、替え玉！
+            <span
+              aria-hidden="true"
+              className="absolute top-[30%] -left-[0.9cqw] size-[1.4cqw] rotate-45 border-b-[0.3cqw] border-l-[0.3cqw] border-yatai-sumi bg-yatai-kinari"
+            />
+          </p>
         )}
-      </p>
+      </div>
     </section>
   );
 }

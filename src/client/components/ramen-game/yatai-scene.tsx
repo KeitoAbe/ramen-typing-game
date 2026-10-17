@@ -1,3 +1,6 @@
+import type { ReactNode } from "react";
+import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
+
 // 夜空の星の位置（舞台の座標 1280×720）。描くたびに変わらないよう固定しておく
 const STARS: readonly (readonly [number, number, number])[] = [
   [40, 30, 2],
@@ -33,7 +36,11 @@ type LanternProps = { cx: number; label: readonly [string, string] };
 /** 屋根から下がる赤い提灯 */
 function Lantern({ cx, label }: LanternProps) {
   return (
-    <g>
+    // 吊り紐の上端（cx, 200）を支点に揺らす。transform-origin は svg の座標で書く
+    <g
+      style={{ transformOrigin: `${cx}px 200px` }}
+      className="motion-safe:animate-lantern-sway"
+    >
       <circle cx={cx} cy={300} r={120} fill="url(#lantern-glow)" />
       <line x1={cx} y1={200} x2={cx} y2={232} stroke={SUMI} strokeWidth={5} />
       <ellipse
@@ -72,8 +79,67 @@ function Lantern({ cx, label }: LanternProps) {
   );
 }
 
+const FACE_LINE = {
+  fill: "none",
+  stroke: SUMI,
+  strokeWidth: 5,
+  strokeLinecap: "round",
+} as const;
+
+/** 表情ごとの眉・目・口 */
+const SHOPKEEPER_FACES: Record<ShopkeeperMood, ReactNode> = {
+  normal: (
+    <>
+      <path
+        d="M866 402 l22 -4 M912 398 l22 4"
+        stroke={SUMI}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
+      <circle cx={879} cy={415} r={5} fill={SUMI} />
+      <circle cx={921} cy={415} r={5} fill={SUMI} />
+      <path d="M884 432 q16 8 32 0" {...FACE_LINE} />
+    </>
+  ),
+  // 眉を上げ、目を細めて口を大きく開けて笑う
+  happy: (
+    <>
+      <path
+        d="M866 396 l22 -6 M912 390 l22 6"
+        stroke={SUMI}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
+      <path d="M870 416 q9 -9 18 0 M912 416 q9 -9 18 0" {...FACE_LINE} />
+      <path
+        d="M880 428 q20 24 40 0 z"
+        fill="var(--color-yatai-lantern-dark)"
+        stroke={SUMI}
+        strokeWidth={5}
+        strokeLinejoin="round"
+      />
+    </>
+  ),
+  // 眉尻を下げ（ハの字）、口をへの字にする
+  troubled: (
+    <>
+      <path
+        d="M866 406 l22 -10 M912 396 l22 10"
+        stroke={SUMI}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
+      <circle cx={879} cy={417} r={4} fill={SUMI} />
+      <circle cx={921} cy={417} r={4} fill={SUMI} />
+      <path d="M886 438 q14 -10 28 0" {...FACE_LINE} />
+    </>
+  ),
+};
+
+type ShopkeeperProps = { mood: ShopkeeperMood };
+
 /** はちまき姿の店主。カウンターの奥に立つ */
-function Shopkeeper() {
+function Shopkeeper({ mood }: ShopkeeperProps) {
   return (
     <g>
       {/* 白い調理服 */}
@@ -107,27 +173,8 @@ function Shopkeeper() {
         strokeWidth={4}
         strokeLinejoin="round"
       />
-      {/* 太い眉と笑った目、口 */}
-      <path
-        d="M866 402 l22 -4 M912 398 l22 4"
-        stroke={SUMI}
-        strokeWidth={7}
-        strokeLinecap="round"
-      />
-      <path
-        d="M870 416 q9 -9 18 0 M912 416 q9 -9 18 0"
-        fill="none"
-        stroke={SUMI}
-        strokeWidth={5}
-        strokeLinecap="round"
-      />
-      <path
-        d="M880 432 q20 18 40 0"
-        fill="none"
-        stroke={SUMI}
-        strokeWidth={5}
-        strokeLinecap="round"
-      />
+      {/* 太い眉と目、口。場面で表情を変える */}
+      {SHOPKEEPER_FACES[mood]}
       <circle
         cx={864}
         cy={428}
@@ -152,7 +199,7 @@ const NOREN_CHARS = ["ら", "ー", "め", "ん"] as const;
  * プレイ画面の背景。奥から順に夜空、屋台の屋根、提灯、のれん、店主、カウンターを描く。
  * 舞台と同じ 16:9 の座標で描き、舞台いっぱいに広げる
  */
-export function YataiScene() {
+export function YataiScene({ shopkeeperMood = "normal" }: YataiStallProps) {
   return (
     <svg
       viewBox="0 0 1280 720"
@@ -161,7 +208,7 @@ export function YataiScene() {
     >
       <YataiDefs />
       <YataiSky />
-      <YataiStall />
+      <YataiStall shopkeeperMood={shopkeeperMood} />
     </svg>
   );
 }
@@ -215,8 +262,10 @@ export function YataiSky() {
   );
 }
 
+type YataiStallProps = { shopkeeperMood?: ShopkeeperMood };
+
 /** 屋台の壁・屋根・のれん・提灯・店主・カウンター（1280×720 の座標） */
-export function YataiStall() {
+export function YataiStall({ shopkeeperMood = "normal" }: YataiStallProps) {
   return (
     <>
       {/* 屋台の奥の、灯りのともった壁 */}
@@ -305,7 +354,7 @@ export function YataiStall() {
       <Lantern cx={196} label={["中", "華"]} />
       <Lantern cx={1084} label={["そ", "ば"]} />
 
-      <Shopkeeper />
+      <Shopkeeper mood={shopkeeperMood} />
 
       {/* 木のカウンター */}
       <rect
