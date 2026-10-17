@@ -5,11 +5,16 @@ import {
   KAEDAMA_EXTENSION_MS,
   KAEDAMA_NOTICE_MS,
 } from "@/client/lib/ramen-kaedama";
-import { emptyPlayStats, type PlayStats } from "@/client/lib/ramen-result";
+import {
+  countMissedKey,
+  emptyPlayStats,
+  type PlayStats,
+} from "@/client/lib/ramen-result";
 import {
   createTypingState,
   inputKey,
   isComplete,
+  remainingRomaji,
   type TypingState,
 } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
@@ -181,11 +186,19 @@ export function ramenGameReducer(
       );
       const { state: typing, accepted } = inputKey(current.typing, action.key);
       if (!accepted) {
-        // ミスすると替え玉ゲージは 0 に戻る
+        // ミスすると替え玉ゲージは 0 に戻る。
+        // 打つべきだったキーは、画面に出ている残りのローマ字の先頭（プレイヤーが見ていたもの）で数える
         return {
           ...current,
           kaedamaGauge: 0,
-          stats: { ...current.stats, missCount: current.stats.missCount + 1 },
+          stats: {
+            ...current.stats,
+            missCount: current.stats.missCount + 1,
+            missedKeys: countMissedKey(
+              current.stats.missedKeys,
+              remainingRomaji(current.typing).charAt(0),
+            ),
+          },
         };
       }
       const afterKey = refillIfGaugeFull(
@@ -202,16 +215,15 @@ export function ramenGameReducer(
       const { stats } = afterKey;
       if (!isComplete(typing)) return afterKey;
       // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ
-      const price = bowlPrice(
-        currentOrder(current),
-        action.now - current.orderServedAt,
-      );
+      const order = currentOrder(current);
+      const price = bowlPrice(order, action.now - current.orderServedAt);
       return serveNext(
         afterKey,
         {
           ...stats,
           servedCount: stats.servedCount + 1,
           bill: stats.bill + price,
+          servedBowls: [...stats.servedBowls, { order, price }],
         },
         action.now,
       );

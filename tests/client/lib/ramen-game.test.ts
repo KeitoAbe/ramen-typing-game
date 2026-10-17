@@ -153,6 +153,41 @@ describe("ramenGameReducer", () => {
     expect(late.stats.missCount).toBe(1);
   });
 
+  it("平らげた丼を、平らげた順に実際の値段つきで記録する", () => {
+    const first = typeKeys(start(), "shio", 1_000);
+    const slowMs = soggyLimitMs(orders[1]) - 1;
+    const second = typeKeys(first, "miso", 1_000 + slowMs);
+    if (second.status !== "playing") throw new Error("playing のはず");
+    expect(second.stats.servedBowls).toEqual([
+      { order: orders[0], price: bowlPrice(orders[0], 1_000) },
+      { order: orders[1], price: bowlPrice(orders[1], slowMs) },
+    ]);
+  });
+
+  it("のびきって下げられた丼は、平らげた丼に記録しない", () => {
+    const halfway = typeKeys(start(), "shi");
+    const discarded = ramenGameReducer(halfway, {
+      type: "tick",
+      now: soggyLimitMs(orders[0]),
+    });
+    if (discarded.status !== "playing") throw new Error("playing のはず");
+    expect(discarded.stats.servedBowls).toEqual([]);
+  });
+
+  it("打ち間違えたときは、画面に出ている残りのローマ字の先頭のキーを数える", () => {
+    // 「し」の 1 打目は s、「shi」で打ち始めたあとの 2 打目は h が画面に出ている
+    const state = typeKeys(start(), "xsxxhio");
+    if (state.status !== "playing") throw new Error("playing のはず");
+    expect(state.stats.missedKeys).toEqual({ s: 1, h: 2 });
+  });
+
+  it("「si」で打ち始めたら、残りのローマ字に合わせて数える", () => {
+    // 「si」と打ったあとは「お」の o が画面に出ている
+    const state = typeKeys(start(), "six");
+    if (state.status !== "playing") throw new Error("playing のはず");
+    expect(state.stats.missedKeys).toEqual({ o: 1 });
+  });
+
   it("正しいキーとミスタイプを数える", () => {
     const state = typeKeys(start(), "sxhio");
     if (state.status !== "playing") throw new Error("playing のはず");
@@ -160,14 +195,18 @@ describe("ramenGameReducer", () => {
     expect(state.stats.missCount).toBe(1);
   });
 
-  it("間違えたキーではミスタイプ数だけが増える", () => {
+  it("間違えたキーではミスタイプ数と打ち間違えたキーだけが増える", () => {
     const state = start();
     const missed = typeKeys(state, "x");
     if (state.status !== "playing" || missed.status !== "playing") {
       throw new Error("playing のはず");
     }
     expect(missed.typing).toBe(state.typing);
-    expect(missed.stats).toEqual({ ...state.stats, missCount: 1 });
+    expect(missed.stats).toEqual({
+      ...state.stats,
+      missCount: 1,
+      missedKeys: { s: 1 },
+    });
   });
 
   it("tick で残り時間が減り、0 になると閉店して食券と成績が残る", () => {
