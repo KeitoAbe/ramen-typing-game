@@ -1,5 +1,10 @@
 import { bowlPrice, isSoggy, soggyLimitMs } from "@/client/lib/ramen-bowl";
 import type { Course } from "@/client/lib/ramen-course";
+import {
+  fillKaedamaGauge,
+  KAEDAMA_EXTENSION_MS,
+  KAEDAMA_NOTICE_MS,
+} from "@/client/lib/ramen-kaedama";
 import { emptyPlayStats, type PlayStats } from "@/client/lib/ramen-result";
 import {
   createTypingState,
@@ -21,8 +26,15 @@ type PlayingState = {
   orderRemainingMs: number;
   typing: TypingState;
   stats: PlayStats;
+  /** 替え玉で延びた分を含む、閉店の時刻 */
   endsAt: number;
   remainingMs: number;
+  /** ミスなしで続けて打ったキー数（替え玉ゲージ） */
+  kaedamaGauge: number;
+  /** 「替え玉！」を出しておく期限の時刻 */
+  kaedamaNoticeUntil: number;
+  /** いま「替え玉！」を出しているか */
+  isKaedamaNoticeShown: boolean;
 };
 
 export type RamenGameState =
@@ -99,6 +111,25 @@ function updateOrderRemaining(state: PlayingState, now: number): PlayingState {
   return { ...state, orderRemainingMs };
 }
 
+/**
+ * 正しく打ったぶん替え玉ゲージをためる。
+ * 満タンになったら替え玉にして、制限時間を延ばし「替え玉！」を出す
+ */
+function refillIfGaugeFull(state: PlayingState, now: number): PlayingState {
+  const { gauge, refilled } = fillKaedamaGauge(state.kaedamaGauge);
+  if (!refilled) return { ...state, kaedamaGauge: gauge };
+  const endsAt = state.endsAt + KAEDAMA_EXTENSION_MS;
+  return {
+    ...state,
+    kaedamaGauge: gauge,
+    endsAt,
+    remainingMs: endsAt - now,
+    kaedamaNoticeUntil: now + KAEDAMA_NOTICE_MS,
+    isKaedamaNoticeShown: true,
+    stats: { ...state.stats, kaedamaCount: state.stats.kaedamaCount + 1 },
+  };
+}
+
 export function ramenGameReducer(
   state: RamenGameState,
   action: RamenGameAction,
@@ -118,6 +149,9 @@ export function ramenGameReducer(
         stats: emptyPlayStats,
         endsAt: action.now + action.course.timeLimitMs,
         remainingMs: action.course.timeLimitMs,
+        kaedamaGauge: 0,
+        kaedamaNoticeUntil: action.now,
+        isKaedamaNoticeShown: false,
       };
     }
     case "reset":
@@ -130,7 +164,11 @@ export function ramenGameReducer(
         discardIfSoggy(state, action.now),
         action.now,
       );
-      return { ...next, remainingMs };
+      return {
+        ...next,
+        remainingMs,
+        isKaedamaNoticeShown: action.now < next.kaedamaNoticeUntil,
+      };
     }
     case "key": {
       if (state.status !== "playing") return state;
@@ -143,23 +181,33 @@ export function ramenGameReducer(
       );
       const { state: typing, accepted } = inputKey(current.typing, action.key);
       if (!accepted) {
+        // ミスすると替え玉ゲージは 0 に戻る
         return {
           ...current,
+          kaedamaGauge: 0,
           stats: { ...current.stats, missCount: current.stats.missCount + 1 },
         };
       }
-      const stats = {
-        ...current.stats,
-        correctKeyCount: current.stats.correctKeyCount + 1,
-      };
-      if (!isComplete(typing)) return { ...current, typing, stats };
+      const afterKey = refillIfGaugeFull(
+        {
+          ...current,
+          typing,
+          stats: {
+            ...current.stats,
+            correctKeyCount: current.stats.correctKeyCount + 1,
+          },
+        },
+        action.now,
+      );
+      const { stats } = afterKey;
+      if (!isComplete(typing)) return afterKey;
       // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ
       const price = bowlPrice(
         currentOrder(current),
         action.now - current.orderServedAt,
       );
       return serveNext(
-        current,
+        afterKey,
         {
           ...stats,
           servedCount: stats.servedCount + 1,

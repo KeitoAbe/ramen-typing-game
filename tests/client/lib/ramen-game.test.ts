@@ -6,6 +6,11 @@ import {
   ramenGameReducer,
   shuffleOrders,
 } from "@/client/lib/ramen-game";
+import {
+  KAEDAMA_EXTENSION_MS,
+  KAEDAMA_GAUGE_MAX,
+  KAEDAMA_NOTICE_MS,
+} from "@/client/lib/ramen-kaedama";
 import { emptyPlayStats, orderPrice } from "@/client/lib/ramen-result";
 import type { Order } from "@/types/order";
 
@@ -204,6 +209,95 @@ describe("ramenGameReducer", () => {
     expect(ramenGameReducer(closed, { type: "reset" })).toBe(
       initialRamenGameState,
     );
+  });
+
+  describe("替え玉", () => {
+    /** 注文どおりに count キーぶん打つ（しお・みそを交互に） */
+    function correctKeys(count: number): string {
+      return "shiomiso".repeat(Math.ceil(count / 8)).slice(0, count);
+    }
+
+    it("正しく打つと替え玉ゲージがたまり、ミスすると 0 に戻る", () => {
+      const typed = typeKeys(start(), "shi");
+      if (typed.status !== "playing") throw new Error("playing のはず");
+      expect(typed.kaedamaGauge).toBe(3);
+
+      const missed = typeKeys(typed, "x");
+      if (missed.status !== "playing") throw new Error("playing のはず");
+      expect(missed.kaedamaGauge).toBe(0);
+    });
+
+    it("満タンになると制限時間が延び、ゲージは 0 から再開して「替え玉！」が出る", () => {
+      const before = typeKeys(
+        start(),
+        correctKeys(KAEDAMA_GAUGE_MAX - 1),
+        1_000,
+      );
+      if (before.status !== "playing") throw new Error("playing のはず");
+      expect(before.endsAt).toBe(course.timeLimitMs);
+      expect(before.isKaedamaNoticeShown).toBe(false);
+
+      const refilled = typeKeys(
+        before,
+        correctKeys(KAEDAMA_GAUGE_MAX).slice(-1),
+        1_000,
+      );
+      if (refilled.status !== "playing") throw new Error("playing のはず");
+      expect(refilled.kaedamaGauge).toBe(0);
+      expect(refilled.stats.kaedamaCount).toBe(1);
+      expect(refilled.endsAt).toBe(course.timeLimitMs + KAEDAMA_EXTENSION_MS);
+      expect(refilled.remainingMs).toBe(
+        course.timeLimitMs + KAEDAMA_EXTENSION_MS - 1_000,
+      );
+      expect(refilled.isKaedamaNoticeShown).toBe(true);
+    });
+
+    it("「替え玉！」はしばらくすると消える", () => {
+      const refilled = typeKeys(start(), correctKeys(KAEDAMA_GAUGE_MAX), 0);
+      const shown = ramenGameReducer(refilled, {
+        type: "tick",
+        now: KAEDAMA_NOTICE_MS - 1,
+      });
+      if (shown.status !== "playing") throw new Error("playing のはず");
+      expect(shown.isKaedamaNoticeShown).toBe(true);
+
+      const hidden = ramenGameReducer(shown, {
+        type: "tick",
+        now: KAEDAMA_NOTICE_MS,
+      });
+      if (hidden.status !== "playing") throw new Error("playing のはず");
+      expect(hidden.isKaedamaNoticeShown).toBe(false);
+    });
+
+    it("延びた分だけ閉店が遅くなる", () => {
+      const refilled = typeKeys(start(), correctKeys(KAEDAMA_GAUGE_MAX), 0);
+      const extended = ramenGameReducer(refilled, {
+        type: "tick",
+        now: course.timeLimitMs,
+      });
+      expect(extended.status).toBe("playing");
+
+      const closed = ramenGameReducer(extended, {
+        type: "tick",
+        now: course.timeLimitMs + KAEDAMA_EXTENSION_MS,
+      });
+      expect(closed.status).toBe("closed");
+      if (closed.status !== "closed") throw new Error("closed のはず");
+      expect(closed.stats.kaedamaCount).toBe(1);
+    });
+
+    it("途中でミスすると、満タンまでの打鍵数を数え直す", () => {
+      const half = KAEDAMA_GAUGE_MAX / 2;
+      const missed = typeKeys(typeKeys(start(), correctKeys(half)), "x");
+      // ミスの前と合わせて満タンの打鍵数に届いても、替え玉にはならない
+      const state = typeKeys(
+        missed,
+        correctKeys(KAEDAMA_GAUGE_MAX).slice(half),
+      );
+      if (state.status !== "playing") throw new Error("playing のはず");
+      expect(state.stats.kaedamaCount).toBe(0);
+      expect(state.kaedamaGauge).toBe(KAEDAMA_GAUGE_MAX - half);
+    });
   });
 
   it("注文が空なら開始しない", () => {

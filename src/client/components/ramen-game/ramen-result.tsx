@@ -16,6 +16,7 @@ export function RamenResult({ course, result, onReplay }: Props) {
   const rows = [
     { label: "平らげた杯数", value: `${result.servedCount} 杯` },
     { label: "のびて下げられた丼", value: `${result.discardedCount} 杯` },
+    { label: "替え玉", value: `${result.kaedamaCount} 回` },
     { label: "正しく打ったキー数", value: `${result.correctKeyCount} 回` },
     { label: "ミスタイプ数", value: `${result.missCount} 回` },
     { label: "正確率", value: `${(result.accuracy * 100).toFixed(1)} %` },
