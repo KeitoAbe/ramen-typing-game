@@ -1,3 +1,4 @@
+import { SOGGY_START_RATIO, soggyLimitMs } from "@/client/lib/ramen-bowl";
 import { COURSES, ordersForCourse } from "@/client/lib/ramen-course";
 import {
   createTypingState,
@@ -9,6 +10,9 @@ import {
   STATIC_ORDERS,
   StaticOrderRepository,
 } from "@/server/contexts/order/infrastructure/repositories/static-order-repository";
+
+/** 普通の腕前の打鍵の速さ（ramen-course の食券代の釣り合いと同じ前提） */
+const NORMAL_KEYS_PER_SECOND = 2;
 
 /** 表示どおりに打てば打ち終えられるか（つづりの分からない文字がないか） */
 function canTypeAsShown(reading: string): boolean {
@@ -44,5 +48,17 @@ describe("StaticOrderRepository", () => {
     STATIC_ORDERS.map((order) => [order.text, order.reading]),
   )("「%s」のよみ (%s) は表示どおりに打ち終えられる", (_text, reading) => {
     expect(canTypeAsShown(reading)).toBe(true);
+  });
+
+  it.each(
+    COURSES.map((course) => [course.name, course]),
+  )("%s のコースの注文は、毎秒 2 キーで打てばのびかける前に完食できる", (_name, course) => {
+    for (const order of ordersForCourse(STATIC_ORDERS, course)) {
+      const keyCount = remainingRomaji(createTypingState(order.reading)).length;
+      const typingMs = (keyCount / NORMAL_KEYS_PER_SECOND) * 1000;
+      expect(typingMs).toBeLessThanOrEqual(
+        soggyLimitMs(order) * SOGGY_START_RATIO,
+      );
+    }
   });
 });

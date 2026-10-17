@@ -7,6 +7,8 @@ export const PRICE_PER_KANA = 100;
 export type PlayStats = {
   /** 平らげた杯数 */
   servedCount: number;
+  /** のびきって下げられた丼の数 */
+  discardedCount: number;
   /** お会計（平らげた丼の値段の合計、円） */
   bill: number;
   /** 正しく打ったキー数 */
@@ -24,12 +26,13 @@ export type PlayResult = PlayStats & {
 
 export const emptyPlayStats: PlayStats = {
   servedCount: 0,
+  discardedCount: 0,
   bill: 0,
   correctKeyCount: 0,
   missCount: 0,
 };
 
-/** 丼の値段。よみが長いほど高い */
+/** 丼の定価。よみが長いほど高い（完食までの時間による増減は ramen-bowl で行う） */
 export function orderPrice(order: Order): number {
   return Array.from(order.reading).length * PRICE_PER_KANA;
 }

@@ -30,11 +30,18 @@ describe("orderPrice", () => {
 describe("summarizePlay", () => {
   it("正確率と 1 秒あたりの平均打鍵数を出す", () => {
     const result = summarizePlay(
-      { servedCount: 3, bill: 1200, correctKeyCount: 90, missCount: 10 },
+      {
+        servedCount: 3,
+        discardedCount: 1,
+        bill: 1200,
+        correctKeyCount: 90,
+        missCount: 10,
+      },
       60_000,
     );
     expect(result).toEqual({
       servedCount: 3,
+      discardedCount: 1,
       bill: 1200,
       correctKeyCount: 90,
       missCount: 10,
