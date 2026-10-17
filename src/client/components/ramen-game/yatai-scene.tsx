@@ -20,8 +20,9 @@ const STARS: readonly (readonly [number, number, number])[] = [
   [30, 300, 2],
 ];
 
-const SUMI = "var(--color-yatai-sumi)";
-const OUTLINE = {
+export const SUMI = "var(--color-yatai-sumi)";
+/** 絵本風の太い輪郭線 */
+export const OUTLINE = {
   stroke: SUMI,
   strokeWidth: 6,
   strokeLinejoin: "round",
@@ -158,37 +159,45 @@ export function YataiScene() {
       aria-hidden="true"
       className="absolute inset-0 size-full"
     >
-      <defs>
-        <linearGradient id="night-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="var(--color-yatai-night-deep)" />
-          <stop offset="1" stopColor="var(--color-yatai-night)" />
-        </linearGradient>
-        <radialGradient id="lantern-glow">
-          <stop
-            offset="0"
-            stopColor="var(--color-yatai-amber)"
-            stopOpacity={0.45}
-          />
-          <stop
-            offset="1"
-            stopColor="var(--color-yatai-amber)"
-            stopOpacity={0}
-          />
-        </radialGradient>
-        <radialGradient id="stall-light" cx="0.5" cy="0.1" r="0.8">
-          <stop
-            offset="0"
-            stopColor="var(--color-yatai-amber)"
-            stopOpacity={0.55}
-          />
-          <stop
-            offset="1"
-            stopColor="var(--color-yatai-amber)"
-            stopOpacity={0}
-          />
-        </radialGradient>
-      </defs>
+      <YataiDefs />
+      <YataiSky />
+      <YataiStall />
+    </svg>
+  );
+}
 
+/** 夜空・提灯・屋台の灯りのグラデーション。YataiSky と YataiStall を描く svg に 1 つだけ置く */
+export function YataiDefs() {
+  return (
+    <defs>
+      <linearGradient id="night-sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="var(--color-yatai-night-deep)" />
+        <stop offset="1" stopColor="var(--color-yatai-night)" />
+      </linearGradient>
+      <radialGradient id="lantern-glow">
+        <stop
+          offset="0"
+          stopColor="var(--color-yatai-amber)"
+          stopOpacity={0.45}
+        />
+        <stop offset="1" stopColor="var(--color-yatai-amber)" stopOpacity={0} />
+      </radialGradient>
+      <radialGradient id="stall-light" cx="0.5" cy="0.1" r="0.8">
+        <stop
+          offset="0"
+          stopColor="var(--color-yatai-amber)"
+          stopOpacity={0.55}
+        />
+        <stop offset="1" stopColor="var(--color-yatai-amber)" stopOpacity={0} />
+      </radialGradient>
+    </defs>
+  );
+}
+
+/** 舞台いっぱいの夜空と星、月（1280×720 の座標） */
+export function YataiSky() {
+  return (
+    <>
       {/* 夜空と星、月 */}
       <rect width={1280} height={720} fill="url(#night-sky)" />
       {STARS.map(([x, y, r]) => (
@@ -202,7 +211,14 @@ export function YataiScene() {
       ))}
       <circle cx={1130} cy={56} r={30} fill="var(--color-yatai-amber)" />
       <circle cx={1144} cy={48} r={26} fill="var(--color-yatai-night-deep)" />
+    </>
+  );
+}
 
+/** 屋台の壁・屋根・のれん・提灯・店主・カウンター（1280×720 の座標） */
+export function YataiStall() {
+  return (
+    <>
       {/* 屋台の奥の、灯りのともった壁 */}
       <rect
         x={126}
@@ -327,6 +343,6 @@ export function YataiScene() {
         fill="var(--color-yatai-wood-light)"
         {...OUTLINE}
       />
-    </svg>
+    </>
   );
 }
