@@ -8,7 +8,7 @@ type Props = {
 export function TicketMachine({ courses, onSelect }: Props) {
   return (
     <section className="flex flex-col items-center gap-6">
-      <p className="text-zinc-600 dark:text-zinc-400">
+      <p className="text-yatai-kinari/75">
         券売機で食券を買って、カウンターに出てくる注文をローマ字で打とう。
         お会計が食券代を超えれば元が取れる。
       </p>
@@ -18,7 +18,7 @@ export function TicketMachine({ courses, onSelect }: Props) {
             <button
               type="button"
               onClick={() => onSelect(course)}
-              className="flex w-full flex-col items-center gap-1 rounded-md bg-red-700 px-6 py-4 text-white hover:bg-red-800"
+              className="flex w-full flex-col items-center gap-1 rounded-md bg-yatai-lantern px-6 py-4 text-yatai-kinari hover:bg-yatai-lantern-dark"
             >
               <span className="text-2xl font-bold">{course.name}</span>
               <span className="font-semibold">

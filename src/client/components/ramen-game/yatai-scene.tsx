@@ -1,0 +1,332 @@
+// 夜空の星の位置（舞台の座標 1280×720）。描くたびに変わらないよう固定しておく
+const STARS: readonly (readonly [number, number, number])[] = [
+  [40, 30, 2],
+  [160, 70, 3],
+  [250, 22, 2],
+  [340, 60, 2],
+  [430, 28, 3],
+  [520, 80, 2],
+  [600, 36, 2],
+  [700, 72, 3],
+  [780, 20, 2],
+  [860, 58, 2],
+  [950, 30, 3],
+  [1010, 86, 2],
+  [1240, 140, 2],
+  [20, 160, 3],
+  [1260, 300, 2],
+  [12, 420, 2],
+  [1250, 480, 3],
+  [30, 300, 2],
+];
+
+const SUMI = "var(--color-yatai-sumi)";
+const OUTLINE = {
+  stroke: SUMI,
+  strokeWidth: 6,
+  strokeLinejoin: "round",
+} as const;
+
+type LanternProps = { cx: number; label: readonly [string, string] };
+
+/** 屋根から下がる赤い提灯 */
+function Lantern({ cx, label }: LanternProps) {
+  return (
+    <g>
+      <circle cx={cx} cy={300} r={120} fill="url(#lantern-glow)" />
+      <line x1={cx} y1={200} x2={cx} y2={232} stroke={SUMI} strokeWidth={5} />
+      <ellipse
+        cx={cx}
+        cy={300}
+        rx={54}
+        ry={64}
+        fill="var(--color-yatai-lantern)"
+        {...OUTLINE}
+      />
+      {/* 竹ひごの筋 */}
+      {[-40, -20, 0, 20, 40].map((dy) => (
+        <path
+          key={dy}
+          d={`M${cx - Math.sqrt(1 - (dy / 64) ** 2) * 52} ${300 + dy} h${Math.sqrt(1 - (dy / 64) ** 2) * 104}`}
+          stroke="var(--color-yatai-lantern-dark)"
+          strokeWidth={3}
+        />
+      ))}
+      <rect x={cx - 30} y={228} width={60} height={14} rx={3} fill={SUMI} />
+      <rect x={cx - 30} y={358} width={60} height={14} rx={3} fill={SUMI} />
+      {label.map((char, index) => (
+        <text
+          key={char}
+          x={cx}
+          y={292 + index * 40}
+          textAnchor="middle"
+          fontSize={34}
+          fill={SUMI}
+          className="font-display"
+        >
+          {char}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+/** はちまき姿の店主。カウンターの奥に立つ */
+function Shopkeeper() {
+  return (
+    <g>
+      {/* 白い調理服 */}
+      <path
+        d="M812 548 Q818 452 900 448 Q982 452 988 548 Z"
+        fill="var(--color-yatai-kinari)"
+        {...OUTLINE}
+      />
+      <path
+        d="M878 452 L900 494 L922 452"
+        fill="none"
+        stroke={SUMI}
+        strokeWidth={5}
+        strokeLinejoin="round"
+      />
+      {/* 顔 */}
+      <circle cx={900} cy={396} r={56} fill="#f2c79b" {...OUTLINE} />
+      <path d="M848 384 Q852 338 900 336 Q948 338 952 384 Z" fill={SUMI} />
+      {/* はちまき */}
+      <path
+        d="M845 374 Q900 358 955 374 L955 392 Q900 376 845 392 Z"
+        fill="var(--color-yatai-kinari)"
+        stroke={SUMI}
+        strokeWidth={4}
+        strokeLinejoin="round"
+      />
+      <path
+        d="M956 382 l22 -14 l4 14 z M956 384 l20 16 l-10 6 z"
+        fill="var(--color-yatai-kinari)"
+        stroke={SUMI}
+        strokeWidth={4}
+        strokeLinejoin="round"
+      />
+      {/* 太い眉と笑った目、口 */}
+      <path
+        d="M866 402 l22 -4 M912 398 l22 4"
+        stroke={SUMI}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
+      <path
+        d="M870 416 q9 -9 18 0 M912 416 q9 -9 18 0"
+        fill="none"
+        stroke={SUMI}
+        strokeWidth={5}
+        strokeLinecap="round"
+      />
+      <path
+        d="M880 432 q20 18 40 0"
+        fill="none"
+        stroke={SUMI}
+        strokeWidth={5}
+        strokeLinecap="round"
+      />
+      <circle
+        cx={864}
+        cy={428}
+        r={9}
+        fill="var(--color-yatai-lantern)"
+        opacity={0.4}
+      />
+      <circle
+        cx={936}
+        cy={428}
+        r={9}
+        fill="var(--color-yatai-lantern)"
+        opacity={0.4}
+      />
+    </g>
+  );
+}
+
+const NOREN_CHARS = ["ら", "ー", "め", "ん"] as const;
+
+/**
+ * プレイ画面の背景。奥から順に夜空、屋台の屋根、提灯、のれん、店主、カウンターを描く。
+ * 舞台と同じ 16:9 の座標で描き、舞台いっぱいに広げる
+ */
+export function YataiScene() {
+  return (
+    <svg
+      viewBox="0 0 1280 720"
+      aria-hidden="true"
+      className="absolute inset-0 size-full"
+    >
+      <defs>
+        <linearGradient id="night-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="var(--color-yatai-night-deep)" />
+          <stop offset="1" stopColor="var(--color-yatai-night)" />
+        </linearGradient>
+        <radialGradient id="lantern-glow">
+          <stop
+            offset="0"
+            stopColor="var(--color-yatai-amber)"
+            stopOpacity={0.45}
+          />
+          <stop
+            offset="1"
+            stopColor="var(--color-yatai-amber)"
+            stopOpacity={0}
+          />
+        </radialGradient>
+        <radialGradient id="stall-light" cx="0.5" cy="0.1" r="0.8">
+          <stop
+            offset="0"
+            stopColor="var(--color-yatai-amber)"
+            stopOpacity={0.55}
+          />
+          <stop
+            offset="1"
+            stopColor="var(--color-yatai-amber)"
+            stopOpacity={0}
+          />
+        </radialGradient>
+      </defs>
+
+      {/* 夜空と星、月 */}
+      <rect width={1280} height={720} fill="url(#night-sky)" />
+      {STARS.map(([x, y, r]) => (
+        <circle
+          key={`${x}-${y}`}
+          cx={x}
+          cy={y}
+          r={r}
+          fill="var(--color-yatai-kinari)"
+        />
+      ))}
+      <circle cx={1130} cy={56} r={30} fill="var(--color-yatai-amber)" />
+      <circle cx={1144} cy={48} r={26} fill="var(--color-yatai-night-deep)" />
+
+      {/* 屋台の奥の、灯りのともった壁 */}
+      <rect
+        x={126}
+        y={226}
+        width={1028}
+        height={320}
+        fill="var(--color-yatai-wood-dark)"
+      />
+      <rect
+        x={126}
+        y={226}
+        width={1028}
+        height={320}
+        fill="url(#stall-light)"
+      />
+
+      {/* 柱と屋根 */}
+      <rect
+        x={96}
+        y={196}
+        width={30}
+        height={364}
+        fill="var(--color-yatai-wood)"
+        {...OUTLINE}
+      />
+      <rect
+        x={1154}
+        y={196}
+        width={30}
+        height={364}
+        fill="var(--color-yatai-wood)"
+        {...OUTLINE}
+      />
+      <path
+        d="M30 200 L110 104 H1170 L1250 200 Z"
+        fill="var(--color-yatai-wood-dark)"
+        {...OUTLINE}
+      />
+      {[250, 400, 550, 700, 850, 1000].map((x) => (
+        <line
+          key={x}
+          x1={x}
+          y1={108}
+          x2={x + (x - 640) * 0.08}
+          y2={196}
+          stroke={SUMI}
+          strokeWidth={3}
+        />
+      ))}
+      <rect
+        x={50}
+        y={196}
+        width={1180}
+        height={32}
+        rx={4}
+        fill="var(--color-yatai-wood)"
+        {...OUTLINE}
+      />
+
+      {/* のれん */}
+      {NOREN_CHARS.map((char, index) => {
+        const x = 330 + index * 157;
+        return (
+          <g key={char}>
+            <path
+              d={`M${x} 228 h150 v104 q-75 10 -150 0 z`}
+              fill="var(--color-yatai-lantern-dark)"
+              {...OUTLINE}
+            />
+            <text
+              x={x + 75}
+              y={304}
+              textAnchor="middle"
+              fontSize={64}
+              fill="var(--color-yatai-kinari)"
+              className="font-display"
+            >
+              {char}
+            </text>
+          </g>
+        );
+      })}
+
+      <Lantern cx={196} label={["中", "華"]} />
+      <Lantern cx={1084} label={["そ", "ば"]} />
+
+      <Shopkeeper />
+
+      {/* 木のカウンター */}
+      <rect
+        x={0}
+        y={600}
+        width={1280}
+        height={120}
+        fill="var(--color-yatai-night-deep)"
+      />
+      <rect
+        x={40}
+        y={576}
+        width={1200}
+        height={160}
+        fill="var(--color-yatai-wood)"
+        {...OUTLINE}
+      />
+      {[160, 300, 440, 580, 720, 860, 1000, 1140].map((x) => (
+        <line
+          key={x}
+          x1={x}
+          y1={580}
+          x2={x}
+          y2={720}
+          stroke="var(--color-yatai-wood-dark)"
+          strokeWidth={4}
+        />
+      ))}
+      <rect
+        x={18}
+        y={540}
+        width={1244}
+        height={38}
+        rx={6}
+        fill="var(--color-yatai-wood-light)"
+        {...OUTLINE}
+      />
+    </svg>
+  );
+}
