@@ -75,7 +75,7 @@ AI エージェント（Claude Code）に実装を自律的に回してもらう
 
 1. **リポジトリを作って push する。**
    ```bash
-   gh repo create <owner>/typing-game --private --source . --push
+   gh repo create <owner>/ramen-typing-game --private --source . --push
    ```
 2. **ラベルを作る。**
    ```bash

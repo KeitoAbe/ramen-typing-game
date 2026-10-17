@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "typing-game",
+  title: "ラーメン屋台タイピング",
   description: "タイピングゲーム",
 };
 
