@@ -1,0 +1,28 @@
+name: Loop Label Guard
+
+# loop:ready は「ループがこの Issue の本文を指示として読んでよい」という許可のラベル。
+# メンバー以外が起票した Issue に付いた場合は自動で外し、外部の人の文章がそのまま
+# AI への指示にならないようにする。採用したい提案は、メンバーが書き直して起票し直す。
+
+on:
+  issues:
+    types: [opened, reopened, labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  guard:
+    if: >-
+      contains(github.event.issue.labels.*.name, 'loop:ready') &&
+      !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove loop:ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue edit "$NUMBER" --repo "$REPO" --remove-label "loop:ready"
+          gh issue comment "$NUMBER" --repo "$REPO" --body "🤖 \`loop:ready\` を外しました。このラベルはメンバーが起票した Issue にだけ付けられます。内容はメンバーが確認します。"

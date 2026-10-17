@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: ja-JP
+
+knowledge_base:
+  code_guidelines:
+    filePatterns:
+      - "CLAUDE.md"
+      - "docs/architecture.md"
+
+reviews:
+  # 指摘があれば Request changes を出し、auto-merge を止める（ループの門番として使う）
+  request_changes_workflow: true
+  profile: chill
+  poem: false
+  high_level_summary: true
+
+  path_filters:
+    - "!**/pnpm-lock.yaml"
+    - "!**/*.svg"
+    - "!**/*.png"
+    - "!**/.next/**"
+
+  path_instructions:
+    - path: "src/server/contexts/**"
+      instructions: "docs/architecture.md のレイヤーと依存のルールに従っているかをレビューしてください。"
+    - path: "src/**"
+      instructions: "CLAUDE.md の「実装ルール」に従っているかをレビューしてください。"
+    - path: "tests/**"
+      instructions: "テストが実装の詳細ではなく振る舞いを検証しているかをレビューしてください。"
+
+  auto_review:
+    enabled: true
+    drafts: true
+    base_branches:
+      - main
+
+  tools:
+    markdownlint:
+      enabled: false
