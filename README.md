@@ -15,6 +15,7 @@
 pnpm install
 pnpm dev        # http://localhost:3000
 pnpm verify     # lint / typecheck / test / depcruise / knip
+pnpm build      # 本番ビルド
 ```
 
 ## ループを回す
