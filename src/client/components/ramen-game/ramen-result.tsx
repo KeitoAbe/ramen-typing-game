@@ -31,6 +31,10 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
   const title = decideTitle(result, course);
   const rows = [
     { label: "平らげた杯数", value: `${result.servedCount} 杯` },
+    {
+      label: "うち店主のおすすめ",
+      value: `${result.specialServedCount} 杯`,
+    },
     { label: "のびて下げられた丼", value: `${result.discardedCount} 杯` },
     { label: "替え玉", value: `${result.kaedamaCount} 回` },
     { label: "正しく打ったキー数", value: `${result.correctKeyCount} 回` },
