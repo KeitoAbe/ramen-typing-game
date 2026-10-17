@@ -4,6 +4,7 @@ import {
   formatBalance,
 } from "@/client/lib/ramen-course";
 import type { PlayResult } from "@/client/lib/ramen-result";
+import { decideTitle } from "@/client/lib/ramen-title";
 
 type Props = {
   course: Course;
@@ -13,6 +14,7 @@ type Props = {
 
 export function RamenResult({ course, result, onReplay }: Props) {
   const balance = courseBalance(result.bill, course);
+  const title = decideTitle(result, course);
   const rows = [
     { label: "平らげた杯数", value: `${result.servedCount} 杯` },
     { label: "のびて下げられた丼", value: `${result.discardedCount} 杯` },
@@ -42,6 +44,11 @@ export function RamenResult({ course, result, onReplay }: Props) {
         >
           {formatBalance(balance)}
         </p>
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <p className="text-zinc-600 dark:text-zinc-400">称号</p>
+        <p className="text-3xl font-bold">{title.name}</p>
+        <p className="text-zinc-600 dark:text-zinc-400">「{title.remark}」</p>
       </div>
       <dl className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-2 text-lg">
         {rows.map((row) => (
