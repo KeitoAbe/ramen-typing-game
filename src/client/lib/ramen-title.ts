@@ -20,13 +20,14 @@ type TitleRule = RamenTitle & {
 
 // 上の称号から順に並べ、最初に条件を満たしたものを出す。
 // お得額は食券代に対する割合で見て、コースの値段の違いをならしている。
-// いちばん上の称号だけは、特盛りを平らげたときの特別な称号にしている
+// いちばん上の称号だけは、特盛りを平らげたときの特別な称号にしている。
+// 食券は食べ放題の札で丼に比べて安いので、元を取ったうえで何倍食べたかで段階をつける
 const TITLE_RULES: readonly TitleRule[] = [
   {
     id: "legend",
     name: "屋台の伝説",
     remark: "あんたの名前、のれんに書いておくよ",
-    minBalanceRate: 1,
+    minBalanceRate: 3,
     minAccuracy: 0.97,
     courseIds: ["tokumori"],
   },
@@ -34,28 +35,28 @@ const TITLE_RULES: readonly TitleRule[] = [
     id: "critic",
     name: "ラーメン評論家",
     remark: "その食べっぷり、記事にしてくれないか",
-    minBalanceRate: 0.5,
+    minBalanceRate: 2.5,
     minAccuracy: 0.95,
   },
   {
     id: "connoisseur",
     name: "麺通",
     remark: "麺の硬さがわかる顔をしてるね",
-    minBalanceRate: 0.2,
+    minBalanceRate: 1.5,
     minAccuracy: 0.9,
   },
   {
     id: "regular",
     name: "常連さん",
     remark: "毎度あり、また来てくれよ",
-    minBalanceRate: 0,
+    minBalanceRate: 1,
     minAccuracy: 0,
   },
   {
     id: "hungry",
     name: "腹ぺこの客",
     remark: "次はもう少しお腹を空かせておいで",
-    minBalanceRate: -0.5,
+    minBalanceRate: 0,
     minAccuracy: 0,
   },
   {
