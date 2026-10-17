@@ -1,11 +1,18 @@
+import {
+  type Course,
+  courseBalance,
+  formatBalance,
+} from "@/client/lib/ramen-course";
 import type { PlayResult } from "@/client/lib/ramen-result";
 
 type Props = {
+  course: Course;
   result: PlayResult;
   onReplay: () => void;
 };
 
-export function RamenResult({ result, onReplay }: Props) {
+export function RamenResult({ course, result, onReplay }: Props) {
+  const balance = courseBalance(result.bill, course);
   const rows = [
     { label: "平らげた杯数", value: `${result.servedCount} 杯` },
     { label: "正しく打ったキー数", value: `${result.correctKeyCount} 回` },
@@ -24,6 +31,14 @@ export function RamenResult({ result, onReplay }: Props) {
         <p className="text-zinc-600 dark:text-zinc-400">お会計</p>
         <p className="text-4xl font-semibold">
           {result.bill.toLocaleString("ja-JP")} 円
+        </p>
+        <p className="text-zinc-600 dark:text-zinc-400">
+          食券: {course.name}（{course.price.toLocaleString("ja-JP")} 円）
+        </p>
+        <p
+          className={`text-2xl font-bold ${balance >= 0 ? "text-red-700 dark:text-red-400" : "text-blue-700 dark:text-blue-400"}`}
+        >
+          {formatBalance(balance)}
         </p>
       </div>
       <dl className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-2 text-lg">

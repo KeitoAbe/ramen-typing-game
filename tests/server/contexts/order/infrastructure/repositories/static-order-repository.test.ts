@@ -1,3 +1,4 @@
+import { COURSES, ordersForCourse } from "@/client/lib/ramen-course";
 import {
   createTypingState,
   inputKey,
@@ -24,6 +25,14 @@ describe("StaticOrderRepository", () => {
   it("注文を 15 件以上返す", async () => {
     const orders = await new StaticOrderRepository().findAll();
     expect(orders.length).toBeGreaterThanOrEqual(15);
+  });
+
+  it.each(
+    COURSES.map((course) => [course.name, course]),
+  )("%s のコースに出せる注文が 10 件以上ある", (_name, course) => {
+    expect(
+      ordersForCourse(STATIC_ORDERS, course).length,
+    ).toBeGreaterThanOrEqual(10);
   });
 
   it("id が重複しない", () => {

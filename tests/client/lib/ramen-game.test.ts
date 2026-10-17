@@ -1,9 +1,9 @@
+import type { Course } from "@/client/lib/ramen-course";
 import {
   initialRamenGameState,
   type RamenGameState,
   ramenGameReducer,
   shuffleOrders,
-  TIME_LIMIT_MS,
 } from "@/client/lib/ramen-game";
 import { emptyPlayStats, orderPrice } from "@/client/lib/ramen-result";
 import type { Order } from "@/types/order";
@@ -13,9 +13,19 @@ const orders: Order[] = [
   { id: "b", text: "味噌", reading: "みそ" },
 ];
 
+const course: Course = {
+  id: "nami",
+  name: "並",
+  price: 800,
+  timeLimitMs: 60_000,
+  minReadingLength: 2,
+  maxReadingLength: 7,
+};
+
 function start(now = 0): RamenGameState {
   return ramenGameReducer(initialRamenGameState, {
     type: "start",
+    course,
     orders,
     now,
   });
@@ -30,13 +40,27 @@ function typeKeys(state: RamenGameState, keys: string, now = 0) {
 }
 
 describe("ramenGameReducer", () => {
-  it("開始すると最初の注文が出て、残り時間は 60 秒", () => {
+  it("開始すると最初の注文が出て、残り時間はコースの制限時間", () => {
     const state = start();
     expect(state.status).toBe("playing");
     if (state.status !== "playing") return;
     expect(state.orders[state.orderIndex].id).toBe("a");
-    expect(state.remainingMs).toBe(TIME_LIMIT_MS);
+    expect(state.course).toBe(course);
+    expect(state.remainingMs).toBe(course.timeLimitMs);
     expect(state.stats).toEqual(emptyPlayStats);
+  });
+
+  it("制限時間はコースごとに変わる", () => {
+    const longCourse = { ...course, timeLimitMs: 120_000 };
+    const state = ramenGameReducer(initialRamenGameState, {
+      type: "start",
+      course: longCourse,
+      orders,
+      now: 0,
+    });
+    const ticking = ramenGameReducer(state, { type: "tick", now: 60_000 });
+    if (ticking.status !== "playing") throw new Error("playing のはず");
+    expect(ticking.remainingMs).toBe(60_000);
   });
 
   it("打ち終えるまでは同じ注文が続き、打ち終えると次の注文に替わる", () => {
@@ -82,7 +106,7 @@ describe("ramenGameReducer", () => {
     expect(missed.stats).toEqual({ ...state.stats, missCount: 1 });
   });
 
-  it("tick で残り時間が減り、0 になると閉店して成績が残る", () => {
+  it("tick で残り時間が減り、0 になると閉店して食券と成績が残る", () => {
     const served = typeKeys(start(), "shio");
     const ticking = ramenGameReducer(served, { type: "tick", now: 30_500 });
     if (ticking.status !== "playing") throw new Error("playing のはず");
@@ -90,9 +114,13 @@ describe("ramenGameReducer", () => {
 
     const closed = ramenGameReducer(ticking, {
       type: "tick",
-      now: TIME_LIMIT_MS,
+      now: course.timeLimitMs,
     });
-    expect(closed).toEqual({ status: "closed", stats: ticking.stats });
+    expect(closed).toEqual({
+      status: "closed",
+      course,
+      stats: ticking.stats,
+    });
     if (closed.status !== "closed") throw new Error("closed のはず");
     expect(closed.stats.servedCount).toBe(1);
   });
@@ -101,17 +129,28 @@ describe("ramenGameReducer", () => {
     const late = ramenGameReducer(start(), {
       type: "key",
       key: "s",
-      now: TIME_LIMIT_MS,
+      now: course.timeLimitMs,
     });
-    expect(late).toEqual({ status: "closed", stats: emptyPlayStats });
+    expect(late).toEqual({ status: "closed", course, stats: emptyPlayStats });
     expect(ramenGameReducer(late, { type: "key", key: "s", now: 0 })).toBe(
       late,
+    );
+  });
+
+  it("reset で券売機（開始前）に戻る", () => {
+    const closed = ramenGameReducer(start(), {
+      type: "tick",
+      now: course.timeLimitMs,
+    });
+    expect(ramenGameReducer(closed, { type: "reset" })).toBe(
+      initialRamenGameState,
     );
   });
 
   it("注文が空なら開始しない", () => {
     const state = ramenGameReducer(initialRamenGameState, {
       type: "start",
+      course,
       orders: [],
       now: 0,
     });
