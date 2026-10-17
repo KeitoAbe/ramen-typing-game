@@ -53,8 +53,9 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
       <YataiScene />
       <div aria-hidden="true" className="absolute inset-0 bg-yatai-night/45" />
 
-      {/* 屋台の屋根に載せた看板。右上の効果音の札と重ならないよう、その下・吹き出しの上に置く */}
-      <div className="absolute top-(--sign-top) left-[60%] flex w-[36%] justify-center">
+      {/* 屋台の屋根に載せた看板。右上の効果音の札と重ならないよう、その下・吹き出しの上に置く。
+          吹き出しの位置は看板を 1 行として計算しているので、狭い舞台で幅が足りなくても折り返さない */}
+      <div className="absolute top-(--sign-top) left-[60%] flex w-[36%] justify-center [&>h1]:whitespace-nowrap">
         <StageSign />
       </div>
 
