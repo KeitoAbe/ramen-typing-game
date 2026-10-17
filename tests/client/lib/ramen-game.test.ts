@@ -1,3 +1,4 @@
+import { bowlPrice, soggyLimitMs } from "@/client/lib/ramen-bowl";
 import type { Course } from "@/client/lib/ramen-course";
 import {
   initialRamenGameState,
@@ -85,8 +86,66 @@ describe("ramenGameReducer", () => {
     const state = typeKeys(start(), "shiomiso");
     if (state.status !== "playing") throw new Error("playing のはず");
     expect(state.stats.bill).toBe(
+      bowlPrice(orders[0], 0) + bowlPrice(orders[1], 0),
+    );
+  });
+
+  it("丼の値段は、その丼が出てから完食するまでの時間で決まる", () => {
+    const first = typeKeys(start(), "shio", 1_000);
+    const slowMs = soggyLimitMs(orders[1]) - 1;
+    const second = typeKeys(first, "miso", 1_000 + slowMs);
+    if (second.status !== "playing") throw new Error("playing のはず");
+    expect(second.stats.bill).toBe(
+      bowlPrice(orders[0], 1_000) + bowlPrice(orders[1], slowMs),
+    );
+    expect(second.stats.bill).toBeLessThan(
       orderPrice(orders[0]) + orderPrice(orders[1]),
     );
+  });
+
+  it("丼がのびるまでの残り時間が tick で減る", () => {
+    const state = start();
+    if (state.status !== "playing") throw new Error("playing のはず");
+    expect(state.orderRemainingMs).toBe(soggyLimitMs(orders[0]));
+
+    const ticking = ramenGameReducer(state, { type: "tick", now: 1_500 });
+    if (ticking.status !== "playing") throw new Error("playing のはず");
+    expect(ticking.orderRemainingMs).toBe(soggyLimitMs(orders[0]) - 1_500);
+  });
+
+  it("tick が遅れても、キー入力で丼がのびるまでの残り時間が今の時刻に合う", () => {
+    const limitMs = soggyLimitMs(orders[0]);
+    const typed = typeKeys(start(), "s", 1_000);
+    if (typed.status !== "playing") throw new Error("playing のはず");
+    expect(typed.orderRemainingMs).toBe(limitMs - 1_000);
+
+    const missed = typeKeys(typed, "x", 2_000);
+    if (missed.status !== "playing") throw new Error("playing のはず");
+    expect(missed.orderRemainingMs).toBe(limitMs - 2_000);
+  });
+
+  it("のびきった丼は tick で下げられて次の丼に替わり、お会計には入らない", () => {
+    const halfway = typeKeys(start(), "shi");
+    const limitMs = soggyLimitMs(orders[0]);
+    const discarded = ramenGameReducer(halfway, { type: "tick", now: limitMs });
+    if (discarded.status !== "playing") throw new Error("playing のはず");
+    expect(discarded.orderIndex).toBe(1);
+    expect(discarded.orderRemainingMs).toBe(soggyLimitMs(orders[1]));
+    expect(discarded.typing.position).toBe(0);
+    expect(discarded.stats.discardedCount).toBe(1);
+    expect(discarded.stats.servedCount).toBe(0);
+    expect(discarded.stats.bill).toBe(0);
+  });
+
+  it("tick より先にキーが届いても、のびきった丼は下げてから次の丼に打つ", () => {
+    const halfway = typeKeys(start(), "shi");
+    const late = typeKeys(halfway, "o", soggyLimitMs(orders[0]));
+    if (late.status !== "playing") throw new Error("playing のはず");
+    // 「o」は次の丼（みそ）の 1 文字目ではないのでミスになる
+    expect(late.orderIndex).toBe(1);
+    expect(late.stats.discardedCount).toBe(1);
+    expect(late.stats.servedCount).toBe(0);
+    expect(late.stats.missCount).toBe(1);
   });
 
   it("正しいキーとミスタイプを数える", () => {

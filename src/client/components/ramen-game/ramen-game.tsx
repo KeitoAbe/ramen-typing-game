@@ -3,6 +3,7 @@
 import { useEffect, useReducer } from "react";
 import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
+import { SOGGY_START_RATIO, soggyLimitMs } from "@/client/lib/ramen-bowl";
 import {
   COURSES,
   type Course,
@@ -69,6 +70,8 @@ export function RamenGame({ orders }: Props) {
   }
 
   const order = state.orders[state.orderIndex];
+  const freshness = state.orderRemainingMs / soggyLimitMs(order);
+  const isGettingSoggy = freshness < 1 - SOGGY_START_RATIO;
   return (
     <section className="flex flex-col gap-8">
       <div className="flex justify-between text-lg">
@@ -93,6 +96,34 @@ export function RamenGame({ orders }: Props) {
           </span>
           <span>{remainingRomaji(state.typing)}</span>
         </p>
+        <div className="mt-4 flex w-full max-w-sm flex-col gap-1">
+          <p
+            className={`text-sm ${isGettingSoggy ? "font-semibold text-blue-700 dark:text-blue-400" : "text-zinc-600 dark:text-zinc-400"}`}
+          >
+            {/* 切り替わりだけを読み上げる。毎秒変わる残り秒数は含めない */}
+            <span aria-live="polite">
+              {isGettingSoggy ? "のびかけ" : "できたて"}
+            </span>
+            ・のびるまで{" "}
+            <span className="font-mono">
+              {Math.ceil(state.orderRemainingMs / 1000)}
+            </span>{" "}
+            秒
+          </p>
+          <div
+            role="progressbar"
+            aria-label="麺がのびるまでの残り時間"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(freshness * 100)}
+            className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+          >
+            <div
+              className={`h-full ${isGettingSoggy ? "bg-blue-600" : "bg-red-700"}`}
+              style={{ width: `${freshness * 100}%` }}
+            />
+          </div>
+        </div>
       </div>
     </section>
   );
