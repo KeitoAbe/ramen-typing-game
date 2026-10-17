@@ -10,7 +10,11 @@ import {
   KAEDAMA_EXTENSION_MS,
   KAEDAMA_NOTICE_MS,
 } from "@/client/lib/ramen-kaedama";
-import { emptyPlayStats, type PlayStats } from "@/client/lib/ramen-result";
+import {
+  countMissedKey,
+  emptyPlayStats,
+  type PlayStats,
+} from "@/client/lib/ramen-result";
 import {
   isSpecialBowlRoll,
   specialBowlPriceRate,
@@ -23,6 +27,7 @@ import {
   createTypingState,
   inputKey,
   isComplete,
+  remainingRomaji,
   type TypingState,
 } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
@@ -251,11 +256,19 @@ export function ramenGameReducer(
       );
       const { state: typing, accepted } = inputKey(current.typing, action.key);
       if (!accepted) {
-        // ミスすると替え玉ゲージと連続杯数は 0 に戻る
+        // ミスすると替え玉ゲージと連続杯数は 0 に戻る。
+        // 打つべきだったキーは、画面に出ている残りのローマ字の先頭（プレイヤーが見ていたもの）で数える
         return {
           ...breakStreak(current, action.now),
           kaedamaGauge: 0,
-          stats: { ...current.stats, missCount: current.stats.missCount + 1 },
+          stats: {
+            ...current.stats,
+            missCount: current.stats.missCount + 1,
+            missedKeys: countMissedKey(
+              current.stats.missedKeys,
+              remainingRomaji(current.typing).charAt(0),
+            ),
+          },
         };
       }
       const afterKey = refillIfGaugeFull(
@@ -274,8 +287,9 @@ export function ramenGameReducer(
       // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ。
       // 特別な丼や連続杯数の倍率は、その値段に掛け合わせる
       const streak = current.isCleanBowl ? current.streak + 1 : 0;
+      const order = currentOrder(current);
       const price = roundPrice(
-        bowlPrice(currentOrder(current), action.now - current.orderServedAt) *
+        bowlPrice(order, action.now - current.orderServedAt) *
           specialBowlPriceRate(current.isSpecialBowl) *
           streakPriceRate(streak),
       );
@@ -288,6 +302,7 @@ export function ramenGameReducer(
             stats.specialServedCount + (current.isSpecialBowl ? 1 : 0),
           bill: stats.bill + price,
           maxStreak: Math.max(stats.maxStreak, streak),
+          servedBowls: [...stats.servedBowls, { order, price }],
         },
         action.now,
         action.roll,
