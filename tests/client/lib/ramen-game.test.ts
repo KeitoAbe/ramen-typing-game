@@ -113,6 +113,17 @@ describe("ramenGameReducer", () => {
     expect(ticking.orderRemainingMs).toBe(soggyLimitMs(orders[0]) - 1_500);
   });
 
+  it("tick が遅れても、キー入力で丼がのびるまでの残り時間が今の時刻に合う", () => {
+    const limitMs = soggyLimitMs(orders[0]);
+    const typed = typeKeys(start(), "s", 1_000);
+    if (typed.status !== "playing") throw new Error("playing のはず");
+    expect(typed.orderRemainingMs).toBe(limitMs - 1_000);
+
+    const missed = typeKeys(typed, "x", 2_000);
+    if (missed.status !== "playing") throw new Error("playing のはず");
+    expect(missed.orderRemainingMs).toBe(limitMs - 2_000);
+  });
+
   it("のびきった丼は tick で下げられて次の丼に替わり、お会計には入らない", () => {
     const halfway = typeKeys(start(), "shi");
     const limitMs = soggyLimitMs(orders[0]);

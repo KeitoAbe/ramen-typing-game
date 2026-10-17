@@ -100,7 +100,11 @@ export function RamenGame({ orders }: Props) {
           <p
             className={`text-sm ${isGettingSoggy ? "font-semibold text-blue-700 dark:text-blue-400" : "text-zinc-600 dark:text-zinc-400"}`}
           >
-            {isGettingSoggy ? "のびかけ" : "できたて"}・のびるまで{" "}
+            {/* 切り替わりだけを読み上げる。毎秒変わる残り秒数は含めない */}
+            <span aria-live="polite">
+              {isGettingSoggy ? "のびかけ" : "できたて"}
+            </span>
+            ・のびるまで{" "}
             <span className="font-mono">
               {Math.ceil(state.orderRemainingMs / 1000)}
             </span>{" "}

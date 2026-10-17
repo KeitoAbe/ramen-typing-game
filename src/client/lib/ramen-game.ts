@@ -90,6 +90,15 @@ function discardIfSoggy(state: PlayingState, now: number): PlayingState {
   );
 }
 
+/** いま出ている丼がのびきるまでの残り時間を、現在時刻に合わせる */
+function updateOrderRemaining(state: PlayingState, now: number): PlayingState {
+  const orderRemainingMs = Math.max(
+    0,
+    state.orderServedAt + soggyLimitMs(currentOrder(state)) - now,
+  );
+  return { ...state, orderRemainingMs };
+}
+
 export function ramenGameReducer(
   state: RamenGameState,
   action: RamenGameAction,
@@ -117,19 +126,21 @@ export function ramenGameReducer(
       if (state.status !== "playing") return state;
       const remainingMs = Math.max(0, state.endsAt - action.now);
       if (remainingMs === 0) return close(state.course, state.stats);
-      const next = discardIfSoggy(state, action.now);
-      const orderRemainingMs = Math.max(
-        0,
-        next.orderServedAt + soggyLimitMs(currentOrder(next)) - action.now,
+      const next = updateOrderRemaining(
+        discardIfSoggy(state, action.now),
+        action.now,
       );
-      return { ...next, remainingMs, orderRemainingMs };
+      return { ...next, remainingMs };
     }
     case "key": {
       if (state.status !== "playing") return state;
       // 時間切れのあとに届いたキーは受け付けない
       if (action.now >= state.endsAt) return close(state.course, state.stats);
-      // tick より先にキーが届いても、のびきった丼には打たせない
-      const current = discardIfSoggy(state, action.now);
+      // tick より先にキーが届いても、のびきった丼には打たせず、残り時間も今の時刻に合わせる
+      const current = updateOrderRemaining(
+        discardIfSoggy(state, action.now),
+        action.now,
+      );
       const { state: typing, accepted } = inputKey(current.typing, action.key);
       if (!accepted) {
         return {
