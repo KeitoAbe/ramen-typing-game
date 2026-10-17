@@ -13,13 +13,14 @@ export type Course = {
   maxReadingLength: number;
 };
 
-// 丼の値段（よみ 1 文字 100 円）との釣り合いで決めた値。
-// 並を平均的な腕前（毎秒 2〜3 キー）で遊んで元が取れるかどうかくらいにしている
+// 寿司打のコース料金に寄せた値。食券は制限時間のあいだ食べ放題の札として見せる。
+// 丼の値段（よみ 1 文字 100 円）だと、並を平均的な腕前（毎秒 2〜3 キー）で遊んで
+// お会計は 8,000 円前後になり、たいてい元が取れる。得の大きさは称号で段階をつける
 export const COURSES: readonly Course[] = [
   {
     id: "nami",
     name: "並",
-    price: 8_000,
+    price: 3_000,
     timeLimitMs: 60_000,
     minReadingLength: 2,
     maxReadingLength: 7,
@@ -27,7 +28,7 @@ export const COURSES: readonly Course[] = [
   {
     id: "oomori",
     name: "大盛り",
-    price: 12_000,
+    price: 5_000,
     timeLimitMs: 90_000,
     minReadingLength: 5,
     maxReadingLength: 10,
@@ -35,7 +36,7 @@ export const COURSES: readonly Course[] = [
   {
     id: "tokumori",
     name: "特盛り",
-    price: 20_000,
+    price: 10_000,
     timeLimitMs: 120_000,
     minReadingLength: 9,
     maxReadingLength: Number.POSITIVE_INFINITY,

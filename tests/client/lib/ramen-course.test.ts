@@ -17,6 +17,10 @@ const course: Course = {
 };
 
 describe("COURSES", () => {
+  it("食券代は寿司打のコース料金に寄せた 3,000 / 5,000 / 10,000 円", () => {
+    expect(COURSES.map((c) => c.price)).toEqual([3_000, 5_000, 10_000]);
+  });
+
   it("並・大盛り・特盛りの順に、値段も制限時間も上がっていく", () => {
     expect(COURSES.map((c) => c.name)).toEqual(["並", "大盛り", "特盛り"]);
     for (let i = 1; i < COURSES.length; i++) {

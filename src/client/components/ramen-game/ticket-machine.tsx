@@ -210,7 +210,7 @@ export function TicketMachine({ courses, onSelect }: Props) {
           遊び方
         </h2>
         <p className="text-[1.15cqw] leading-snug font-bold">
-          カウンターに出てくる注文をローマ字で打って平らげよう。
+          食券の時間内は食べ放題。出てくる注文をローマ字で打って平らげよう。
           お会計が食券代を超えれば元が取れる。
         </p>
       </div>
@@ -241,7 +241,7 @@ export function TicketMachine({ courses, onSelect }: Props) {
                   <span className="text-[1.2cqw]"> 円</span>
                 </span>
                 <span className="text-[1.2cqw] font-bold">
-                  制限時間 {course.timeLimitMs / 1000} 秒
+                  {course.timeLimitMs / 1000} 秒 食べ放題
                 </span>
               </span>
             </button>
