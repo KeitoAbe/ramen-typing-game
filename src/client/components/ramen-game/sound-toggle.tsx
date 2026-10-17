@@ -12,6 +12,10 @@ export function SoundToggle({ enabled, onToggle }: Props) {
       onClick={onToggle}
       // プレイ中のキー入力でボタンが押されないよう、クリックしたらフォーカスを外す
       onMouseUp={(event) => event.currentTarget.blur()}
+      // キーボードでボタンを押す Space / Enter は、window で打鍵を受けるゲームへ伝えない
+      onKeyDown={(event) => {
+        if (event.key === " " || event.key === "Enter") event.stopPropagation();
+      }}
       className="self-end rounded-full border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
     >
       効果音: {enabled ? "オン" : "オフ"}
