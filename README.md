@@ -66,6 +66,7 @@ pnpm build      # 本番ビルド
 | `NEXT_PUBLIC_CONTACT_FORM_URL` | お問い合わせページ（`/contact`）から新しいタブで開く Google フォームの URL | リンクを出さずに「準備中」と出す |
 | `NEXT_PUBLIC_ADSENSE_PUBLISHER_ID` | Google アドセンスのパブリッシャー ID（`ca-pub-…`）。全ページの head にアドセンスのスクリプト（審査用のコードを兼ねる）を読み込み、`/ads.txt` を返す | スクリプト・`/ads.txt`・広告枠のどれも出さない（`/ads.txt` は 404） |
 | `NEXT_PUBLIC_ADSENSE_SLOT_ID` | トップページの紹介の下に出す広告ユニットの ID（数字） | 広告枠を出さない（パブリッシャー ID が無いときも出さない） |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google アナリティクス 4 の測定 ID（`G-XXXXXXXXXX`）。すべてのページの表示と、プレイの開始・終了（`play_start` / `play_end`、コース名つき）を計測する | GA4 のタグを一切読み込まない |
 
 `NEXT_PUBLIC_` の変数は**ビルド時に値が埋め込まれる**。ホスティング（AWS Amplify など）のコンソールで設定し、変えたら再ビルドする。
 ローカルでは `.env.local` に書く。
