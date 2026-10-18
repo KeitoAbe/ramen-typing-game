@@ -59,10 +59,14 @@ test("食券を買う・のれんをくぐる・閉店する・もう一杯で�
   await page.keyboard.press(" ");
   const remaining = page.getByTestId("remaining-romaji");
   await expect(remaining).not.toBeEmpty();
+  // 開始待ち → プレイには移り変わりを付けないが、画面が替わったことは知らせる
+  await expect(announcement(page)).toHaveText("開店しました");
   await page.clock.fastForward(61_000);
   await expect(overlay).toBeAttached();
   expect(await transitionAnimationNames(page)).toContain("lights-out");
   await expect(page.getByRole("heading", { name: "御会計" })).toHaveCount(0);
+  // 伝票が出る前には、伝票のことを知らせない
+  await expect(announcement(page)).toHaveText("");
   await page.keyboard.type((await remaining.textContent()) ?? "");
   await page.keyboard.press("1");
 

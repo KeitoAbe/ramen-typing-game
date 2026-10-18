@@ -169,7 +169,8 @@ export function RamenGame({ orders }: Props) {
     setSceneTransition((current) =>
       kind === null ? null : { kind, id: (current?.id ?? 0) + 1 },
     );
-    if (kind !== null) setSceneAnnouncement(sceneAnnouncementOf(scene));
+    // 移り変わりを付けない切り替え（開始待ち → プレイなど）でも、画面が替わったことは知らせる
+    setSceneAnnouncement(sceneAnnouncementOf(scene));
     // previousStateRef は描画のあとの effect で更新するので、ここではまだ閉店する直前のプレイの状態を指している
     const lastPlay = previousStateRef.current;
     setClosingPlay(
@@ -378,7 +379,8 @@ export function RamenGame({ orders }: Props) {
         aria-live="polite"
         className="sr-only"
       >
-        {sceneAnnouncement}
+        {/* 灯りが落ちるあいだはまだ伝票が出ていないので、結果画面が出てから知らせる */}
+        {closingPlay === null ? sceneAnnouncement : ""}
       </p>
     </GameStage>
   );
