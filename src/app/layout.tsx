@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Dela_Gothic_One, Geist_Mono, Zen_Maru_Gothic } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/site-metadata";
+import { getSiteUrl } from "@/app/site-url";
 import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import { GoogleAnalytics } from "@/client/components/google-analytics/google-analytics";
 import { parseGaMeasurementId } from "@/client/lib/analytics";
@@ -25,8 +26,9 @@ const geistMono = Geist_Mono({
 });
 
 // OGP 画像は opengraph-image.tsx / twitter-image.tsx から自動で入る。
-// 本番 URL（metadataBase）はデプロイ先が決まってから設定する
+// 基準 URL（metadataBase）は NEXT_PUBLIC_SITE_URL から取る。正規 URL は各ページで設定する
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   openGraph: {

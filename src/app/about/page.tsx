@@ -9,6 +9,7 @@ import {
 export const metadata: Metadata = {
   title: pageTitle("運営者情報"),
   description: `タイピングゲーム「${SITE_NAME}」の運営者情報です。個人で開発・運営しています。`,
+  alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {

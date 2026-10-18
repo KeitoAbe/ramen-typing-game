@@ -9,6 +9,7 @@ import { parseContactFormUrl } from "@/client/lib/contact-form-url";
 export const metadata: Metadata = {
   title: pageTitle("お問い合わせ"),
   description: `タイピングゲーム「${SITE_NAME}」へのご意見・ご質問の窓口です。`,
+  alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {

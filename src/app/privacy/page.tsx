@@ -10,6 +10,7 @@ import {
 export const metadata: Metadata = {
   title: pageTitle("プライバシーポリシー"),
   description: `タイピングゲーム「${SITE_NAME}」のプライバシーポリシーです。ブラウザに保存する情報、アクセス解析（Google アナリティクス）、広告配信（Google アドセンス）での Cookie の扱いを説明します。`,
+  alternates: { canonical: "/privacy" },
 };
 
 const ESTABLISHED_ON = "2026 年 10 月 18 日";
