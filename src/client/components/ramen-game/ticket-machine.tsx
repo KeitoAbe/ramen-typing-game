@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { StampCard } from "@/client/components/ramen-game/stamp-card";
 import {
   OUTLINE,
   SUMI,
@@ -8,6 +9,7 @@ import {
 } from "@/client/components/ramen-game/yatai-scene";
 import { StageSign } from "@/client/components/stage/stage-sign";
 import type { Course } from "@/client/lib/ramen-course";
+import type { StampCard as StampCardData } from "@/client/lib/ramen-stamp-card";
 import { prefersReducedMotion } from "@/client/lib/reduced-motion";
 
 /** 食券が出てきてからプレイを始めるまでの時間。出てくる動き（0.5 秒）のあと少し見せる */
@@ -156,13 +158,30 @@ function TicketMachineScene() {
 type Props = {
   courses: readonly Course[];
   onSelect: (course: Course) => void;
+  stampCard: StampCardData;
 };
 
-/** 開始前の画面。屋台の脇の券売機で食券を買うと、そのコースでプレイが始まる */
-export function TicketMachine({ courses, onSelect }: Props) {
+/**
+ * 開始前の画面。屋台の脇の券売機で食券を買うと、そのコースでプレイが始まる。
+ * 屋台に掛けた木札から、スタンプカードを開ける
+ */
+export function TicketMachine({ courses, onSelect, stampCard }: Props) {
   // 取出口から出てくる途中の食券。出てくる動きのあとにプレイを始める
   const [issuedCourse, setIssuedCourse] = useState<Course | null>(null);
   const issueTimerRef = useRef<number | undefined>(undefined);
+  const [isStampCardOpen, setIsStampCardOpen] = useState(false);
+  const stampCardButtonRef = useRef<HTMLButtonElement>(null);
+
+  const wasStampCardOpenRef = useRef(false);
+  const closeStampCard = useCallback(() => setIsStampCardOpen(false), []);
+
+  // 閉じたら、開いたボタンにフォーカスを戻す（開いているあいだは inert で触れないので、描画のあとに戻す）
+  useEffect(() => {
+    if (wasStampCardOpenRef.current && !isStampCardOpen) {
+      stampCardButtonRef.current?.focus();
+    }
+    wasStampCardOpenRef.current = isStampCardOpen;
+  }, [isStampCardOpen]);
 
   useEffect(() => () => window.clearTimeout(issueTimerRef.current), []);
 
@@ -215,8 +234,28 @@ export function TicketMachine({ courses, onSelect }: Props) {
         </p>
       </div>
 
-      {/* 食券のボタン: 券売機のボタン板の上に並べる */}
-      <ul className="absolute top-[29.2%] left-[12.3%] flex h-[41%] w-[25.3%] flex-col gap-[1.2cqw]">
+      {/* スタンプカードを開くボタン: 遊び方の貼り紙の右に掛けた木札 */}
+      <button
+        ref={stampCardButtonRef}
+        type="button"
+        onClick={() => setIsStampCardOpen(true)}
+        disabled={issuedCourse !== null}
+        inert={isStampCardOpen}
+        className="absolute top-[66%] left-[81.5%] flex w-[15%] flex-col items-center rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-wood px-[0.8cqw] py-[0.6cqw] text-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-wood-light focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
+      >
+        <span className="font-display text-[1.6cqw] leading-tight whitespace-nowrap">
+          スタンプカード
+        </span>
+        <span className="text-[1.15cqw] leading-tight font-bold whitespace-nowrap">
+          判子 {stampCard.stampedIds.length} 個
+        </span>
+      </button>
+
+      {/* 食券のボタン: 券売機のボタン板の上に並べる。スタンプカードを開いているあいだは触れない */}
+      <ul
+        inert={isStampCardOpen}
+        className="absolute top-[29.2%] left-[12.3%] flex h-[41%] w-[25.3%] flex-col gap-[1.2cqw]"
+      >
         {courses.map((course) => (
           <li key={course.id} className="flex-1">
             <button
@@ -248,6 +287,10 @@ export function TicketMachine({ courses, onSelect }: Props) {
           </li>
         ))}
       </ul>
+
+      {isStampCardOpen && (
+        <StampCard card={stampCard} onClose={closeStampCard} />
+      )}
     </section>
   );
 }

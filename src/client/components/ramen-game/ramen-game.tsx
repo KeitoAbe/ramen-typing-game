@@ -39,6 +39,12 @@ import {
   loadSoundEnabled,
   saveSoundEnabled,
 } from "@/client/lib/ramen-sound";
+import {
+  emptyStampCard,
+  loadStampCard,
+  recordStampCard,
+  type Stamp,
+} from "@/client/lib/ramen-stamp-card";
 import type { Order } from "@/types/order";
 
 type Props = {
@@ -57,6 +63,9 @@ export function RamenGame({ orders }: Props) {
   const [personalBest, setPersonalBest] = useState<PersonalBestRecord | null>(
     null,
   );
+  // スタンプカードは localStorage にあるので、最初の描画では空とし、マウント後に読み直す
+  const [stampCard, setStampCard] = useState(emptyStampCard);
+  const [newStamps, setNewStamps] = useState<readonly Stamp[]>([]);
   // 同じプレイを二度記録しないための目印（StrictMode で effect が二度走っても更新判定を崩さない）
   const recordedStatsRef = useRef<PlayStats | null>(null);
   // 音の設定は localStorage にあるので、最初の描画ではオンとしておき、マウント後に読み直す
@@ -70,6 +79,7 @@ export function RamenGame({ orders }: Props) {
 
   useEffect(() => {
     setIsSoundEnabled(loadSoundEnabled(browserStorage()));
+    setStampCard(loadStampCard(browserStorage()));
     return () => window.clearTimeout(moodTimerRef.current);
   }, []);
 
@@ -124,19 +134,32 @@ export function RamenGame({ orders }: Props) {
     </GameStage>
   );
 
-  // 閉店したら、そのコースの自己ベストと比べて保存する。localStorage を使うので effect で行う
+  // 閉店したら、そのコースの自己ベストと比べて保存し、スタンプカードに判子を押す。
+  // localStorage を使うので effect で行う
   useEffect(() => {
     if (state.status !== "closed") return;
     if (recordedStatsRef.current === state.stats) return;
     recordedStatsRef.current = state.stats;
+    const storage = browserStorage();
     setPersonalBest(
       recordPersonalBest(
-        browserStorage(),
+        storage,
         state.course.id,
         courseBalance(state.stats.bill, state.course),
       ),
     );
-  }, [state]);
+    const stampRecord = recordStampCard(
+      storage,
+      stampCard,
+      state.course,
+      summarizePlay(
+        state.stats,
+        playTimeMs(state.course.timeLimitMs, state.stats.kaedamaCount),
+      ),
+    );
+    setStampCard(stampRecord.card);
+    setNewStamps(stampRecord.newStamps);
+  }, [state, stampCard]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -178,7 +201,13 @@ export function RamenGame({ orders }: Props) {
 
   if (state.status === "ready") {
     // 券売機の画面は看板も絵の中に置くので、舞台いっぱいに描く
-    return onStage(<TicketMachine courses={COURSES} onSelect={start} />);
+    return onStage(
+      <TicketMachine
+        courses={COURSES}
+        onSelect={start}
+        stampCard={stampCard}
+      />,
+    );
   }
 
   if (state.status === "closed") {
@@ -192,8 +221,10 @@ export function RamenGame({ orders }: Props) {
           playTimeMs(state.course.timeLimitMs, state.stats.kaedamaCount),
         )}
         personalBest={personalBest}
+        newStamps={newStamps}
         onReplay={() => {
           setPersonalBest(null);
+          setNewStamps([]);
           // 入力のないプレイは毎回同じ emptyPlayStats で閉店するので、目印も戻しておく
           recordedStatsRef.current = null;
           dispatch({ type: "reset" });
