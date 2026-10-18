@@ -1,5 +1,6 @@
 import type { RamenGameEvent } from "@/client/lib/ramen-events";
 import type { PersonalBestStorage } from "@/client/lib/ramen-personal-best";
+import { RESULT_REVEAL } from "@/client/lib/ramen-result-reveal";
 
 /** 音のオン・オフを保存する localStorage のキー */
 export const SOUND_SETTING_STORAGE_KEY = "ramen-game:sound-enabled";
@@ -81,9 +82,9 @@ export type SoundCue =
 
 /**
  * 結果画面が出てから、称号の判子が伝票に着くまでの時間（秒）。
- * globals.css の stamp-press（0.3 秒待ってから 0.35 秒で押し、70% の時点で伝票に着く）に合わせる
+ * 結果発表の演出の段取り（差し引きが出たあとに判子を押す）に合わせる
  */
-export const STAMP_LANDING_SECONDS = 0.3 + 0.35 * 0.7;
+export const STAMP_LANDING_SECONDS = RESULT_REVEAL.stampLanding;
 
 /** 判子の音から、自己ベスト更新のファンファーレを鳴らし始めるまでの間（秒）。判子の音と重ならないようにする */
 export const PERSONAL_BEST_AFTER_STAMP_SECONDS = 0.25;
