@@ -2,6 +2,7 @@ import {
   GEKIKARA_MISS_PENALTY_MS,
   NINNIKU_SOGGY_RATE,
   TOPPING_PRICE_RATE,
+  TOPPINGS,
   toppingMissPenaltyMs,
   toppingNames,
   toppingPriceRate,
@@ -39,6 +40,15 @@ describe("toppingSoggyLimitMs", () => {
       10_000 * NINNIKU_SOGGY_RATE,
     );
     expect(NINNIKU_SOGGY_RATE).toBe(0.7);
+  });
+});
+
+describe("TOPPINGS", () => {
+  it("選ぶ画面に出す中身は、効果の値と合った短い 1 行にする", () => {
+    expect(TOPPINGS.map((topping) => topping.effect)).toEqual([
+      "ミスで −1 秒",
+      "のびる時間 ×0.7",
+    ]);
   });
 });
 

@@ -14,6 +14,14 @@ import { type ToppingId, toppingNames } from "@/client/lib/ramen-topping";
 /** 結果画面に出す、打ち間違いの多いキーの数 */
 const MISSED_KEY_RANK_LIMIT = 3;
 
+/** 伝票の成績の表の 1 行。点線で区切る */
+const RECEIPT_ROW =
+  "border-b-[0.12cqw] border-dashed border-yatai-sumi/30 py-[0.25cqw]";
+/** 2 列に並べる短い項目の行。項目名と値の幅を、同じ列の行どうしでそろえる */
+const RECEIPT_HALF_ROW = `col-span-2 grid grid-cols-subgrid ${RECEIPT_ROW}`;
+/** 長い値の項目の行。表の幅いっぱいを使い、列の幅には影響させない */
+const RECEIPT_FULL_ROW = `col-span-4 flex justify-between gap-x-[1cqw] ${RECEIPT_ROW}`;
+
 type Props = {
   course: Course;
   /** 食券のあとに足したトッピング */
@@ -94,77 +102,83 @@ export function RamenResult({
 
       {/* お会計の伝票 */}
       <div className="absolute top-[4%] left-[19%] flex h-[92%] w-[38%] flex-col stage-paper px-[2.2cqw] py-[1.4cqw]">
-        <h2 className="font-display text-[3cqw] leading-tight tracking-[0.4em]">
-          御会計
-        </h2>
-        <p className="text-[1.25cqw]">本日は閉店しました</p>
+        <div className="flex items-start justify-between gap-[1cqw]">
+          {/* 判子がいちばん長い称号（7 文字）でも、見出しを折り返さずに並べられる大きさにしている */}
+          <div className="whitespace-nowrap">
+            <h2 className="font-display text-[3cqw] leading-tight tracking-[0.2em]">
+              御会計
+            </h2>
+            <p className="text-[1.25cqw]">本日は閉店しました</p>
+          </div>
 
-        {/* 称号の判子: 伝票の右上に、朱肉で斜めに押す。押す動きは傾き（rotate）と別の transform で付ける */}
-        <div className="absolute top-[0.8cqw] right-[1.2cqw] flex rotate-[-10deg] flex-col items-center rounded-[0.8cqw] border-[0.4cqw] border-double border-yatai-lantern-dark px-[0.8cqw] py-[0.3cqw] text-yatai-lantern-dark opacity-90 mix-blend-multiply motion-safe:animate-stamp-press">
-          <span className="text-[1.25cqw] leading-tight font-bold">称号</span>
-          <span className="font-display text-[1.8cqw] leading-tight">
-            {title.name}
-          </span>
+          {/* 称号の判子: 伝票の右上に、朱肉で斜めに大きく押す。押す動きは傾き（rotate）と別の transform で付ける */}
+          <div className="mt-[0.4cqw] mr-[0.4cqw] flex shrink-0 rotate-[-8deg] flex-col items-center rounded-[0.8cqw] border-[0.45cqw] border-double border-yatai-lantern-dark px-[1cqw] py-[0.4cqw] text-yatai-lantern-dark opacity-90 mix-blend-multiply motion-safe:animate-stamp-press">
+            <span className="text-[1.25cqw] leading-tight font-bold">称号</span>
+            <span className="font-display text-[2.2cqw] leading-tight whitespace-nowrap">
+              {title.name}
+            </span>
+          </div>
         </div>
 
-        {/* 振り返りの欄を入れる場所をあけるため、成績は 2 列に並べる */}
-        <dl className="mt-[1cqw] grid grid-cols-[1fr_auto_1fr_auto] gap-x-[1.5cqw] border-y-[0.25cqw] border-double border-yatai-sumi text-[1.25cqw]">
-          {rows.map((row) => (
-            <div
-              key={row.label}
-              className="col-span-2 grid grid-cols-subgrid border-b-[0.12cqw] border-dashed border-yatai-sumi/30 py-[0.25cqw] whitespace-nowrap last:border-b-0"
-            >
-              <dt>{row.label}</dt>
-              <dd className="text-right font-bold tabular-nums">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        {/* 振り返り: 打ち間違いの多いキー */}
-        <div className="mt-[0.8cqw] flex items-center gap-x-[1cqw] text-[1.25cqw] whitespace-nowrap">
-          <h3 className="font-bold">打ち間違いの多いキー</h3>
-          {missedKeys.length === 0 ? (
-            <p className="font-bold text-yatai-lantern-dark">打ち間違いなし</p>
-          ) : (
-            <ol className="flex gap-x-[1cqw]">
-              {missedKeys.map(({ key, count }) => (
-                <li key={key} className="flex items-center gap-x-[0.3cqw]">
-                  <kbd className="min-w-[1.8cqw] rounded-[0.3cqw] border-[0.12cqw] border-yatai-sumi bg-white/60 px-[0.3cqw] text-center font-mono font-bold leading-snug">
-                    {key.toUpperCase()}
-                  </kbd>
-                  <span>{count} 回</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-
-        {/* お会計から下は伝票の下端に寄せ、余った高さは成績とお会計のあいだにあける */}
-        <dl className="mt-auto grid grid-cols-[auto_1fr] items-baseline gap-x-[1cqw] gap-y-[0.2cqw] pt-[0.8cqw]">
-          <dt className="text-[1.4cqw] font-bold">食券</dt>
-          <dd className="text-right text-[1.4cqw] font-bold">
-            {course.name}（{course.price.toLocaleString("ja-JP")} 円）
-          </dd>
-          <dt className="text-[1.4cqw] font-bold">トッピング</dt>
-          <dd className="text-right text-[1.4cqw] font-bold">
-            {names.length === 0 ? "なし" : names.join("・")}
-          </dd>
+        {/* 主役のお会計と差し引き: 見出しのすぐ下に大きく書く */}
+        <dl className="mt-[1.2cqw] grid grid-cols-[auto_1fr] items-baseline gap-x-[1cqw] border-y-[0.25cqw] border-double border-yatai-sumi py-[0.4cqw]">
           <dt className="text-[1.6cqw] font-bold">お会計</dt>
-          <dd className="text-right font-display text-[3.4cqw] leading-tight">
+          <dd className="text-right font-display text-[3.8cqw] leading-tight">
             {result.bill.toLocaleString("ja-JP")} 円
           </dd>
           <dt className="text-[1.6cqw] font-bold">差し引き</dt>
           <dd
-            className={`text-right font-display text-[3.4cqw] leading-tight ${balanceColor(balance)}`}
+            className={`text-right font-display text-[3.8cqw] leading-tight ${balanceColor(balance)}`}
           >
             {formatBalance(balance)}
           </dd>
         </dl>
 
-        {/* 記録は表示のあとに済むので、出たときに読み上げる */}
+        {/* ほかの成績は、小さな文字の 1 つの表にまとめる。長い値（食券・トッピング・打ち間違いの多いキー）は 1 行を使い、残りは 2 列に並べる */}
+        <dl className="mt-[1cqw] grid grid-cols-[1fr_auto_1fr_auto] gap-x-[1.5cqw] text-[1.25cqw] whitespace-nowrap">
+          <div className={RECEIPT_FULL_ROW}>
+            <dt>食券</dt>
+            <dd className="text-right font-bold tabular-nums">
+              {course.name}（{course.price.toLocaleString("ja-JP")} 円）
+            </dd>
+          </div>
+          <div className={RECEIPT_FULL_ROW}>
+            <dt>トッピング</dt>
+            <dd className="text-right font-bold">
+              {names.length === 0 ? "なし" : names.join("・")}
+            </dd>
+          </div>
+          {rows.map((row) => (
+            <div key={row.label} className={RECEIPT_HALF_ROW}>
+              <dt>{row.label}</dt>
+              <dd className="text-right font-bold tabular-nums">{row.value}</dd>
+            </div>
+          ))}
+          <div className={RECEIPT_FULL_ROW}>
+            <dt>打ち間違いの多いキー</dt>
+            <dd className="flex justify-end font-bold">
+              {missedKeys.length === 0 ? (
+                <span className="text-yatai-lantern-dark">打ち間違いなし</span>
+              ) : (
+                <ol className="flex gap-x-[1cqw]">
+                  {missedKeys.map(({ key, count }) => (
+                    <li key={key} className="flex items-center gap-x-[0.3cqw]">
+                      <kbd className="min-w-[1.8cqw] rounded-[0.3cqw] border-[0.12cqw] border-yatai-sumi bg-white/60 px-[0.3cqw] text-center font-mono leading-snug">
+                        {key.toUpperCase()}
+                      </kbd>
+                      <span>{count} 回</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </dd>
+          </div>
+        </dl>
+
+        {/* 記録は表示のあとに済むので、出たときに読み上げる。伝票の下端に寄せる */}
         <div
           aria-live="polite"
-          className="mt-[0.8cqw] border-t-[0.12cqw] border-dashed border-yatai-sumi pt-[0.5cqw] text-right text-[1.3cqw] font-bold"
+          className="mt-auto border-t-[0.12cqw] border-dashed border-yatai-sumi pt-[0.5cqw] text-right text-[1.3cqw] font-bold"
         >
           {personalBest?.isUpdated && (
             // 伝票の左に立てるのぼり。伝票（位置の基準）からはみ出して置く

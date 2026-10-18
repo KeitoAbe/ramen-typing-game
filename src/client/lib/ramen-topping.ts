@@ -4,7 +4,7 @@ export type ToppingId = "gekikara" | "ninniku";
 export type Topping = {
   id: ToppingId;
   name: string;
-  /** 選ぶ画面に出す、難しくなる中身 */
+  /** 選ぶ画面に出す、難しくなる中身。小さな券に値段の倍率と並べて 1 行で載せるので、短く書く */
   effect: string;
 };
 
@@ -19,12 +19,12 @@ export const TOPPINGS: readonly Topping[] = [
   {
     id: "gekikara",
     name: "激辛",
-    effect: `ミスタイプするたびに残り時間が ${GEKIKARA_MISS_PENALTY_MS / 1000} 秒減る`,
+    effect: `ミスで −${GEKIKARA_MISS_PENALTY_MS / 1000} 秒`,
   },
   {
     id: "ninniku",
     name: "ニンニクマシマシ",
-    effect: `丼が ${NINNIKU_SOGGY_RATE} 倍の時間でのびきる`,
+    effect: `のびる時間 ×${NINNIKU_SOGGY_RATE}`,
   },
 ];
 

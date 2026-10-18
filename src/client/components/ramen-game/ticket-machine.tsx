@@ -243,9 +243,10 @@ export function TicketMachine({ courses, onSelect }: Props) {
         <h2 className="text-center text-[1.5cqw] leading-tight font-bold">
           遊び方
         </h2>
-        <p className="text-[1.25cqw] leading-snug">
-          食券の時間内は食べ放題。出てくる注文をローマ字で打って平らげよう。
-          お会計が食券代を超えれば元が取れる。
+        {/* 貼り紙の幅に収まるよう、1 文を 1 行にして 2 行に留める */}
+        <p className="text-[1.25cqw] leading-snug whitespace-nowrap">
+          <span className="block">注文をローマ字で打って平らげよう</span>
+          <span className="block">食券代より多く食べれば元が取れる</span>
         </p>
       </div>
 
@@ -264,12 +265,13 @@ export function TicketMachine({ courses, onSelect }: Props) {
                 aria-hidden="true"
                 className="size-[1.4cqw] shrink-0 rounded-full border-[0.25cqw] border-yatai-sumi bg-yatai-wood-dark group-hover:bg-yatai-lantern group-focus-visible:bg-yatai-lantern"
               />
-              {/* 品名と値段は折り返さない。値段が 6 桁（例: 200,000 円）になっても収まる大きさにしている */}
-              <span className="shrink-0 font-display text-[2.6cqw] leading-none whitespace-nowrap">
+              {/* 品名がいちばん目立つよう、品名 > 値段 > 秒数の順に文字を小さくする。
+                  品名と値段は折り返さない。値段が 6 桁（例: 200,000 円）になっても収まる大きさにしている */}
+              <span className="shrink-0 font-display text-[3.2cqw] leading-none whitespace-nowrap">
                 {course.name}
               </span>
               <span className="ml-auto flex shrink-0 flex-col items-end leading-tight whitespace-nowrap">
-                <span className="text-[1.8cqw] font-bold tabular-nums">
+                <span className="text-[1.6cqw] font-bold tabular-nums">
                   {course.price.toLocaleString("ja-JP")}
                   <span className="text-[1.25cqw]"> 円</span>
                 </span>
