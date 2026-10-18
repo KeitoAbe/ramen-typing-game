@@ -88,7 +88,7 @@ export function StampCard({ card, onClose }: Props) {
                 <span className="sr-only">
                   {isStamped ? "押した判子" : "まだ押していない判子"}
                 </span>
-                <span className="text-[1.05cqw] leading-snug font-bold">
+                <span className="text-[1.25cqw] leading-snug font-bold">
                   {stamp.condition}
                 </span>
               </li>
