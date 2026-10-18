@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Dela_Gothic_One, Geist_Mono, Zen_Maru_Gothic } from "next/font/google";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/site-metadata";
 import "./globals.css";
 
 // 日本語の書体は subsets に日本語がなく、先読みすると重いので preload しない
@@ -20,9 +21,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// OGP 画像は opengraph-image.tsx / twitter-image.tsx から自動で入る。
+// 本番 URL（metadataBase）はデプロイ先が決まってから設定する
 export const metadata: Metadata = {
-  title: "ラーメン屋台タイピング",
-  description: "タイピングゲーム",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "ja_JP",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
