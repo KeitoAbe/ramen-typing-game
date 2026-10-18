@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { SITE_NAME } from "@/app/site-metadata";
+import { buildGameJsonLd, getSiteUrl, serializeJsonLd } from "@/app/site-url";
 import { GuideAd } from "@/client/components/adsense/guide-ad";
 import { StageBottomAd } from "@/client/components/adsense/stage-bottom-ad";
 import { StageSideAd } from "@/client/components/adsense/stage-side-ad";
@@ -8,6 +10,10 @@ import { SiteFooter } from "@/client/components/site-footer/site-footer";
 import { SiteHeader } from "@/client/components/site-header/site-header";
 import { loadOrders } from "@/server/contexts/order/presentation/loaders/load-orders";
 
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
 export default async function Home() {
   const orders = await loadOrders();
   // 舞台は全画面にせず、決まった大きさ（幅 960px まで）でページの中央に置く。
@@ -16,6 +22,13 @@ export default async function Home() {
   // 右の枠があるときは、舞台と右の枠をまとめて中央に置く
   return (
     <>
+      <script
+        type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD は script の中身として埋め込むしかなく、serializeJsonLd で `<` を逃がしている
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(buildGameJsonLd(getSiteUrl())),
+        }}
+      />
       <SiteHeader siteName={SITE_NAME} />
       <main className="flex w-full flex-1 flex-col">
         <div className="flex w-full justify-center gap-8 pt-4">

@@ -9,11 +9,15 @@ function h1Of(html: string): string {
 }
 
 describe.each([
-  ["プライバシーポリシー", PrivacyPage, privacyMetadata],
-  ["運営者情報", AboutPage, aboutMetadata],
-  ["お問い合わせ", ContactPage, contactMetadata],
-])("%s のページ", (name, Page, metadata) => {
+  ["プライバシーポリシー", PrivacyPage, privacyMetadata, "/privacy"],
+  ["運営者情報", AboutPage, aboutMetadata, "/about"],
+  ["お問い合わせ", ContactPage, contactMetadata, "/contact"],
+])("%s のページ", (name, Page, metadata, path) => {
   const html = renderToStaticMarkup(<Page />);
+
+  it("自分のパスを正規 URL にしている", () => {
+    expect(metadata.alternates?.canonical).toBe(path);
+  });
 
   it("h1 と、ページ名を含む title・description がある", () => {
     expect(h1Of(html)).toBe(name);
