@@ -6,6 +6,7 @@ async function startPlaying(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("button", { name: "いただきます" }).click();
+  await page.keyboard.press("Enter");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
 }
 
