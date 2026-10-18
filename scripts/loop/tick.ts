@@ -273,7 +273,10 @@ function verifySuccess(
   }
 }
 
-/** open な PR の head のブランチ名 */
+/**
+ * open な PR の head のブランチ名。Issue を着手し直すかの判定にも使うので、
+ * 取りこぼさないよう上限は十分に大きくする
+ */
 function openPrBranches(): string[] {
   return gh([
     "pr",
@@ -281,7 +284,7 @@ function openPrBranches(): string[] {
     "--state",
     "open",
     "--limit",
-    "100",
+    "1000",
     "--json",
     "headRefName",
     "--jq",
@@ -355,7 +358,12 @@ function pruneMergedLoopBranches(): void {
     .map((b) => b.trim())
     .filter(Boolean);
   for (const branch of merged) {
-    git(["branch", "-d", branch]);
-    log(`取り込み済みのブランチを消しました: ${branch}`);
+    try {
+      git(["branch", "-d", branch]);
+      log(`取り込み済みのブランチを消しました: ${branch}`);
+    } catch {
+      // upstream に取り込まれていないブランチは -d が拒否する。消さずに残し、tick は止めない
+      log(`ブランチを消せなかったので残します: ${branch}`);
+    }
   }
 }
