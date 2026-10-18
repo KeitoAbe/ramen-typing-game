@@ -10,6 +10,7 @@ import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { ToppingSelect } from "@/client/components/ramen-game/topping-select";
 import { GameStage } from "@/client/components/stage/game-stage";
+import { trackPlayEnd, trackPlayStart } from "@/client/lib/analytics";
 import { isImeKeyInput } from "@/client/lib/ime-input";
 import { isPageScrollKey } from "@/client/lib/page-scroll-keys";
 import {
@@ -151,12 +152,13 @@ export function RamenGame({ orders }: Props) {
     </GameStage>
   );
 
-  // 閉店したら、そのコースの自己ベストと比べて保存し、スタンプカードに判子を押す。
+  // 閉店したら、プレイを終えたことを計測し、そのコースの自己ベストと比べて保存し、スタンプカードに判子を押す。
   // localStorage を使うので effect で行う
   useEffect(() => {
     if (state.status !== "closed") return;
     if (recordedStatsRef.current === state.stats) return;
     recordedStatsRef.current = state.stats;
+    trackPlayEnd(state.course);
     const storage = browserStorage();
     const balance = courseBalance(state.stats.bill, state.course);
     setPersonalBest(recordPersonalBest(storage, state.course.id, balance));
@@ -207,6 +209,7 @@ export function RamenGame({ orders }: Props) {
 
   const start = (course: Course, toppings: readonly ToppingId[]) => {
     setTicketCourse(null);
+    trackPlayStart(course);
     const now = Date.now();
     const courseOrders = ordersForCourse(orders, course);
     if (playMode === "daily") {
