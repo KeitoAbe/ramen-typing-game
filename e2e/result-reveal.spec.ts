@@ -17,6 +17,7 @@ async function closeAfterOneBowl(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("button", { name: "いただきます" }).click();
+  await page.keyboard.press("Enter");
   const remaining = page.getByTestId("remaining-romaji");
   await expect(remaining).not.toBeEmpty();
   await page.keyboard.type((await remaining.textContent()) ?? "");
