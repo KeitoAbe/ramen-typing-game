@@ -27,6 +27,7 @@ export function RamenWaiting({ state }: Props) {
       {/* 始め方の案内: 注文の札と同じ場所に置く紙。始めると、ここに最初の注文が出る */}
       <div
         ref={signRef}
+        data-scene-focus
         tabIndex={-1}
         className="stage-paper absolute top-[79.5%] left-[24%] flex h-[18.5%] w-[52%] flex-col items-center justify-center gap-[0.4cqw] focus:outline-none"
       >

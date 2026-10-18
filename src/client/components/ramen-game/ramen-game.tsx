@@ -7,6 +7,7 @@ import {
 } from "@/client/components/ramen-game/ramen-play";
 import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import { RamenWaiting } from "@/client/components/ramen-game/ramen-waiting";
+import { SceneTransitionOverlay } from "@/client/components/ramen-game/scene-transition-overlay";
 import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { ToppingSelect } from "@/client/components/ramen-game/topping-select";
@@ -37,6 +38,7 @@ import {
 import { detectGameEvents } from "@/client/lib/ramen-events";
 import {
   initialRamenGameState,
+  type RamenGameState,
   ramenGameReducer,
   shuffleOrders,
 } from "@/client/lib/ramen-game";
@@ -69,15 +71,49 @@ import { decideTitle } from "@/client/lib/ramen-title";
 import type { ToppingId } from "@/client/lib/ramen-topping";
 import { waitingKeyAction } from "@/client/lib/ramen-waiting";
 import { prefersReducedMotion } from "@/client/lib/reduced-motion";
+import {
+  type GameScene,
+  resultSceneDelaySeconds,
+  type SceneTransitionKind,
+  sceneAnnouncementOf,
+  sceneOf,
+  sceneTransitionOf,
+  sceneTransitionSeconds,
+} from "@/client/lib/scene-transition";
 import type { Order } from "@/types/order";
 
 type Props = {
   orders: readonly Order[];
 };
 
+type PlayingState = Extract<RamenGameState, { status: "playing" }>;
+
+/** いま動いている画面の切り替えの移り変わり。id は同じ種類が続いても動きをやり直すための通し番号 */
+type SceneTransition = { kind: SceneTransitionKind; id: number };
+
 /** 丼が替わるたびに 1 増える値 */
 function bowlIdOf(stats: PlayStats): number {
   return stats.servedCount + stats.discardedCount;
+}
+
+/**
+ * 画面の切り替えのあと、次の画面の最初の操作できる要素にフォーカスを移す。
+ * data-scene-focus を付けた要素があればそれを、操作できる要素がなければ見出しを選ぶ
+ */
+function focusSceneStart(container: HTMLElement | null) {
+  const target =
+    container?.querySelector<HTMLElement>("[data-scene-focus]") ??
+    container?.querySelector<HTMLElement>(
+      "button:not(:disabled), input:not(:disabled), a[href]",
+    ) ??
+    container?.querySelector<HTMLElement>("h1, h2");
+  if (target === null || target === undefined) return;
+  // 見出しはそのままではフォーカスできないので、スクリプトからだけフォーカスできるようにする
+  if (target.tabIndex < 0 && !target.hasAttribute("tabindex")) {
+    target.tabIndex = -1;
+  }
+  // 舞台の下に紹介の文章があるので、フォーカスでページをスクロールさせない
+  target.focus({ preventScroll: true });
 }
 
 // キー入力とタイマーを扱うので、クライアントで動かす
@@ -115,6 +151,55 @@ export function RamenGame({ orders }: Props) {
   const [leavingBowl, setLeavingBowl] = useState<LeavingBowl | null>(null);
   const [pricePop, setPricePop] = useState<ServedPricePop | null>(null);
   const previousStateRef = useRef(state);
+
+  // 画面の切り替えの移り変わり（docs/design.md の「画面の切り替え」）。
+  // 画面が替わったことを描画の中で読み取り、同じ描画で移り変わりを始める（替わった画面が一瞬だけ素のまま出ないように）
+  const scene = sceneOf(state.status, ticketCourse !== null);
+  const [shownScene, setShownScene] = useState<GameScene>(scene);
+  const [sceneTransition, setSceneTransition] =
+    useState<SceneTransition | null>(null);
+  // 閉店して灯りが落ちるあいだ、止めたまま見せるプレイの画面。null なら結果画面を出す
+  const [closingPlay, setClosingPlay] = useState<PlayingState | null>(null);
+  const [sceneAnnouncement, setSceneAnnouncement] = useState("");
+  const sceneRef = useRef<HTMLDivElement>(null);
+  if (scene !== shownScene) {
+    setShownScene(scene);
+    const kind = sceneTransitionOf(shownScene, scene);
+    // 移り変わりの途中で次の画面に移ったら（のれんが開ききる前にスペースで始めたなど）、移り変わりを打ち切る
+    setSceneTransition((current) =>
+      kind === null ? null : { kind, id: (current?.id ?? 0) + 1 },
+    );
+    // 移り変わりを付けない切り替え（開始待ち → プレイなど）でも、画面が替わったことは知らせる
+    setSceneAnnouncement(sceneAnnouncementOf(scene));
+    // previousStateRef は描画のあとの effect で更新するので、ここではまだ閉店する直前のプレイの状態を指している
+    const lastPlay = previousStateRef.current;
+    setClosingPlay(
+      kind === "lights-out" &&
+        lastPlay.status === "playing" &&
+        !prefersReducedMotion()
+        ? lastPlay
+        : null,
+    );
+  }
+
+  // 移り変わりを終えたら外し、次の画面の最初の操作できる要素にフォーカスを移す
+  useEffect(() => {
+    if (sceneTransition === null) return;
+    const isReducedMotion = prefersReducedMotion();
+    const lightsOutTimer = window.setTimeout(
+      () => setClosingPlay(null),
+      resultSceneDelaySeconds(isReducedMotion) * 1000,
+    );
+    const endTimer = window.setTimeout(() => {
+      setSceneTransition(null);
+      focusSceneStart(sceneRef.current);
+    }, sceneTransitionSeconds(sceneTransition.kind, isReducedMotion) * 1000);
+    return () => {
+      window.clearTimeout(lightsOutTimer);
+      window.clearTimeout(endTimer);
+    };
+  }, [sceneTransition]);
+
   const [shopkeeperMood, setShopkeeperMood] =
     useState<ShopkeeperMood>("normal");
   const moodTimerRef = useRef<number | undefined>(undefined);
@@ -276,9 +361,41 @@ export function RamenGame({ orders }: Props) {
         </div>
       }
     >
-      {screen}
+      {/* 画面の入れ物。レイアウトに関わらないよう contents にし、切り替えのあとのフォーカス先を探すのに使う */}
+      <div ref={sceneRef} className="contents">
+        {screen}
+      </div>
+      {sceneTransition && (
+        <SceneTransitionOverlay
+          key={sceneTransition.id}
+          kind={sceneTransition.kind}
+          isLightsDimming={closingPlay !== null}
+          course={ticketCourse}
+        />
+      )}
+      {/* 画面が替わったことを、スクリーンリーダーに知らせる */}
+      <p
+        data-testid="scene-announcement"
+        aria-live="polite"
+        className="sr-only"
+      >
+        {/* 灯りが落ちるあいだはまだ伝票が出ていないので、結果画面が出てから知らせる */}
+        {closingPlay === null ? sceneAnnouncement : ""}
+      </p>
     </GameStage>
   );
+
+  const renderPlay = (playState: PlayingState) =>
+    onStage(
+      <RamenPlay
+        state={playState}
+        bowlId={bowlIdOf(playState.stats)}
+        leavingBowl={leavingBowl}
+        onLeavingBowlEnd={() => setLeavingBowl(null)}
+        pricePop={pricePop}
+        shopkeeperMood={shopkeeperMood}
+      />,
+    );
 
   // 閉店したら、プレイを終えたことを計測し、そのコースの自己ベストと比べて保存する。
   // localStorage を使うので effect で行う。判子と自己ベスト更新の音も、1 プレイに 1 回だけここで鳴らす
@@ -294,8 +411,12 @@ export function RamenGame({ orders }: Props) {
     );
     setPersonalBest(record);
     if (isSoundEnabled) {
-      // 動きを抑える設定では判子が最初から押されているので、待たずに鳴らす
-      const stampSeconds = prefersReducedMotion() ? 0 : STAMP_LANDING_SECONDS;
+      // 動きを抑える設定では判子が最初から押されているので、待たずに鳴らす。
+      // 結果画面は灯りが落ちてから出るので、判子が着く時刻もその分遅らせる
+      const isReducedMotion = prefersReducedMotion();
+      const stampSeconds = isReducedMotion
+        ? 0
+        : resultSceneDelaySeconds(isReducedMotion) + STAMP_LANDING_SECONDS;
       playSound("stamp", stampSeconds);
       if (record.isUpdated) {
         playSound(
@@ -404,6 +525,11 @@ export function RamenGame({ orders }: Props) {
     );
   }
 
+  // 閉店しても、灯りが落ちるあいだは止めたプレイの画面を見せる。時間は閉店した時点で止まり、キーも数えない
+  if (closingPlay !== null) {
+    return renderPlay(closingPlay);
+  }
+
   if (state.status === "closed") {
     // 伝票の画面は看板も絵の中に置くので、舞台いっぱいに描く
     return onStage(
@@ -437,14 +563,5 @@ export function RamenGame({ orders }: Props) {
     );
   }
 
-  return onStage(
-    <RamenPlay
-      state={state}
-      bowlId={bowlIdOf(state.stats)}
-      leavingBowl={leavingBowl}
-      onLeavingBowlEnd={() => setLeavingBowl(null)}
-      pricePop={pricePop}
-      shopkeeperMood={shopkeeperMood}
-    />,
-  );
+  return renderPlay(state);
 }

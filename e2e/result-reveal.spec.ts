@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@e2e/fixtures";
+import { LIGHTS_OUT_SECONDS } from "@/client/lib/scene-transition";
 
 // 結果画面の結果発表の演出（docs/design.md の「結果発表の演出」）を確かめる。
 // 数字の数え上げは requestAnimationFrame で進むので、page.clock で時刻を止めたり進めたりして調べる。
@@ -26,6 +27,9 @@ async function closeAfterOneBowl(page: Page) {
   );
   const now = await page.evaluate(() => Date.now());
   await page.clock.pauseAt(now + 61_000);
+  // 閉店すると提灯の灯りが落ちてから結果画面に移るので、その分だけ時計を進める
+  await expect(page.getByTestId("scene-transition")).toBeAttached();
+  await page.clock.runFor(LIGHTS_OUT_SECONDS * 1000);
   await expect(page.getByRole("heading", { name: "御会計" })).toBeVisible();
 }
 
