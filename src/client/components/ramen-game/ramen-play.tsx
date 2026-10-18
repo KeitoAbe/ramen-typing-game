@@ -121,7 +121,7 @@ export function RamenPlay({
           <span className="text-[1.3cqw] font-bold">杯連続</span>
         </p>
         <p className="text-[1.1cqw] font-bold">
-          この丼の値段{" "}
+          連続ボーナス{" "}
           <span
             className={`font-display ${streakRate > 1 ? "text-yatai-lantern" : ""}`}
           >
