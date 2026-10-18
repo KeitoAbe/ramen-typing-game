@@ -69,25 +69,39 @@ describe("運営者情報のページ", () => {
 });
 
 describe("お問い合わせのページ", () => {
-  const original = process.env.NEXT_PUBLIC_CONTACT_FORM_URL;
+  const original = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
   afterEach(() => {
-    if (original === undefined) delete process.env.NEXT_PUBLIC_CONTACT_FORM_URL;
-    else process.env.NEXT_PUBLIC_CONTACT_FORM_URL = original;
+    if (original === undefined) delete process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+    else process.env.NEXT_PUBLIC_CONTACT_EMAIL = original;
   });
 
-  it("フォームの URL があるときは、新しいタブで開くリンクを出す", () => {
-    process.env.NEXT_PUBLIC_CONTACT_FORM_URL = "https://forms.gle/example";
+  it("メールで受け付けることと、返信に時間がかかる場合があることが書かれている", () => {
     const html = renderToStaticMarkup(<ContactPage />);
-    expect(html).toContain('href="https://forms.gle/example"');
-    expect(html).toContain('target="_blank"');
-    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain("メールでお送りください");
+    expect(html).toContain("お返事にお時間をいただく");
+  });
+
+  it("メールアドレスがあるときは、HTML にアドレスを平文で載せずに、メールの手段を出す", () => {
+    process.env.NEXT_PUBLIC_CONTACT_EMAIL = "contact@example.com";
+    const html = renderToStaticMarkup(<ContactPage />);
+    expect(html).not.toContain("contact@example.com");
+    expect(html).not.toContain("mailto:");
+    expect(html).toContain("メールアドレスを表示しています");
     expect(html).not.toContain("準備中");
   });
 
-  it("フォームの URL が無いときは、リンクを出さずに「準備中」と出す", () => {
-    delete process.env.NEXT_PUBLIC_CONTACT_FORM_URL;
+  it("メールアドレスが無いときは、手段を出さずに「準備中」と出す", () => {
+    delete process.env.NEXT_PUBLIC_CONTACT_EMAIL;
     const html = renderToStaticMarkup(<ContactPage />);
     expect(html).toContain("準備中");
-    expect(html).not.toContain('target="_blank"');
+    expect(html).not.toContain("メールアドレスを表示しています");
+  });
+
+  it("メールアドレスの形でないときは、手段を出さずに「準備中」と出す", () => {
+    process.env.NEXT_PUBLIC_CONTACT_EMAIL = "not-an-email";
+    const html = renderToStaticMarkup(<ContactPage />);
+    expect(html).toContain("準備中");
+    expect(html).not.toContain("not-an-email");
+    expect(html).not.toContain("メールアドレスを表示しています");
   });
 });
