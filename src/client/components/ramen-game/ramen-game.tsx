@@ -45,6 +45,11 @@ import {
   type PersonalBestRecord,
   recordPersonalBest,
 } from "@/client/lib/ramen-personal-best";
+import {
+  eatenRatio,
+  type ServedPricePop,
+  servedPricePopOf,
+} from "@/client/lib/ramen-play-motion";
 import { type PlayStats, summarizePlay } from "@/client/lib/ramen-result";
 import {
   SHOPKEEPER_MOOD_MS,
@@ -108,6 +113,7 @@ export function RamenGame({ orders }: Props) {
   useEffect(() => () => stopSounds(), [stopSounds]);
   useEffect(() => () => ambience.stop(), [ambience]);
   const [leavingBowl, setLeavingBowl] = useState<LeavingBowl | null>(null);
+  const [pricePop, setPricePop] = useState<ServedPricePop | null>(null);
   const previousStateRef = useRef(state);
   const [shopkeeperMood, setShopkeeperMood] =
     useState<ShopkeeperMood>("normal");
@@ -197,7 +203,7 @@ export function RamenGame({ orders }: Props) {
     };
   }, []);
 
-  // 状態の移り変わりから出来事を読み取り、効果音・店主の表情・丼を下げる演出を出す
+  // 状態の移り変わりから出来事を読み取り、効果音・店主の表情・丼を下げる演出・平らげた値段を出す
   useEffect(() => {
     const previous = previousStateRef.current;
     previousStateRef.current = state;
@@ -231,8 +237,11 @@ export function RamenGame({ orders }: Props) {
     }
     if (previous.status !== "playing" || state.status !== "playing") {
       setLeavingBowl(null);
+      setPricePop(null);
       return;
     }
+    const pop = servedPricePopOf(previous, state);
+    if (pop !== null) setPricePop(pop);
     // のびきって下げた直後に次の丼を平らげることもあるが、下げていくのは前の丼なので discarded を優先する
     const reason = events.includes("discarded")
       ? "discarded"
@@ -244,6 +253,8 @@ export function RamenGame({ orders }: Props) {
       id: bowlIdOf(state.stats),
       order: previous.orders[previous.orderIndex],
       reason,
+      // のびきって下げる丼は、それまでに食べ進めた分の麺を減らしたまま下げる
+      eatenRatio: reason === "eaten" ? 1 : eatenRatio(previous.typing),
     });
   }, [state, isSoundEnabled, playSound, ambience]);
 
@@ -420,6 +431,7 @@ export function RamenGame({ orders }: Props) {
       bowlId={bowlIdOf(state.stats)}
       leavingBowl={leavingBowl}
       onLeavingBowlEnd={() => setLeavingBowl(null)}
+      pricePop={pricePop}
       shopkeeperMood={shopkeeperMood}
     />,
   );

@@ -1,4 +1,4 @@
-import { streakPriceRate } from "@/client/lib/ramen-streak";
+import { streakPriceRate, streakTierOf } from "@/client/lib/ramen-streak";
 
 describe("streakPriceRate", () => {
   it("2 杯目までは倍率がかからない", () => {
@@ -14,5 +14,14 @@ describe("streakPriceRate", () => {
     expect(streakPriceRate(9)).toBe(1.2);
     expect(streakPriceRate(10)).toBe(1.5);
     expect(streakPriceRate(30)).toBe(1.5);
+  });
+});
+
+describe("streakTierOf", () => {
+  it("倍率がかからなければ 0 段、×1.1 / ×1.2 / ×1.5 で 1〜3 段", () => {
+    expect(streakTierOf(2)).toBe(0);
+    expect(streakTierOf(3)).toBe(1);
+    expect(streakTierOf(5)).toBe(2);
+    expect(streakTierOf(10)).toBe(3);
   });
 });

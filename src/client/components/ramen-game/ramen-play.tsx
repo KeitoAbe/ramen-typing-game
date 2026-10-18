@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { type CSSProperties, Fragment } from "react";
 import {
   EmptyBowlIcon,
   RamenBowl,
@@ -9,9 +9,17 @@ import { bowlStyleOf } from "@/client/lib/ramen-bowl-style";
 import { CLOSING_RUSH_PRICE_RATE } from "@/client/lib/ramen-closing-rush";
 import type { RamenGameState } from "@/client/lib/ramen-game";
 import { KAEDAMA_GAUGE_MAX } from "@/client/lib/ramen-kaedama";
+import {
+  eatenRatio,
+  type ServedPricePop,
+} from "@/client/lib/ramen-play-motion";
 import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
 import { SPECIAL_BOWL_PRICE_RATE } from "@/client/lib/ramen-special-bowl";
-import { streakPriceRate } from "@/client/lib/ramen-streak";
+import {
+  STREAK_PRICE_RATES,
+  streakPriceRate,
+  streakTierOf,
+} from "@/client/lib/ramen-streak";
 import { toppingNames, toppingPriceRate } from "@/client/lib/ramen-topping";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
@@ -22,6 +30,8 @@ export type LeavingBowl = {
   id: number;
   order: Order;
   reason: "eaten" | "discarded";
+  /** 下げるときに、どこまで食べ進めていたか（0〜1） */
+  eatenRatio: number;
 };
 
 /** 替え玉ゲージに並べる麺玉の数。ゲージがこの数に分けてたまる */
@@ -32,12 +42,31 @@ const STACKED_BOWL_MAX = 6;
 // 丼の置き場所（舞台の 1280×720 の座標を百分率にしたもの）。出す丼と下げる丼で同じ位置を使う
 const BOWL_POSITION = "absolute top-[39.5%] left-[35.9%] h-[36.1%] w-[28.2%]";
 
+/** 連続ボーナスの段（1〜3）ごとの、札の弾み方。段が上がるほど派手にする */
+const STREAK_UP_ANIMATIONS: Record<number, string> = {
+  1: "motion-safe:animate-streak-up-1",
+  2: "motion-safe:animate-streak-up-2",
+  3: "motion-safe:animate-streak-up-3",
+};
+
+/** ×1.5 に上がったとき、連続の札の周りに散らす火の粉の飛ぶ向き（cqw） */
+const STREAK_SPARKS = [
+  [-3.2, -2.4],
+  [-1.2, -3.4],
+  [1.4, -3.2],
+  [3.4, -2],
+  [-3.6, 0.6],
+  [3.8, 0.8],
+] as const;
+
 type Props = {
   state: Extract<RamenGameState, { status: "playing" }>;
   /** 丼が替わるたびに変わる値 */
   bowlId: number;
   leavingBowl: LeavingBowl | null;
   onLeavingBowlEnd: () => void;
+  /** 最後に平らげた丼の値段。丼のあたりから浮かび上がらせる */
+  pricePop: ServedPricePop | null;
   shopkeeperMood: ShopkeeperMood;
 };
 
@@ -47,6 +76,7 @@ export function RamenPlay({
   bowlId,
   leavingBowl,
   onLeavingBowlEnd,
+  pricePop,
   shopkeeperMood,
 }: Props) {
   const order = state.orders[state.orderIndex];
@@ -59,13 +89,19 @@ export function RamenPlay({
   // いま出ている丼をミスなしで平らげたときにかかる、連続杯数の倍率
   const streakRate = state.isCleanBowl ? streakPriceRate(state.streak + 1) : 1;
   // 連続ボーナスがかかる杯数（3 杯）まで続いたときだけ、連続杯数を見せる
-  const isStreakShown = streakPriceRate(state.streak) > 1;
+  const streakTier = streakTierOf(state.streak);
+  const isStreakShown = streakTier > 0;
   const toppingNameList = toppingNames(state.toppings);
   const toppingRate = toppingPriceRate(state.toppings);
+  const typed = typedRomaji(state.typing);
 
   return (
     <section className="absolute inset-0">
-      <YataiScene shopkeeperMood={shopkeeperMood} hasStrayCat />
+      <YataiScene
+        shopkeeperMood={shopkeeperMood}
+        isClosingRush={state.isClosingRush}
+        hasStrayCat
+      />
 
       {/* 残り時間: 左の柱に掛けた丸い時計。閉店間際は文字盤を琥珀色に替える。
           提灯に重ならないよう、提灯の下端より下に掛ける */}
@@ -131,11 +167,13 @@ export function RamenPlay({
         )}
       </div>
 
-      {/* 連続杯数: 丼の左に短く出す。連続ボーナスがかかる杯数に届くまでは、読み上げにだけ出す */}
+      {/* 連続杯数: 丼の左に短く出す。連続ボーナスがかかる杯数に届くまでは、読み上げにだけ出す。
+          倍率の段が上がるたびに作り直して、札を弾ませる */}
       <p
+        key={`streak-${streakTier}`}
         className={
           isStreakShown
-            ? "stage-wood-board absolute top-[46%] left-[21%] flex items-baseline gap-[0.4cqw] px-[0.8cqw] py-[0.3cqw] font-bold whitespace-nowrap"
+            ? `stage-wood-board absolute top-[46%] left-[21%] flex items-baseline gap-[0.4cqw] px-[0.8cqw] py-[0.3cqw] font-bold whitespace-nowrap ${STREAK_UP_ANIMATIONS[streakTier]} motion-reduce:animate-streak-flash`
             : "sr-only"
         }
       >
@@ -146,6 +184,21 @@ export function RamenPlay({
         <span className="text-[1.4cqw] tabular-nums text-yatai-amber">
           ×{streakRate.toFixed(1)}
         </span>
+        {/* いちばん上の段（×1.5）に上がったときは、札の周りに火の粉を散らす */}
+        {streakTier === STREAK_PRICE_RATES.length &&
+          STREAK_SPARKS.map(([x, y]) => (
+            <span
+              key={`${x}-${y}`}
+              aria-hidden="true"
+              style={
+                {
+                  "--spark-x": `${x}cqw`,
+                  "--spark-y": `${y}cqw`,
+                } as CSSProperties
+              }
+              className="pointer-events-none absolute top-1/2 left-1/2 hidden size-[0.6cqw] rounded-full bg-yatai-amber motion-safe:block motion-safe:animate-streak-spark"
+            />
+          ))}
       </p>
       {/* 連続が途切れた知らせ: 連続杯数と同じ場所に出す */}
       <div aria-live="polite" className="absolute top-[52%] left-[21%]">
@@ -209,6 +262,7 @@ export function RamenPlay({
             look={bowlStyleOf(leavingBowl.order)}
             freshness={leavingBowl.reason === "eaten" ? 1 : 0}
             isSoggy={leavingBowl.reason === "discarded"}
+            eatenRatio={leavingBowl.eatenRatio}
           />
         </div>
       )}
@@ -221,6 +275,8 @@ export function RamenPlay({
           look={bowlStyleOf(order)}
           freshness={freshness}
           isSoggy={isGettingSoggy}
+          eatenRatio={eatenRatio(state.typing)}
+          isSpecial={state.isSpecialBowl}
         />
         {/* 特別な丼: 丼の上に掲げる赤い札。読み上げは注文の札の側で行う */}
         {state.isSpecialBowl && (
@@ -237,6 +293,37 @@ export function RamenPlay({
           </p>
         )}
       </div>
+
+      {/* 平らげた丼の値段: 丼の上から浮かび上がって消える。倍率がかかった丼は琥珀色にして、かかった倍率を添える。
+          平らげるたびに作り直して演出をやり直す。消えたあとは透明なまま残し、次に平らげたときに差し替える */}
+      {/* 浮かび上がる値段は見た目だけなので、同じ内容を読み上げ用に置く。
+          注文の切り替わりの読み上げを妨げないよう、自動では読み上げない */}
+      {pricePop && (
+        <p className="sr-only">
+          平らげた丼の値段 {pricePop.price.toLocaleString("ja-JP")} 円
+          {pricePop.bonuses.length > 0 &&
+            `（${pricePop.bonuses.map(({ label }) => label).join("・")}）`}
+        </p>
+      )}
+      {pricePop && (
+        <div
+          key={`price-${pricePop.id}`}
+          aria-hidden="true"
+          data-testid="price-pop"
+          className="pointer-events-none absolute top-[24%] left-1/2 flex -translate-x-1/2 flex-col items-center whitespace-nowrap [text-shadow:0_0.2cqw_0_var(--color-yatai-sumi),0_0_0.6cqw_var(--color-yatai-sumi)] motion-safe:animate-price-pop motion-reduce:animate-price-fade"
+        >
+          <span
+            className={`font-display text-[3cqw] leading-none tabular-nums ${pricePop.bonuses.length > 0 ? "text-yatai-amber" : "text-yatai-kinari"}`}
+          >
+            +{pricePop.price.toLocaleString("ja-JP")} 円
+          </span>
+          {pricePop.bonuses.length > 0 && (
+            <span className="mt-[0.3cqw] text-[1.4cqw] leading-tight font-bold text-yatai-amber">
+              {pricePop.bonuses.map(({ label }) => label).join("・")}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* 注文の文・よみ・ローマ字: 丼の手前に置いた注文の札。画面の主役なので、ほかの表示より大きく出す */}
       <div className="stage-paper absolute top-[79.5%] left-[24%] flex h-[18.5%] w-[52%] flex-col items-center justify-center">
@@ -256,9 +343,24 @@ export function RamenPlay({
             <p className="text-[1.4cqw] leading-tight">{order.reading}</p>
           </Fragment>
         </div>
-        <p className="font-mono text-[2.4cqw] leading-tight tracking-wide">
+        {/* ミスするたびに作り直して、ローマ字を横に震わせる（動きを抑える設定では短く明滅させる） */}
+        <p
+          key={`romaji-${state.stats.missCount}`}
+          className={`font-mono text-[2.4cqw] leading-tight tracking-wide ${state.stats.missCount > 0 ? "motion-safe:animate-romaji-shake motion-reduce:animate-miss-flash" : ""}`}
+        >
           <span className="text-yatai-lantern-dark underline decoration-[0.15cqw] underline-offset-[0.3cqw]">
-            {typedRomaji(state.typing)}
+            {typed.slice(0, -1)}
+            {/* 最後に打った文字は、打つたびに作り直して弾ませる。
+                inline-block には親の下線が届かないので、下線を付け直す */}
+            {typed !== "" && (
+              <span
+                key={state.stats.correctKeyCount}
+                data-testid="last-typed-romaji"
+                className="inline-block underline decoration-[0.15cqw] underline-offset-[0.3cqw] motion-safe:animate-key-bounce"
+              >
+                {typed.slice(-1)}
+              </span>
+            )}
           </span>
           {/* E2E テストが、これから打つローマ字を読んで打つための目印 */}
           <span data-testid="remaining-romaji" className="font-bold">
