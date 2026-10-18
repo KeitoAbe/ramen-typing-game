@@ -5,29 +5,46 @@ import type { PersonalBestStorage } from "@/client/lib/ramen-personal-best";
 export const SOUND_SETTING_STORAGE_KEY = "ramen-game:sound-enabled";
 
 /** 保存先。テストで差し替えられるよう、使うメソッドだけに絞る */
-type SoundSettingStorage = PersonalBestStorage;
+export type SoundSettingStorage = PersonalBestStorage;
 
-/** 保存された音の設定を読む。保存されていない・読めないときはオン */
-export function loadSoundEnabled(
+/** 保存されたオン・オフの設定を読む。保存されていない・読めないときはオン */
+export function loadOnOffSetting(
   storage: SoundSettingStorage | undefined,
+  key: string,
 ): boolean {
   try {
-    return storage?.getItem(SOUND_SETTING_STORAGE_KEY) !== "off";
+    return storage?.getItem(key) !== "off";
   } catch {
     return true;
   }
 }
 
-/** 音の設定を保存する。保存できなくてもゲームは続けられるので、例外は投げない */
+/** オン・オフの設定を保存する。保存できなくてもゲームは続けられるので、例外は投げない */
+export function saveOnOffSetting(
+  storage: SoundSettingStorage | undefined,
+  key: string,
+  enabled: boolean,
+): void {
+  try {
+    storage?.setItem(key, enabled ? "on" : "off");
+  } catch {
+    // 何もしない
+  }
+}
+
+/** 保存された効果音の設定を読む。保存されていない・読めないときはオン */
+export function loadSoundEnabled(
+  storage: SoundSettingStorage | undefined,
+): boolean {
+  return loadOnOffSetting(storage, SOUND_SETTING_STORAGE_KEY);
+}
+
+/** 効果音の設定を保存する */
 export function saveSoundEnabled(
   storage: SoundSettingStorage | undefined,
   enabled: boolean,
 ): void {
-  try {
-    storage?.setItem(SOUND_SETTING_STORAGE_KEY, enabled ? "on" : "off");
-  } catch {
-    // 何もしない
-  }
+  saveOnOffSetting(storage, SOUND_SETTING_STORAGE_KEY, enabled);
 }
 
 /** 効果音を組み立てる層に共通する、時間と音量 */
@@ -600,21 +617,51 @@ function applyEnvelope(
   gain.gain.exponentialRampToValueAtTime(0.0001, end);
 }
 
+/** 音を鳴らす AudioContext と、すべての音を最後に通す出口 */
+export type AudioOutput = {
+  context: AudioContext;
+  destination: AudioNode;
+};
+
 /**
- * Web Audio で効果音を鳴らす関数を作る。
+ * 効果音と環境音・BGM で共有する出口を、最初に使うときに作る関数を返す。
  * ブラウザはユーザー操作の前に音を出せないので、AudioContext は最初に鳴らすときに作る
  * （食券を選ぶクリックのあとなので、鳴らせる）。
+ * 同じ出口に通すことで、効果音と環境音・BGM が同時に鳴っても最後の圧縮で割れないようにする
+ */
+export function createAudioOutput(): () => AudioOutput {
+  let output: AudioOutput | undefined;
+  return () => {
+    if (output === undefined) {
+      const context = new AudioContext();
+      // 音量の合計は 1.0 以下に設計しているが、フィルタの共振で山が出ても割れないよう、最後に圧縮をかける
+      const limiter = context.createDynamicsCompressor();
+      limiter.threshold.value = -6;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.1;
+      limiter.connect(context.destination);
+      output = { context, destination: limiter };
+    }
+    if (output.context.state === "suspended") void output.context.resume();
+    return output;
+  };
+}
+
+/**
+ * Web Audio で効果音を鳴らす関数を作る。
  * delaySeconds を渡すと、その秒数だけ遅らせて鳴らす。タイマーを使わず Web Audio の時刻で予約するので、
  * 画面の動きに合わせる音でもゲームの進行を止めない。
  * 予約した音は、効果音をオフにしたとき・次のプレイに移るとき・画面を離れるときに stopAll で取り消す
  */
-export function createSoundPlayer(): {
+export function createSoundPlayer(
+  getOutput: () => AudioOutput = createAudioOutput(),
+): {
   play: (cue: SoundCue, delaySeconds?: number) => void;
   /** 鳴っている音と、予約してまだ鳴っていない音をすべて止める */
   stopAll: () => void;
 } {
-  let context: AudioContext | undefined;
-  let output: AudioNode | undefined;
   let noiseBuffer: AudioBuffer | undefined;
   // stopAll で止めるために、鳴り終わるまでの音源を持っておく
   const sources = new Set<AudioScheduledSourceNode>();
@@ -635,19 +682,7 @@ export function createSoundPlayer(): {
   const play = (cue: SoundCue, delaySeconds = 0) => {
     if (SOUND_PATTERNS[cue].layers.length === 0) return;
     try {
-      context ??= new AudioContext();
-      if (context.state === "suspended") void context.resume();
-      if (output === undefined) {
-        // 音量の合計は 1.0 以下に設計しているが、フィルタの共振で山が出ても割れないよう、最後に圧縮をかける
-        const limiter = context.createDynamicsCompressor();
-        limiter.threshold.value = -6;
-        limiter.knee.value = 0;
-        limiter.ratio.value = 20;
-        limiter.attack.value = 0.001;
-        limiter.release.value = 0.1;
-        limiter.connect(context.destination);
-        output = limiter;
-      }
+      const { context, destination: output } = getOutput();
       noiseBuffer ??= createNoiseBuffer(context);
       const start = context.currentTime + delaySeconds;
       for (const layer of resolveSoundLayers(cue)) {
