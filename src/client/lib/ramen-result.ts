@@ -3,13 +3,6 @@ import type { Order } from "@/types/order";
 /** よみ 1 文字あたりの丼の値段（円） */
 export const PRICE_PER_KANA = 100;
 
-/** 平らげた丼の記録 */
-type ServedBowl = {
-  order: Order;
-  /** お会計に足した値段（円） */
-  price: number;
-};
-
 /** 1 プレイのあいだに積み上げる成績 */
 export type PlayStats = {
   /** 平らげた杯数 */
@@ -28,8 +21,6 @@ export type PlayStats = {
   kaedamaCount: number;
   /** ミスなし・下げられなしで続けて平らげた杯数の、そのプレイでの最大 */
   maxStreak: number;
-  /** 平らげた丼（平らげた順） */
-  servedBowls: readonly ServedBowl[];
   /** 打ち間違えたときに打つべきだったキーごとの回数 */
   missedKeys: Readonly<Record<string, number>>;
 };
@@ -56,7 +47,6 @@ export const emptyPlayStats: PlayStats = {
   missCount: 0,
   kaedamaCount: 0,
   maxStreak: 0,
-  servedBowls: [],
   missedKeys: {},
 };
 

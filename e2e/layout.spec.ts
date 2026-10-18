@@ -99,7 +99,7 @@ test.describe("1366×768 のウィンドウ", () => {
     expect(guideBox.y).toBeLessThan(768);
   });
 
-  test("券売機・スタンプカード・トッピング・プレイ中・結果画面の文字が 12px 以上で、舞台からはみ出さない", async ({
+  test("券売機・トッピング・プレイ中・結果画面の文字が 12px 以上で、舞台からはみ出さない", async ({
     page,
   }) => {
     await page.clock.install();
@@ -107,12 +107,6 @@ test.describe("1366×768 のウィンドウ", () => {
 
     // 券売機
     await expectReadableStage(page);
-
-    // スタンプカード
-    await page.getByRole("button", { name: /スタンプカード/ }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expectReadableStage(page);
-    await page.getByRole("button", { name: "閉じる" }).click();
 
     // トッピング
     await page.getByRole("button", { name: /^並/ }).click();
