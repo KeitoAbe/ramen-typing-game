@@ -64,6 +64,7 @@ pnpm build      # 本番ビルド
 | 名前 | 用途 | 未設定のとき |
 |------|------|-------------|
 | `NEXT_PUBLIC_CONTACT_FORM_URL` | お問い合わせページ（`/contact`）から新しいタブで開く Google フォームの URL | リンクを出さずに「準備中」と出す |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google アナリティクス 4 の測定 ID（`G-XXXXXXXXXX`）。すべてのページの表示と、プレイの開始・終了（`play_start` / `play_end`、コース名つき）を計測する | GA4 のタグを一切読み込まない |
 
 `NEXT_PUBLIC_` の変数は**ビルド時に値が埋め込まれる**。ホスティング（AWS Amplify など）のコンソールで設定し、変えたら再ビルドする。
 ローカルでは `.env.local` に書く。
