@@ -21,6 +21,7 @@ async function startPlaying(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("button", { name: "いただきます" }).click();
+  await page.keyboard.press("Enter");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
 }
 
@@ -93,7 +94,12 @@ test("猫は画面ごとに数え直さないよう、トッピングの画面�
   ).toBeVisible();
   await expect(page.locator(CAT)).toHaveCount(0);
 
+  // 始めるのを待つ画面にも出さない
   await page.getByRole("button", { name: "いただきます" }).click();
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+  await expect(page.locator(CAT)).toHaveCount(0);
+
+  await page.keyboard.press("Enter");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
   await expect(page.locator(CAT)).toHaveCount(1);
 });
@@ -107,6 +113,7 @@ test("動きを抑える設定では、屋台の背景を動かさず、猫も�
 
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("button", { name: "いただきます" }).click();
+  await page.keyboard.press("Enter");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
   expect(await sceneAnimationNames(page)).toEqual([]);
   await expect(page.locator(CAT)).toBeHidden();

@@ -88,9 +88,21 @@ type PlayingState = {
   isImeNoticeShown: boolean;
 };
 
+/** 「いただきます」を押して、スペースか Enter で始めるのを待っている。時間は進まず、丼も出ていない */
+type WaitingState = {
+  status: "waiting";
+  course: Course;
+  toppings: readonly ToppingId[];
+  /** 始まったら出す順に並べた注文 */
+  orders: readonly Order[];
+  /** いま「半角英数に切り替えて」の案内を出しているか（IME がオンのまま押したら出す） */
+  isImeNoticeShown: boolean;
+};
+
 export type RamenGameState =
   /** 券売機の前で食券を選んでいる */
   | { status: "ready" }
+  | WaitingState
   | PlayingState
   | {
       status: "closed";
@@ -117,6 +129,15 @@ export type RamenGameAction =
       orders: readonly Order[];
       now: number;
     } & BowlRoll)
+  /** 「いただきます」を押した。始めるのを待つ状態にする（orders の並べ方は start と同じ） */
+  | {
+      type: "prepare";
+      course: Course;
+      toppings?: readonly ToppingId[];
+      orders: readonly Order[];
+    }
+  /** 始めるのを待っているところで、スペースか Enter が押された。その時刻から始める */
+  | ({ type: "open"; now: number } & BowlRoll)
   | ({ type: "key"; key: string; now: number } & BowlRoll)
   | ({ type: "tick"; now: number } & BowlRoll)
   /** 日本語入力（IME）がオンのままキーが押された。ミスには数えない */
@@ -278,49 +299,81 @@ function penalizeMiss(state: PlayingState, now: number): RamenGameState {
   };
 }
 
+/** now に開店して最初の丼を出す。注文が 1 つもなければ開店しない */
+function open(
+  course: Course,
+  toppings: readonly ToppingId[],
+  orders: readonly Order[],
+  now: number,
+  roll: number | undefined,
+): PlayingState | null {
+  const [first] = orders;
+  if (!first) return null;
+  const endsAt = now + course.timeLimitMs;
+  const orderSoggyLimitMs = servedSoggyLimitMs(first, toppings, endsAt, now);
+  return {
+    status: "playing",
+    course,
+    toppings,
+    startedAt: now,
+    orders,
+    orderIndex: 0,
+    orderServedAt: now,
+    orderSoggyLimitMs,
+    orderRemainingMs: orderSoggyLimitMs,
+    isSpecialBowl: isSpecialRoll(roll),
+    typing: createTypingState(first.reading),
+    stats: emptyPlayStats,
+    endsAt,
+    remainingMs: course.timeLimitMs,
+    isClosingRush: isClosingRush(course.timeLimitMs),
+    kaedamaGauge: 0,
+    kaedamaNoticeUntil: now,
+    isKaedamaNoticeShown: false,
+    streak: 0,
+    isCleanBowl: true,
+    brokenStreak: 0,
+    streakBrokenNoticeUntil: now,
+    isStreakBrokenNoticeShown: false,
+    isImeNoticeShown: false,
+  };
+}
+
 export function ramenGameReducer(
   state: RamenGameState,
   action: RamenGameAction,
 ): RamenGameState {
   switch (action.type) {
-    case "start": {
-      const [first] = action.orders;
-      if (!first) return state;
-      const toppings = action.toppings ?? [];
-      const endsAt = action.now + action.course.timeLimitMs;
-      const orderSoggyLimitMs = servedSoggyLimitMs(
-        first,
-        toppings,
-        endsAt,
-        action.now,
+    case "start":
+      return (
+        open(
+          action.course,
+          action.toppings ?? [],
+          action.orders,
+          action.now,
+          action.roll,
+        ) ?? state
       );
+    case "prepare":
+      if (action.orders.length === 0) return state;
       return {
-        status: "playing",
+        status: "waiting",
         course: action.course,
-        toppings,
-        startedAt: action.now,
+        toppings: action.toppings ?? [],
         orders: action.orders,
-        orderIndex: 0,
-        orderServedAt: action.now,
-        orderSoggyLimitMs,
-        orderRemainingMs: orderSoggyLimitMs,
-        isSpecialBowl: isSpecialRoll(action.roll),
-        typing: createTypingState(first.reading),
-        stats: emptyPlayStats,
-        endsAt,
-        remainingMs: action.course.timeLimitMs,
-        isClosingRush: isClosingRush(action.course.timeLimitMs),
-        kaedamaGauge: 0,
-        kaedamaNoticeUntil: action.now,
-        isKaedamaNoticeShown: false,
-        streak: 0,
-        isCleanBowl: true,
-        brokenStreak: 0,
-        streakBrokenNoticeUntil: action.now,
-        isStreakBrokenNoticeShown: false,
         isImeNoticeShown: false,
       };
-    }
+    case "open":
+      if (state.status !== "waiting") return state;
+      return (
+        open(
+          state.course,
+          state.toppings,
+          state.orders,
+          action.now,
+          action.roll,
+        ) ?? state
+      );
     case "reset":
       return initialRamenGameState;
     case "tick": {
@@ -341,7 +394,9 @@ export function ramenGameReducer(
     }
     case "ime":
       // 案内を出すだけで、時間の進みや打った数には触れない
-      if (state.status !== "playing") return state;
+      if (state.status !== "playing" && state.status !== "waiting") {
+        return state;
+      }
       return { ...state, isImeNoticeShown: true };
     case "key": {
       if (state.status !== "playing") return state;

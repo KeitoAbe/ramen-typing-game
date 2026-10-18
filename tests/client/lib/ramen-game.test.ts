@@ -544,6 +544,91 @@ describe("ramenGameReducer", () => {
     });
   });
 
+  describe("始めるのを待つ", () => {
+    function prepare(toppings: readonly ToppingId[] = []): RamenGameState {
+      return ramenGameReducer(initialRamenGameState, {
+        type: "prepare",
+        course,
+        toppings,
+        orders,
+      });
+    }
+
+    function waiting(state: RamenGameState) {
+      if (state.status !== "waiting") throw new Error("waiting のはず");
+      return state;
+    }
+
+    it("「いただきます」を押すと、まだ始まらずに待つ。選んだコースとトッピングを持っている", () => {
+      const state = waiting(prepare(["gekikara"]));
+      expect(state.course).toBe(course);
+      expect(state.toppings).toEqual(["gekikara"]);
+      expect(state.orders).toBe(orders);
+      expect(state.isImeNoticeShown).toBe(false);
+    });
+
+    it("注文が 1 つもなければ待たない", () => {
+      expect(
+        ramenGameReducer(initialRamenGameState, {
+          type: "prepare",
+          course,
+          orders: [],
+        }),
+      ).toBe(initialRamenGameState);
+    });
+
+    it("待っている間は、時間が過ぎても、キーを押しても何も変わらない", () => {
+      const state = prepare();
+      expect(ramenGameReducer(state, { type: "tick", now: 120_000 })).toBe(
+        state,
+      );
+      expect(typeKeys(state, "shi x", 1_000)).toBe(state);
+    });
+
+    it("始めると、その時刻に最初の丼が出て、残り時間はコースの制限時間から減り始める", () => {
+      const opened = ramenGameReducer(prepare(["ninniku"]), {
+        type: "open",
+        now: 30_000,
+        roll: 0.5,
+      });
+      if (opened.status !== "playing") throw new Error("playing のはず");
+      expect(opened.startedAt).toBe(30_000);
+      expect(opened.orderServedAt).toBe(30_000);
+      expect(opened.orders[opened.orderIndex].id).toBe("a");
+      expect(opened.toppings).toEqual(["ninniku"]);
+      expect(opened.remainingMs).toBe(course.timeLimitMs);
+      expect(opened.stats).toEqual(emptyPlayStats);
+      expect(opened.typing.position).toBe(0);
+      expect(opened.typing.committed + opened.typing.buffer).toBe("");
+
+      const ticked = ramenGameReducer(opened, { type: "tick", now: 31_000 });
+      if (ticked.status !== "playing") throw new Error("playing のはず");
+      expect(ticked.remainingMs).toBe(course.timeLimitMs - 1_000);
+    });
+
+    it("待っているとき以外は、始める操作で何も変わらない", () => {
+      expect(
+        ramenGameReducer(initialRamenGameState, { type: "open", now: 0 }),
+      ).toBe(initialRamenGameState);
+      const playing = start();
+      expect(ramenGameReducer(playing, { type: "open", now: 1_000 })).toBe(
+        playing,
+      );
+    });
+
+    it("IME がオンのまま押すと案内が出て、始まりはしない", () => {
+      const state = waiting(ramenGameReducer(prepare(), { type: "ime" }));
+      expect(state.isImeNoticeShown).toBe(true);
+    });
+
+    it("始まったら IME の案内は消す", () => {
+      const ime = ramenGameReducer(prepare(), { type: "ime" });
+      const opened = ramenGameReducer(ime, { type: "open", now: 0 });
+      if (opened.status !== "playing") throw new Error("playing のはず");
+      expect(opened.isImeNoticeShown).toBe(false);
+    });
+  });
+
   describe("日本語入力（IME）の案内", () => {
     it("開始したときは案内を出していない", () => {
       const state = start();

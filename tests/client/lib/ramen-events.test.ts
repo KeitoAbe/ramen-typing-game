@@ -104,6 +104,17 @@ describe("detectGameEvents", () => {
     ]);
   });
 
+  it("「いただきます」で始めるのを待つ間は何も起きず、スペースか Enter で始まったときに opened", () => {
+    const waiting = ramenGameReducer(initialRamenGameState, {
+      type: "prepare",
+      course,
+      orders,
+    });
+    expect(detectGameEvents(initialRamenGameState, waiting)).toEqual([]);
+    expect(eventsOf(waiting, { type: "ime" })).toEqual([]);
+    expect(eventsOf(waiting, { type: "open", now: 0 })).toEqual(["opened"]);
+  });
+
   it("最初の丼が特別な丼なら、opened と specialBowl", () => {
     const special = ramenGameReducer(initialRamenGameState, {
       type: "start",
