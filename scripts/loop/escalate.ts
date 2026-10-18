@@ -128,6 +128,26 @@ export function applyRunnerActions(
   return summary;
 }
 
+/** 利用上限で打ち切られた実装の Issue を、loop:wip から loop:ready に戻す */
+export function releaseInterruptedIssue(issue: number): void {
+  gh([
+    "issue",
+    "edit",
+    String(issue),
+    "--remove-label",
+    "loop:wip",
+    "--add-label",
+    "loop:ready",
+  ]);
+  gh([
+    "issue",
+    "comment",
+    String(issue),
+    "--body",
+    "🤖 実装のセッションが Claude の利用上限で途中終了し、PR を作る前に止まったので `loop:ready` に戻しました。上限の解除後に、ループが着手し直します。",
+  ]);
+}
+
 function log(message: string): void {
   console.error(`[escalate] ${message}`);
 }
