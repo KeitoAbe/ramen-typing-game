@@ -10,13 +10,13 @@ GA4 の管理画面でカスタムディメンション・カスタム指標を�
 
 | イベント名 | 送るとき | パラメータ |
 |---|---|---|
-| `play_start` | プレイを始めたとき（トッピングを選んで「いただきます」を押したとき） | `course_id`、`course_name`、`toppings` |
+| `play_start` | プレイを始めたとき（「いただきます」のあと、スペースか Enter を押して最初の丼が出たとき） | `course_id`、`course_name`、`toppings` |
 | `play_end` | 閉店したとき | `course_id`、`course_name`、`toppings`、`bill`、`balance`、`served_count`、`discarded_count`、`miss_count`、`accuracy`、`keys_per_second`、`max_streak`、`kaedama_count`、`title_id`、`is_personal_best` |
 | `replay` | 結果画面で「もう一杯」を押したとき | `course_id` |
 | `share` | 結果画面で「X で共有」を押したとき。GA4 の推奨イベントの形で送る | `method`、`content_type`、`item_id` |
 | `ime_notice_shown` | 日本語入力がオンのまま打って「半角英数に切り替えて」の案内が出たとき（1 プレイに 1 回まで） | `course_id` |
 | `touch_notice_shown` | タッチ端末で「PC のキーボードで遊んでください」の案内が出たとき（1 ページの表示に 1 回まで） | なし |
-| `ticket_abandon` | 食券を買ったあと、プレイを始めずにページを離れたとき（タブを閉じる・別のページに移る） | `course_id` |
+| `ticket_abandon` | 食券を買ったあと、プレイを始めずにページを離れたとき（タブを閉じる・別のページに移る）。「いただきます」のあと、スペースか Enter で始める前に離れたときも含む | `course_id` |
 | `sound_toggle` | 効果音のオン・オフを切り替えたとき | `enabled` |
 
 ## パラメータ

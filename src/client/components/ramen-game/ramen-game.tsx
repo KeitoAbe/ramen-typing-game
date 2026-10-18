@@ -6,6 +6,7 @@ import {
   RamenPlay,
 } from "@/client/components/ramen-game/ramen-play";
 import { RamenResult } from "@/client/components/ramen-game/ramen-result";
+import { RamenWaiting } from "@/client/components/ramen-game/ramen-waiting";
 import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { ToppingSelect } from "@/client/components/ramen-game/topping-select";
@@ -54,6 +55,7 @@ import {
 } from "@/client/lib/ramen-sound";
 import { decideTitle } from "@/client/lib/ramen-title";
 import type { ToppingId } from "@/client/lib/ramen-topping";
+import { waitingKeyAction } from "@/client/lib/ramen-waiting";
 import { prefersReducedMotion } from "@/client/lib/reduced-motion";
 import type { Order } from "@/types/order";
 
@@ -70,6 +72,7 @@ function bowlIdOf(stats: PlayStats): number {
 export function RamenGame({ orders }: Props) {
   const [state, dispatch] = useReducer(ramenGameReducer, initialRamenGameState);
   const isPlaying = state.status === "playing";
+  const isWaiting = state.status === "waiting";
   // 食券を買ってトッピングを選んでいるあいだの食券。プレイを始めたら null に戻す
   const [ticketCourse, setTicketCourse] = useState<Course | null>(null);
   const [personalBest, setPersonalBest] = useState<PersonalBestRecord | null>(
@@ -146,8 +149,12 @@ export function RamenGame({ orders }: Props) {
     previousStateRef.current = state;
     if (previous === state) return;
     const events = detectGameEvents(previous, state);
+    // スペースか Enter で実際にプレイが始まったときに、1 回だけ計測する
+    if (previous.status !== "playing" && state.status === "playing") {
+      trackPlayStart(state.course, state.toppings);
+    }
     if (
-      state.status === "playing" &&
+      (state.status === "playing" || state.status === "waiting") &&
       state.isImeNoticeShown &&
       !isImeNoticeTrackedRef.current
     ) {
@@ -257,19 +264,38 @@ export function RamenGame({ orders }: Props) {
     };
   }, [isPlaying]);
 
-  const start = (course: Course, toppings: readonly ToppingId[]) => {
-    setTicketCourse(null);
-    // 食券を使ったので、このあとページを離れても途中でやめたとはみなさない
-    ticketCourseRef.current = null;
+  // 始めるのを待っているあいだは、スペースか Enter でだけ始める。ほかのキーはミスにもしない
+  useEffect(() => {
+    if (!isWaiting) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Alt+← で戻るなど、ブラウザのショートカットは止めない（プレイ中と同じ）
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isPageScrollKey(event.key)) event.preventDefault();
+      const action = waitingKeyAction(event);
+      if (action === "ime") {
+        dispatch({ type: "ime" });
+        return;
+      }
+      if (action !== "open") return;
+      // 始めるために押した Enter で、フォーカスのあるボタンまで押されないようにする
+      event.preventDefault();
+      setTicketCourse(null);
+      // 食券を使ってプレイを始めたので、このあとページを離れても途中でやめたとはみなさない
+      ticketCourseRef.current = null;
+      dispatch({ type: "open", now: Date.now(), roll: Math.random() });
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isWaiting]);
+
+  // 食券はプレイが始まるまで持たせておき、始めるのを待つ間にページを離れても、やめたとみなす
+  const prepare = (course: Course, toppings: readonly ToppingId[]) => {
     isImeNoticeTrackedRef.current = false;
-    trackPlayStart(course, toppings);
     dispatch({
-      type: "start",
+      type: "prepare",
       course,
       toppings,
       orders: shuffleOrders(ordersForCourse(orders, course)),
-      now: Date.now(),
-      roll: Math.random(),
     });
   };
 
@@ -277,9 +303,13 @@ export function RamenGame({ orders }: Props) {
     return onStage(
       <ToppingSelect
         course={ticketCourse}
-        onStart={(toppings) => start(ticketCourse, toppings)}
+        onStart={(toppings) => prepare(ticketCourse, toppings)}
       />,
     );
+  }
+
+  if (state.status === "waiting") {
+    return onStage(<RamenWaiting state={state} />);
   }
 
   if (state.status === "ready") {

@@ -32,6 +32,7 @@ test("券売機・トッピング・プレイ中・結果画面で、押せる�
     "pointer",
   );
   await page.getByRole("button", { name: "いただきます" }).click();
+  await page.keyboard.press("Enter");
 
   // プレイ中: 注文の札（押せない表示）は指の形にしない
   const remaining = page.getByTestId("remaining-romaji");

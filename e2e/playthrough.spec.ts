@@ -29,9 +29,29 @@ test("券売機から並を遊び、結果画面を見て券売機に戻れる",
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("button", { name: "いただきます" }).click();
 
+  // 「いただきます」のあとは、スペースか Enter を押すまで始まらない。丼も時計もまだ出ない
   const remaining = page.getByTestId("remaining-romaji");
+  const clock = page.getByText("残り時間", { exact: true }).locator("..");
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+  await expect(page.getByText("並（60 秒）・トッピングなし")).toBeVisible();
+  await expect(remaining).toHaveCount(0);
+
+  // 待っている間に時間が過ぎても、ほかのキーを押しても始まらない
+  await page.clock.fastForward(10_000);
+  await page.keyboard.press("a");
+  await page.keyboard.press("Escape");
+  await expect(remaining).toHaveCount(0);
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+
+  // スペースで始まると、最初の丼が出て、残り時間は制限時間から減り始める。ページはスクロールしない
+  const scrollY = await page.evaluate(() => window.scrollY);
+  await page.keyboard.press(" ");
   const servedCount = page.getByText("平らげた杯数").locator("..");
   await expect(remaining).not.toBeEmpty();
+  await expect(clock).toHaveText(/残り時間\s*60\s*秒/);
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  await page.clock.fastForward(1_000);
+  await expect(clock).toHaveText(/残り時間\s*59\s*秒/);
   await expect(servedCount).toHaveText(/平らげた杯数\s*0\s*杯/);
 
   // 打ち間違えたら、注文は進まない
@@ -50,6 +70,7 @@ test("券売機から並を遊び、結果画面を見て券売機に戻れる",
   // 結果発表の演出は Space で飛ばして、最終の表示を確かめる（演出は result-reveal.spec.ts で確かめる）
   await page.keyboard.press("Space");
   await expect(receiptValue(page, "平らげた杯数")).toHaveText("1 杯");
+  // 始めるために押したスペースや、待っている間に押したキーはミスに数えない
   await expect(receiptValue(page, "ミスタイプ数")).toHaveText("1 回");
   await expect(receiptValue(page, "お会計")).toHaveText(/^[\d,]+ 円$/);
 
@@ -58,4 +79,27 @@ test("券売機から並を遊び、結果画面を見て券売機に戻れる",
   await expect(page.getByRole("button", { name: /^並/ })).toBeVisible();
 
   expect(errors).toEqual([]);
+});
+
+test("開始待ちでは、日本語入力がオンのまま押すと案内が出て始まらず、Enter で始まる", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^並/ }).click();
+  await page.getByRole("checkbox", { name: /激辛/ }).check();
+  await page.getByRole("button", { name: "いただきます" }).click();
+  await expect(page.getByText("並（60 秒）・トッピング: 激辛")).toBeVisible();
+
+  // IME がオンのまま押されたスペース（keyCode 229）では始まらない
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: " ", keyCode: 229 }),
+    );
+  });
+  await expect(page.getByText("日本語入力がオンになっています")).toBeVisible();
+  const remaining = page.getByTestId("remaining-romaji");
+  await expect(remaining).toHaveCount(0);
+
+  await page.keyboard.press("Enter");
+  await expect(remaining).not.toBeEmpty();
 });
