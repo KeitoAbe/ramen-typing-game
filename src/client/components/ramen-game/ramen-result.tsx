@@ -5,14 +5,9 @@ import {
   courseBalance,
   formatBalance,
 } from "@/client/lib/ramen-course";
-import {
-  type DailyBestRecord,
-  formatDailyDate,
-} from "@/client/lib/ramen-daily";
 import type { PersonalBestRecord } from "@/client/lib/ramen-personal-best";
 import { type PlayResult, topMissedKeys } from "@/client/lib/ramen-result";
 import { buildShareText, buildXShareUrl } from "@/client/lib/ramen-share";
-import type { Stamp } from "@/client/lib/ramen-stamp-card";
 import { decideTitle, type RamenTitle } from "@/client/lib/ramen-title";
 import { type ToppingId, toppingNames } from "@/client/lib/ramen-topping";
 
@@ -26,10 +21,6 @@ type Props = {
   result: PlayResult;
   /** 自己ベストとの比較。記録が済むまでは null */
   personalBest: PersonalBestRecord | null;
-  /** 今日のお題の、その日・そのコースの最高記録との比較。いつものプレイと、記録が済むまでは null */
-  dailyBest: DailyBestRecord | null;
-  /** このプレイで新しく押したスタンプカードの判子。記録が済むまでは空 */
-  newStamps: readonly Stamp[];
   onReplay: () => void;
 };
 
@@ -53,16 +44,13 @@ function balanceColor(balance: number): string {
 
 /**
  * 閉店後の結果画面。夜の屋台を背にお会計の伝票を出し、称号を判子で押す。
- * 右の店主がひとこと添え、自己ベストを更新したら伝票の左に「新記録」ののぼりを立てる。
- * スタンプカードに新しく判子を押したら、吹き出しの下に並べる
+ * 右の店主がひとこと添え、自己ベストを更新したら伝票の左に「新記録」ののぼりを立てる
  */
 export function RamenResult({
   course,
   toppings,
   result,
   personalBest,
-  dailyBest,
-  newStamps,
   onReplay,
 }: Props) {
   const names = toppingNames(toppings);
@@ -132,50 +120,27 @@ export function RamenResult({
           ))}
         </dl>
 
-        {/* 振り返り: 打ち間違いの多いキーと、平らげた丼。丼の一覧は伝票の残りの高さに収め、あふれたら中でスクロールする */}
-        <div className="mt-[0.8cqw] flex min-h-0 flex-1 flex-col text-[1.2cqw]">
-          <div className="flex items-center gap-x-[1cqw] whitespace-nowrap">
-            <h3 className="font-bold">打ち間違いの多いキー</h3>
-            {missedKeys.length === 0 ? (
-              <p className="font-bold text-yatai-lantern">打ち間違いなし</p>
-            ) : (
-              <ol className="flex gap-x-[1cqw]">
-                {missedKeys.map(({ key, count }) => (
-                  <li key={key} className="flex items-center gap-x-[0.3cqw]">
-                    <kbd className="min-w-[1.8cqw] rounded-[0.3cqw] border-[0.12cqw] border-yatai-sumi bg-white/60 px-[0.3cqw] text-center font-display leading-snug">
-                      {key.toUpperCase()}
-                    </kbd>
-                    <span>{count} 回</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-
-          <h3 className="mt-[0.5cqw] font-bold">平らげた丼（出た順）</h3>
-          {result.servedBowls.length === 0 ? (
-            <p>平らげた丼はありません</p>
+        {/* 振り返り: 打ち間違いの多いキー */}
+        <div className="mt-[0.8cqw] flex items-center gap-x-[1cqw] text-[1.2cqw] whitespace-nowrap">
+          <h3 className="font-bold">打ち間違いの多いキー</h3>
+          {missedKeys.length === 0 ? (
+            <p className="font-bold text-yatai-lantern">打ち間違いなし</p>
           ) : (
-            <ol className="min-h-0 flex-1 overflow-y-auto border-y-[0.12cqw] border-dashed border-yatai-sumi">
-              {result.servedBowls.map((bowl, index) => (
-                // 同じ注文が二度出ることもあるので、平らげた順番で見分ける
-                <li
-                  // biome-ignore lint/suspicious/noArrayIndexKey: 一覧は平らげた順に足すだけで、並び替えや削除はない
-                  key={index}
-                  className="grid grid-cols-[2.4cqw_1fr_auto] gap-x-[0.6cqw] py-[0.15cqw] whitespace-nowrap"
-                >
-                  <span className="text-right font-display">{index + 1}</span>
-                  <span className="truncate">{bowl.order.text}</span>
-                  <span className="text-right font-display">
-                    {bowl.price.toLocaleString("ja-JP")} 円
-                  </span>
+            <ol className="flex gap-x-[1cqw]">
+              {missedKeys.map(({ key, count }) => (
+                <li key={key} className="flex items-center gap-x-[0.3cqw]">
+                  <kbd className="min-w-[1.8cqw] rounded-[0.3cqw] border-[0.12cqw] border-yatai-sumi bg-white/60 px-[0.3cqw] text-center font-display leading-snug">
+                    {key.toUpperCase()}
+                  </kbd>
+                  <span>{count} 回</span>
                 </li>
               ))}
             </ol>
           )}
         </div>
 
-        <dl className="mt-[0.8cqw] grid grid-cols-[auto_1fr] items-baseline gap-x-[1cqw] gap-y-[0.2cqw]">
+        {/* お会計から下は伝票の下端に寄せ、余った高さは成績とお会計のあいだにあける */}
+        <dl className="mt-auto grid grid-cols-[auto_1fr] items-baseline gap-x-[1cqw] gap-y-[0.2cqw] pt-[0.8cqw]">
           <dt className="text-[1.4cqw] font-bold">食券</dt>
           <dd className="text-right text-[1.4cqw] font-bold">
             {course.name}（{course.price.toLocaleString("ja-JP")} 円）
@@ -199,7 +164,7 @@ export function RamenResult({
         {/* 記録は表示のあとに済むので、出たときに読み上げる */}
         <div
           aria-live="polite"
-          className="mt-auto border-t-[0.12cqw] border-dashed border-yatai-sumi pt-[0.5cqw] text-right text-[1.3cqw] font-bold"
+          className="mt-[0.8cqw] border-t-[0.12cqw] border-dashed border-yatai-sumi pt-[0.5cqw] text-right text-[1.3cqw] font-bold"
         >
           {personalBest?.isUpdated && (
             // 伝票の左に立てるのぼり。伝票（位置の基準）からはみ出して置く
@@ -209,20 +174,6 @@ export function RamenResult({
               </span>
               <span className="text-[1.3cqw] leading-tight [writing-mode:vertical-rl]">
                 自己ベスト更新！
-              </span>
-            </p>
-          )}
-          {dailyBest && (
-            <p>
-              {dailyBest.isUpdated && (
-                <span className="mr-[0.6cqw] rounded-[0.3cqw] bg-yatai-lantern px-[0.4cqw] text-yatai-kinari">
-                  最高記録を更新！
-                </span>
-              )}
-              今日のお題（{formatDailyDate(dailyBest.dateKey)}・{course.name}
-              ）の最高記録:{" "}
-              <span className={balanceColor(dailyBest.best)}>
-                {formatBalance(dailyBest.best)}
               </span>
             </p>
           )}
@@ -247,30 +198,6 @@ export function RamenResult({
           aria-hidden="true"
           className="absolute -bottom-[1.3cqw] left-[38%] size-[2cqw] rotate-45 border-r-[0.3cqw] border-b-[0.3cqw] border-yatai-sumi bg-yatai-kinari"
         />
-      </div>
-
-      {/* 新しく押した判子: 吹き出しの下・もう一杯の札の上に置く紙片。
-          吹き出しの下端は 390px 幅の舞台でも 53% より上、札の上端は 81% なので、そのあいだに収める。
-          記録は表示のあとに済むので、出たときに読み上げる */}
-      <div aria-live="polite" className="absolute top-[57%] left-[61%] w-[35%]">
-        {newStamps.length > 0 && (
-          <div className="rounded-[0.3cqw] border-[0.25cqw] border-yatai-sumi bg-yatai-kinari px-[1cqw] py-[0.6cqw] text-yatai-sumi shadow-[0.3cqw_0.3cqw_0_rgb(0_0_0/0.35)]">
-            <p className="text-[1.2cqw] leading-tight font-bold">
-              スタンプカードに判子を押しました
-            </p>
-            {/* 判子が 9 個すべて並んでも 3 行に収まり、もう一杯の札に届かない大きさにしている */}
-            <ul className="mt-[0.4cqw] flex flex-wrap gap-[0.4cqw]">
-              {newStamps.map((stamp) => (
-                <li
-                  key={stamp.id}
-                  className="rotate-[-4deg] rounded-[0.5cqw] border-[0.25cqw] border-double border-yatai-lantern px-[0.5cqw] font-display text-[1.1cqw] leading-[1.2] whitespace-nowrap text-yatai-lantern opacity-90 mix-blend-multiply motion-safe:animate-stamp-press"
-                >
-                  {stamp.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
       {/* もう一杯と X で共有: カウンターに並べて置いた木札のボタン。吹き出しと同じ幅に収める */}

@@ -19,14 +19,6 @@ import {
   courseBalance,
   ordersForCourse,
 } from "@/client/lib/ramen-course";
-import {
-  type DailyBestRecord,
-  dailyBowlRoll,
-  dailyDateKey,
-  dailyOrders,
-  type PlayMode,
-  recordDailyBest,
-} from "@/client/lib/ramen-daily";
 import { detectGameEvents } from "@/client/lib/ramen-events";
 import {
   initialRamenGameState,
@@ -49,12 +41,6 @@ import {
   loadSoundEnabled,
   saveSoundEnabled,
 } from "@/client/lib/ramen-sound";
-import {
-  emptyStampCard,
-  loadStampCard,
-  recordStampCard,
-  type Stamp,
-} from "@/client/lib/ramen-stamp-card";
 import type { ToppingId } from "@/client/lib/ramen-topping";
 import type { Order } from "@/types/order";
 
@@ -76,14 +62,6 @@ export function RamenGame({ orders }: Props) {
   const [personalBest, setPersonalBest] = useState<PersonalBestRecord | null>(
     null,
   );
-  // 券売機で選んだ遊び方。もう一杯で券売機に戻っても選んだままにする
-  const [playMode, setPlayMode] = useState<PlayMode>("regular");
-  // 今日のお題で遊んでいるときの、お題の日付。0 時をまたいで閉店しても、始めた日の記録にする
-  const [dailyDate, setDailyDate] = useState<string | null>(null);
-  const [dailyBest, setDailyBest] = useState<DailyBestRecord | null>(null);
-  // スタンプカードは localStorage にあるので、最初の描画では空とし、マウント後に読み直す
-  const [stampCard, setStampCard] = useState(emptyStampCard);
-  const [newStamps, setNewStamps] = useState<readonly Stamp[]>([]);
   // 同じプレイを二度記録しないための目印（StrictMode で effect が二度走っても更新判定を崩さない）
   const recordedStatsRef = useRef<PlayStats | null>(null);
   // 音の設定は localStorage にあるので、最初の描画ではオンとしておき、マウント後に読み直す
@@ -97,7 +75,6 @@ export function RamenGame({ orders }: Props) {
 
   useEffect(() => {
     setIsSoundEnabled(loadSoundEnabled(browserStorage()));
-    setStampCard(loadStampCard(browserStorage()));
     return () => window.clearTimeout(moodTimerRef.current);
   }, []);
 
@@ -152,30 +129,18 @@ export function RamenGame({ orders }: Props) {
     </GameStage>
   );
 
-  // 閉店したら、プレイを終えたことを計測し、そのコースの自己ベストと比べて保存し、スタンプカードに判子を押す。
+  // 閉店したら、プレイを終えたことを計測し、そのコースの自己ベストと比べて保存する。
   // localStorage を使うので effect で行う
   useEffect(() => {
     if (state.status !== "closed") return;
     if (recordedStatsRef.current === state.stats) return;
     recordedStatsRef.current = state.stats;
     trackPlayEnd(state.course);
-    const storage = browserStorage();
     const balance = courseBalance(state.stats.bill, state.course);
-    setPersonalBest(recordPersonalBest(storage, state.course.id, balance));
-    if (dailyDate !== null) {
-      setDailyBest(
-        recordDailyBest(storage, dailyDate, state.course.id, balance),
-      );
-    }
-    const stampRecord = recordStampCard(
-      storage,
-      stampCard,
-      state.course,
-      summarizePlay(state.stats, state.playedMs),
+    setPersonalBest(
+      recordPersonalBest(browserStorage(), state.course.id, balance),
     );
-    setStampCard(stampRecord.card);
-    setNewStamps(stampRecord.newStamps);
-  }, [state, stampCard, dailyDate]);
+  }, [state]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -210,29 +175,12 @@ export function RamenGame({ orders }: Props) {
   const start = (course: Course, toppings: readonly ToppingId[]) => {
     setTicketCourse(null);
     trackPlayStart(course);
-    const now = Date.now();
-    const courseOrders = ordersForCourse(orders, course);
-    if (playMode === "daily") {
-      // 今日のお題は、注文の順番も特別な丼が出る杯も、日付とコースで決める
-      const dateKey = dailyDateKey(now);
-      setDailyDate(dateKey);
-      dispatch({
-        type: "start",
-        course,
-        toppings,
-        orders: dailyOrders(courseOrders, dateKey, course.id),
-        now,
-        rollForBowl: dailyBowlRoll(dateKey, course.id),
-      });
-      return;
-    }
-    setDailyDate(null);
     dispatch({
       type: "start",
       course,
       toppings,
-      orders: shuffleOrders(courseOrders),
-      now,
+      orders: shuffleOrders(ordersForCourse(orders, course)),
+      now: Date.now(),
       roll: Math.random(),
     });
   };
@@ -249,13 +197,7 @@ export function RamenGame({ orders }: Props) {
   if (state.status === "ready") {
     // 券売機の画面は看板も絵の中に置くので、舞台いっぱいに描く
     return onStage(
-      <TicketMachine
-        courses={COURSES}
-        playMode={playMode}
-        onPlayModeChange={setPlayMode}
-        onSelect={setTicketCourse}
-        stampCard={stampCard}
-      />,
+      <TicketMachine courses={COURSES} onSelect={setTicketCourse} />,
     );
   }
 
@@ -267,12 +209,8 @@ export function RamenGame({ orders }: Props) {
         toppings={state.toppings}
         result={summarizePlay(state.stats, state.playedMs)}
         personalBest={personalBest}
-        dailyBest={dailyBest}
-        newStamps={newStamps}
         onReplay={() => {
           setPersonalBest(null);
-          setDailyBest(null);
-          setNewStamps([]);
           // 入力のないプレイは毎回同じ emptyPlayStats で閉店するので、目印も戻しておく
           recordedStatsRef.current = null;
           dispatch({ type: "reset" });

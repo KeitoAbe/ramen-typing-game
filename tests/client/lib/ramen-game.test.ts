@@ -165,27 +165,6 @@ describe("ramenGameReducer", () => {
     expect(late.stats.missCount).toBe(1);
   });
 
-  it("平らげた丼を、平らげた順に実際の値段つきで記録する", () => {
-    const first = typeKeys(start(), "shio", 1_000);
-    const slowMs = soggyLimitMs(orders[1]) - 1;
-    const second = typeKeys(first, "miso", 1_000 + slowMs);
-    if (second.status !== "playing") throw new Error("playing のはず");
-    expect(second.stats.servedBowls).toEqual([
-      { order: orders[0], price: bowlPrice(orders[0], 1_000) },
-      { order: orders[1], price: bowlPrice(orders[1], slowMs) },
-    ]);
-  });
-
-  it("のびきって下げられた丼は、平らげた丼に記録しない", () => {
-    const halfway = typeKeys(start(), "shi");
-    const discarded = ramenGameReducer(halfway, {
-      type: "tick",
-      now: soggyLimitMs(orders[0]),
-    });
-    if (discarded.status !== "playing") throw new Error("playing のはず");
-    expect(discarded.stats.servedBowls).toEqual([]);
-  });
-
   it("打ち間違えたときは、画面に出ている残りのローマ字の先頭のキーを数える", () => {
     // 「し」の 1 打目は s、「shi」で打ち始めたあとの 2 打目は h が画面に出ている
     const state = typeKeys(start(), "xsxxhio");
@@ -464,48 +443,6 @@ describe("ramenGameReducer", () => {
       const typed = typeKeysWith(ticking, "s", 100, NORMAL_ROLL);
       if (typed.status !== "playing") throw new Error("playing のはず");
       expect(typed.isSpecialBowl).toBe(true);
-    });
-
-    describe("何杯目かで乱数を決める（今日のお題）", () => {
-      /** 0 杯目と 2 杯目だけ特別な丼にする */
-      const rollForBowl = (bowlIndex: number) =>
-        bowlIndex % 2 === 0 ? SPECIAL_ROLL : NORMAL_ROLL;
-
-      function startDaily(): RamenGameState {
-        return ramenGameReducer(initialRamenGameState, {
-          type: "start",
-          course,
-          orders,
-          now: 0,
-          roll: NORMAL_ROLL,
-          rollForBowl,
-        });
-      }
-
-      it("action の乱数ではなく、何杯目かで特別な丼かが決まる", () => {
-        const first = startDaily();
-        if (first.status !== "playing") throw new Error("playing のはず");
-        expect(first.isSpecialBowl).toBe(true);
-
-        const second = typeKeysWith(first, "shio", 0, SPECIAL_ROLL);
-        if (second.status !== "playing") throw new Error("playing のはず");
-        expect(second.isSpecialBowl).toBe(false);
-
-        const third = typeKeysWith(second, "miso", 0, NORMAL_ROLL);
-        if (third.status !== "playing") throw new Error("playing のはず");
-        expect(third.isSpecialBowl).toBe(true);
-      });
-
-      it("のびきって下げられた丼も 1 杯と数える", () => {
-        const discarded = ramenGameReducer(startDaily(), {
-          type: "tick",
-          now: soggyLimitMs(orders[0]),
-          roll: SPECIAL_ROLL,
-        });
-        if (discarded.status !== "playing") throw new Error("playing のはず");
-        expect(discarded.stats.discardedCount).toBe(1);
-        expect(discarded.isSpecialBowl).toBe(false);
-      });
     });
   });
 
