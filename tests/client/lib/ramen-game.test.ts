@@ -1,4 +1,9 @@
 import { bowlPrice, roundPrice, soggyLimitMs } from "@/client/lib/ramen-bowl";
+import {
+  CLOSING_RUSH_PRICE_RATE,
+  CLOSING_RUSH_SOGGY_RATE,
+  CLOSING_RUSH_THRESHOLD_MS,
+} from "@/client/lib/ramen-closing-rush";
 import type { Course } from "@/client/lib/ramen-course";
 import {
   initialRamenGameState,
@@ -591,6 +596,122 @@ describe("ramenGameReducer", () => {
       expect(ramenGameReducer(initialRamenGameState, { type: "ime" })).toBe(
         initialRamenGameState,
       );
+    });
+  });
+
+  describe("閉店間際", () => {
+    function playing(state: RamenGameState) {
+      if (state.status !== "playing") throw new Error("playing のはず");
+      return state;
+    }
+
+    function startCourse(timeLimitMs: number, roll?: number): RamenGameState {
+      return ramenGameReducer(initialRamenGameState, {
+        type: "start",
+        course: { ...course, timeLimitMs },
+        orders,
+        now: 0,
+        roll,
+      });
+    }
+
+    /** 閉店間際に入ってから出た丼の、のびきるまでの時間 */
+    function rushLimitMs(order: Order) {
+      return soggyLimitMs(order) * CLOSING_RUSH_SOGGY_RATE;
+    }
+
+    it("残り時間が 15 秒以下になると閉店間際になる", () => {
+      const state = start();
+      expect(playing(state).isClosingRush).toBe(false);
+      const before = ramenGameReducer(state, {
+        type: "tick",
+        now: course.timeLimitMs - CLOSING_RUSH_THRESHOLD_MS - 1,
+      });
+      expect(playing(before).isClosingRush).toBe(false);
+      const after = ramenGameReducer(before, {
+        type: "tick",
+        now: course.timeLimitMs - CLOSING_RUSH_THRESHOLD_MS,
+      });
+      expect(playing(after).isClosingRush).toBe(true);
+    });
+
+    it("替え玉で残り時間が 15 秒より長く戻ったら、通常に戻る", () => {
+      // 残り 15 秒で閉店間際に入り、替え玉で 2 秒延びて残り 17 秒になる
+      const rush = playing(
+        ramenGameReducer(startCourse(20_000), { type: "tick", now: 5_000 }),
+      );
+      expect(rush.isClosingRush).toBe(true);
+      const keys = "shiomiso".repeat(4).slice(0, KAEDAMA_GAUGE_MAX);
+      const refilled = playing(typeKeys(rush, keys, 5_000));
+      expect(refilled.stats.kaedamaCount).toBe(1);
+      expect(refilled.remainingMs).toBe(15_000 + KAEDAMA_EXTENSION_MS);
+      expect(refilled.isClosingRush).toBe(false);
+    });
+
+    it("閉店間際に平らげた丼の値段は ×1.5 になる", () => {
+      const elapsedMs = 2_000;
+      const normal = playing(typeKeys(start(), "shio", elapsedMs));
+      const rush = playing(
+        typeKeys(startCourse(CLOSING_RUSH_THRESHOLD_MS), "shio", elapsedMs),
+      );
+      expect(normal.stats.bill).toBe(bowlPrice(orders[0], elapsedMs));
+      expect(rush.stats.bill).toBe(
+        roundPrice(
+          bowlPrice(orders[0], elapsedMs, rushLimitMs(orders[0])) *
+            CLOSING_RUSH_PRICE_RATE,
+        ),
+      );
+    });
+
+    it("特別な丼・連続杯数の倍率と掛け合わせる", () => {
+      const freshPrice = bowlPrice(orders[0], 0);
+      // 2 杯平らげ、2 杯目を平らげたキーの乱数で 3 杯目を特別な丼にする
+      const twoServed = typeKeys(
+        startCourse(CLOSING_RUSH_THRESHOLD_MS),
+        "shiomis",
+      );
+      const special = playing(
+        ramenGameReducer(twoServed, { type: "key", key: "o", now: 0, roll: 0 }),
+      );
+      expect(special.isSpecialBowl).toBe(true);
+      const served = playing(typeKeys(special, "shio"));
+      expect(served.stats.bill - special.stats.bill).toBe(
+        roundPrice(freshPrice * 2 * 1.1 * CLOSING_RUSH_PRICE_RATE),
+      );
+    });
+
+    it("閉店間際に出た丼は、のびきるまでの時間が 0.7 倍になる", () => {
+      const state = playing(startCourse(CLOSING_RUSH_THRESHOLD_MS));
+      expect(state.orderSoggyLimitMs).toBe(rushLimitMs(orders[0]));
+      expect(state.orderRemainingMs).toBe(rushLimitMs(orders[0]));
+
+      const halfway = typeKeys(state, "shi");
+      const kept = playing(
+        ramenGameReducer(halfway, {
+          type: "tick",
+          now: rushLimitMs(orders[0]) - 1,
+        }),
+      );
+      expect(kept.stats.discardedCount).toBe(0);
+      const discarded = playing(
+        ramenGameReducer(kept, { type: "tick", now: rushLimitMs(orders[0]) }),
+      );
+      expect(discarded.stats.discardedCount).toBe(1);
+      expect(discarded.orderSoggyLimitMs).toBe(rushLimitMs(orders[1]));
+    });
+
+    it("閉店間際に入る前に出ていた丼は、のびきるまでの時間が変わらない", () => {
+      // 残り 15 秒で閉店間際に入るが、0 秒に出た丼はそのまま
+      const rush = playing(
+        ramenGameReducer(startCourse(20_000), { type: "tick", now: 5_000 }),
+      );
+      expect(rush.isClosingRush).toBe(true);
+      expect(rush.orderSoggyLimitMs).toBe(soggyLimitMs(orders[0]));
+      expect(rush.orderRemainingMs).toBe(soggyLimitMs(orders[0]) - 5_000);
+
+      // 平らげて次に出た丼から短くなる
+      const next = playing(typeKeys(rush, "shio", 5_000));
+      expect(next.orderSoggyLimitMs).toBe(rushLimitMs(orders[1]));
     });
   });
 

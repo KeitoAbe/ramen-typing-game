@@ -4,8 +4,9 @@ import {
   RamenBowl,
 } from "@/client/components/ramen-game/ramen-bowl";
 import { YataiScene } from "@/client/components/ramen-game/yatai-scene";
-import { SOGGY_START_RATIO, soggyLimitMs } from "@/client/lib/ramen-bowl";
+import { SOGGY_START_RATIO } from "@/client/lib/ramen-bowl";
 import { bowlStyleOf } from "@/client/lib/ramen-bowl-style";
+import { CLOSING_RUSH_PRICE_RATE } from "@/client/lib/ramen-closing-rush";
 import type { RamenGameState } from "@/client/lib/ramen-game";
 import { KAEDAMA_GAUGE_MAX } from "@/client/lib/ramen-kaedama";
 import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
@@ -53,7 +54,7 @@ export function RamenPlay({
   shopkeeperMood,
 }: Props) {
   const order = state.orders[state.orderIndex];
-  const freshness = state.orderRemainingMs / soggyLimitMs(order);
+  const freshness = state.orderRemainingMs / state.orderSoggyLimitMs;
   const isGettingSoggy = freshness < 1 - SOGGY_START_RATIO;
   const filledSteamCount = Math.ceil(freshness * STEAM_ICON_COUNT);
   const filledNoodleBallCount = Math.floor(
@@ -67,11 +68,23 @@ export function RamenPlay({
     <section className="absolute inset-0">
       <YataiScene shopkeeperMood={shopkeeperMood} />
 
-      {/* 残り時間: 左の柱に掛けた木札の時計 */}
+      {/* 残り時間: 左の柱に掛けた木札の時計。閉店間際は見出しを赤い札に替えて知らせる */}
       <div
-        className={`${WOOD_PLATE} absolute top-[52%] left-[1.5%] flex w-[15.6%] flex-col items-center px-[0.8cqw] py-[0.6cqw]`}
+        className={`${WOOD_PLATE} absolute top-[52%] left-[1.5%] flex w-[15.6%] flex-col items-center px-[0.8cqw] py-[0.6cqw] ${state.isClosingRush ? "ring-[0.3cqw] ring-yatai-lantern" : ""}`}
       >
-        <p className="text-[1.2cqw] font-bold">残り時間</p>
+        {/* 切り替わりだけを読み上げる。毎秒変わる残り秒数は含めない */}
+        <p aria-live="polite" className="text-[1.2cqw] font-bold">
+          {state.isClosingRush ? (
+            <span className="flex flex-col items-center rounded-[0.4cqw] bg-yatai-lantern px-[0.5cqw] leading-tight text-yatai-kinari">
+              <span>閉店間際！</span>
+              <span className="text-[0.95cqw]">
+                値段 {CLOSING_RUSH_PRICE_RATE} 倍・早くのびる
+              </span>
+            </span>
+          ) : (
+            "残り時間"
+          )}
+        </p>
         <p className="flex items-center gap-[0.6cqw]">
           <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[2.6cqw]">
             <circle
