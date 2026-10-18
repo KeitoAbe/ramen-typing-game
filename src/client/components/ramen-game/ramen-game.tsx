@@ -10,6 +10,7 @@ import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { GameStage } from "@/client/components/stage/game-stage";
 import { isImeKeyInput } from "@/client/lib/ime-input";
+import { isPageScrollKey } from "@/client/lib/page-scroll-keys";
 import {
   COURSES,
   type Course,
@@ -165,6 +166,8 @@ export function RamenGame({ orders }: Props) {
     if (!isPlaying) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+      // 舞台の下に紹介の文章があるので、プレイ中はキーでページがスクロールしないようにする
+      if (isPageScrollKey(event.key)) event.preventDefault();
       // IME がオンのままのキーは打鍵として扱わず、半角英数に切り替えるよう案内する
       if (isImeKeyInput(event)) {
         dispatch({ type: "ime" });

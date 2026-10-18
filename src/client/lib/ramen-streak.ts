@@ -2,7 +2,7 @@
  * 連続杯数（ミスなし・下げられなしで続けて平らげた杯数）に応じた値段の倍率。
  * 何杯目の丼からその倍率がかかるかを、杯数の多い順に並べる
  */
-const STREAK_PRICE_RATES = [
+export const STREAK_PRICE_RATES = [
   { from: 10, rate: 1.5 },
   { from: 5, rate: 1.2 },
   { from: 3, rate: 1.1 },
