@@ -79,7 +79,8 @@ export function RamenGame({ orders }: Props) {
   const recordedStatsRef = useRef<PlayStats | null>(null);
   // 音の設定は localStorage にあるので、最初の描画ではオンとしておき、マウント後に読み直す
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  const [playSound] = useState(createSoundPlayer);
+  const [{ play: playSound, stopAll: stopSounds }] =
+    useState(createSoundPlayer);
   const [leavingBowl, setLeavingBowl] = useState<LeavingBowl | null>(null);
   const previousStateRef = useRef(state);
   const [shopkeeperMood, setShopkeeperMood] =
@@ -104,6 +105,8 @@ export function RamenGame({ orders }: Props) {
   const toggleSound = () => {
     const enabled = !isSoundEnabled;
     setIsSoundEnabled(enabled);
+    // 結果画面の判子などは遅らせて予約しているので、オフにしたら予約ごと止める
+    if (!enabled) stopSounds();
     saveSoundEnabled(browserStorage(), enabled);
     trackSoundToggle(enabled);
   };
@@ -299,6 +302,8 @@ export function RamenGame({ orders }: Props) {
         personalBest={personalBest}
         onReplay={() => {
           trackReplay(state.course);
+          // 判子や自己ベストの音が、次の券売機の画面まで残らないようにする
+          stopSounds();
           setPersonalBest(null);
           // 入力のないプレイは毎回同じ emptyPlayStats で閉店するので、目印も戻しておく
           recordedStatsRef.current = null;

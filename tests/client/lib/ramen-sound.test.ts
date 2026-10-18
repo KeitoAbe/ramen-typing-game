@@ -1,5 +1,6 @@
 import type { PersonalBestStorage } from "@/client/lib/ramen-personal-best";
 import {
+  createSoundPlayer,
   loadSoundEnabled,
   PERSONAL_BEST_AFTER_STAMP_SECONDS,
   resolveSoundLayers,
@@ -403,5 +404,115 @@ describe("resolveSoundLayers", () => {
     expect(resolveSoundLayers("closed", () => 0)).toBe(
       SOUND_PATTERNS.closed.layers,
     );
+  });
+});
+
+describe("createSoundPlayer", () => {
+  type FakeSource = {
+    stopCalls: (number | undefined)[];
+    onended: (() => void) | null;
+  };
+  let sources: FakeSource[];
+
+  // Web Audio は node に無いので、音源の stop の呼ばれ方だけを記録する偽物を置く
+  function fakeSource() {
+    const source = {
+      stopCalls: [] as (number | undefined)[],
+      onended: null as (() => void) | null,
+      start: () => {},
+      stop: (when?: number) => {
+        source.stopCalls.push(when);
+      },
+      connect: (node: unknown) => node,
+      frequency: {
+        setValueAtTime: () => {},
+        exponentialRampToValueAtTime: () => {},
+      },
+    };
+    sources.push(source);
+    return source;
+  }
+  const param = () => ({ value: 0 });
+  class FakeAudioContext {
+    state = "running";
+    currentTime = 0;
+    destination = {};
+    sampleRate = 44100;
+    createDynamicsCompressor() {
+      return {
+        threshold: param(),
+        knee: param(),
+        ratio: param(),
+        attack: param(),
+        release: param(),
+        connect: () => {},
+      };
+    }
+    createBuffer(_channels: number, length: number) {
+      return { getChannelData: () => new Float32Array(length) };
+    }
+    createGain() {
+      return {
+        gain: {
+          setValueAtTime: () => {},
+          linearRampToValueAtTime: () => {},
+          exponentialRampToValueAtTime: () => {},
+        },
+        connect: () => {},
+      };
+    }
+    createOscillator() {
+      return fakeSource();
+    }
+    createBufferSource() {
+      return fakeSource();
+    }
+    createBiquadFilter() {
+      return {
+        frequency: param(),
+        Q: param(),
+        connect: (node: unknown) => node,
+      };
+    }
+  }
+
+  beforeEach(() => {
+    sources = [];
+    Object.assign(globalThis, { AudioContext: FakeAudioContext });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, "AudioContext");
+  });
+
+  it("stopAll で、遅らせて予約した判子と自己ベストの音を、鳴る前に止める", () => {
+    const player = createSoundPlayer();
+    player.play("stamp", STAMP_LANDING_SECONDS);
+    player.play(
+      "personalBest",
+      STAMP_LANDING_SECONDS + PERSONAL_BEST_AFTER_STAMP_SECONDS,
+    );
+    expect(sources.length).toBeGreaterThan(0);
+    const scheduledStops = sources.map((source) => source.stopCalls.length);
+
+    player.stopAll();
+
+    // 予約したときの stop に加えて、引数なしの stop（今すぐ止める）が呼ばれる
+    sources.forEach((source, index) => {
+      expect(source.stopCalls).toHaveLength(scheduledStops[index] + 1);
+      expect(source.stopCalls.at(-1)).toBeUndefined();
+    });
+  });
+
+  it("鳴り終わった音源は、stopAll で止め直さない", () => {
+    const player = createSoundPlayer();
+    player.play("stamp");
+    const finishedStops = sources.map((source) => source.stopCalls.length);
+    for (const source of sources) source.onended?.();
+
+    player.stopAll();
+
+    sources.forEach((source, index) => {
+      expect(source.stopCalls).toHaveLength(finishedStops[index]);
+    });
   });
 });

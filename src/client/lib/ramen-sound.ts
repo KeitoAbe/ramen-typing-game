@@ -605,16 +605,34 @@ function applyEnvelope(
  * ブラウザはユーザー操作の前に音を出せないので、AudioContext は最初に鳴らすときに作る
  * （食券を選ぶクリックのあとなので、鳴らせる）。
  * delaySeconds を渡すと、その秒数だけ遅らせて鳴らす。タイマーを使わず Web Audio の時刻で予約するので、
- * 画面の動きに合わせる音でもゲームの進行を止めない
+ * 画面の動きに合わせる音でもゲームの進行を止めない。
+ * 予約した音は、効果音をオフにしたときや次のプレイに移るときに stopAll で取り消す
  */
-export function createSoundPlayer(): (
-  cue: SoundCue,
-  delaySeconds?: number,
-) => void {
+export function createSoundPlayer(): {
+  play: (cue: SoundCue, delaySeconds?: number) => void;
+  /** 鳴っている音と、予約してまだ鳴っていない音をすべて止める */
+  stopAll: () => void;
+} {
   let context: AudioContext | undefined;
   let output: AudioNode | undefined;
   let noiseBuffer: AudioBuffer | undefined;
-  return (cue, delaySeconds = 0) => {
+  // stopAll で止めるために、鳴り終わるまでの音源を持っておく
+  const sources = new Set<AudioScheduledSourceNode>();
+  const track = (source: AudioScheduledSourceNode) => {
+    sources.add(source);
+    source.onended = () => sources.delete(source);
+  };
+  const stopAll = () => {
+    for (const source of sources) {
+      try {
+        source.stop();
+      } catch {
+        // 止められない音源があっても、ほかの音は止める
+      }
+    }
+    sources.clear();
+  };
+  const play = (cue: SoundCue, delaySeconds = 0) => {
     if (SOUND_PATTERNS[cue].layers.length === 0) return;
     try {
       context ??= new AudioContext();
@@ -651,6 +669,7 @@ export function createSoundPlayer(): (
           oscillator.connect(gain);
           oscillator.start(begin);
           oscillator.stop(end);
+          track(oscillator);
         } else {
           const source = context.createBufferSource();
           source.buffer = noiseBuffer;
@@ -663,10 +682,12 @@ export function createSoundPlayer(): (
           const offset =
             Math.random() * (NOISE_BUFFER_SECONDS - layer.duration);
           source.start(begin, offset, layer.duration);
+          track(source);
         }
       }
     } catch {
       // 音が出せない環境でもゲームは続けられるので、何もしない
     }
   };
+  return { play, stopAll };
 }
