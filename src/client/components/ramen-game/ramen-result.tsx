@@ -102,7 +102,8 @@ function isOnControl(target: EventTarget | null): boolean {
 function useResultReveal(onSkip: (elapsedSeconds: number) => void) {
   const [isRevealing, setIsRevealing] = useState(() => !prefersReducedMotion());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const elapsedRef = useRef(0);
+  // 飛ばした時点の秒を次の描画を待たずに測れるよう、演出の始まった時刻を持つ
+  const startedAtRef = useRef(0);
   const sectionRef = useRef<HTMLElement>(null);
   // 親は描画のたびに新しい関数を渡すので、最新のものを ref で持ち、飛ばす処理を作り直さない
   const onSkipRef = useRef(onSkip);
@@ -113,6 +114,7 @@ function useResultReveal(onSkip: (elapsedSeconds: number) => void) {
   useEffect(() => {
     if (!isRevealing) return;
     const startedAt = performance.now();
+    startedAtRef.current = startedAt;
     let frame = 0;
     const step = () => {
       const seconds = (performance.now() - startedAt) / 1000;
@@ -120,7 +122,6 @@ function useResultReveal(onSkip: (elapsedSeconds: number) => void) {
         setIsRevealing(false);
         return;
       }
-      elapsedRef.current = seconds;
       setElapsedSeconds(seconds);
       frame = requestAnimationFrame(step);
     };
@@ -132,7 +133,8 @@ function useResultReveal(onSkip: (elapsedSeconds: number) => void) {
     if (!isRevealing) return;
     const skip = () => {
       setIsRevealing(false);
-      onSkipRef.current(elapsedRef.current);
+      // 描画ごとの秒は次のフレームまで古いままなので、いまの時刻から測る（音は描画とは別の時計で予約されている）
+      onSkipRef.current((performance.now() - startedAtRef.current) / 1000);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== " " && event.key !== "Enter") return;
