@@ -19,6 +19,7 @@ const EXIT_CODES: Record<TickResult["kind"], number> = {
   "no-task": 2,
   escalated: 3,
   waiting: 4,
+  "usage-limit": 6,
   failed: 1,
 };
 

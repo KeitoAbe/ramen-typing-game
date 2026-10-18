@@ -6,15 +6,19 @@ import { dirname } from "node:path";
 import { decide } from "./decide";
 import { applyRunnerActions } from "./escalate";
 import { gh, git, graphql } from "./gh";
+import { abortGitOperation, currentGitOperation } from "./git-operation";
 import { parseLoopResult, runSession } from "./session";
 import { CODERABBIT_LOGIN, collectState } from "./state";
 import type { Action, Decision, LoopConfig, SessionCommand } from "./types";
+import { detectUsageLimit } from "./usage-limit";
 
 export type TickResult =
   | { kind: "success"; detail: string }
   | { kind: "no-task" }
   | { kind: "escalated"; detail: string }
   | { kind: "waiting"; detail: string }
+  /** セッションが Claude の利用上限で打ち切られた。resetAt は解除時刻（ISO 形式。読み取れなければ null） */
+  | { kind: "usage-limit"; resetAt: string | null }
   | { kind: "failed"; deterministic: boolean; reason: string };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): LoopConfig {
@@ -43,25 +47,42 @@ function log(message: string): void {
   console.log(`[tick] ${message}`);
 }
 
-/** main に戻って最新化する。前のセッションが loop/* に残した作業は退避する */
+/**
+ * main に戻って最新化する。前のセッションが loop/* に残した作業は退避する。
+ * 途中のマージ・リベース・cherry-pick が残っていれば、退避の前に取り消す（そのままでは stash できない）
+ */
 function syncWorkingTree(): TickResult | null {
-  if (git(["status", "--porcelain"]).trim() !== "") {
-    const branch = git(["branch", "--show-current"]).trim();
-    if (!branch.startsWith("loop/")) {
-      return {
-        kind: "failed",
-        deterministic: true,
-        reason: `dirty-tree (branch: ${branch})`,
-      };
-    }
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    log(`前のセッションの作業を退避します: ${branch}`);
-    git(["stash", "push", "-u", "-m", `loop-abandoned:${branch}:${stamp}`]);
-  }
   try {
+    const operation = currentGitOperation();
+    const dirty = git(["status", "--porcelain"]).trim() !== "";
+    if (operation || dirty) {
+      const branch =
+        operation?.branch ?? git(["branch", "--show-current"]).trim();
+      // 人間の作業かもしれないので、loop/* 以外には手を付けない
+      if (!branch.startsWith("loop/")) {
+        return {
+          kind: "failed",
+          deterministic: true,
+          reason: `dirty-tree (branch: ${branch}${operation ? `, ${operation.kind} in progress` : ""})`,
+        };
+      }
+      if (operation) {
+        log(
+          `前のセッションの途中の ${operation.kind} を取り消します: ${branch}`,
+        );
+        abortGitOperation(operation.kind);
+      }
+      if (git(["status", "--porcelain"]).trim() !== "") {
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        log(`前のセッションの作業を退避します: ${branch}`);
+        git(["stash", "push", "-u", "-m", `loop-abandoned:${branch}:${stamp}`]);
+      }
+    }
     git(["checkout", "-q", "main"]);
     git(["pull", "-q", "--ff-only", "origin", "main"]);
-  } catch {
+  } catch (error) {
+    // 片付けに失敗しても、ランナーごと落とさずに一時的な失敗として返す
+    log(`作業ツリーの片付けに失敗しました: ${(error as Error).message}`);
     return { kind: "failed", deterministic: false, reason: "git-sync" };
   }
   return null;
@@ -140,6 +161,14 @@ export async function runTick(
     logFile,
   );
   const result = parseLoopResult(outcome.text);
+  // 利用上限で打ち切られたセッションは仕事をしていない。0 ターンで終わることもあるので、先に見分ける
+  const usageLimit = result ? null : detectUsageLimit(outcome.text, new Date());
+  if (usageLimit) {
+    return {
+      kind: "usage-limit",
+      resetAt: usageLimit.resetAt?.toISOString() ?? null,
+    };
+  }
 
   if (!result) {
     if (outcome.turns === 0) {

@@ -2,6 +2,7 @@ import {
   initialRunnerState,
   nextRunnerState,
   type RunnerState,
+  usageLimitWaitMs,
 } from "@scripts/loop/runner";
 import { parseLoopResult } from "@scripts/loop/session";
 import type { TickResult } from "@scripts/loop/tick";
@@ -57,6 +58,15 @@ describe("nextRunnerState", () => {
     expect(run([waiting, waiting], 5).stop).toBeNull();
   });
 
+  it("利用上限は成功にも失敗にも数えず、連続のカウンタも変えない", () => {
+    const limited: TickResult = { kind: "usage-limit", resetAt: null };
+    expect(run([transient, limited, limited], 5)).toMatchObject({
+      completed: 0,
+      consecutiveFailures: 1,
+      stop: null,
+    });
+  });
+
   it("試行回数が指定回数の 4 倍に達したら打ち切る", () => {
     expect(run([escalated, waiting, escalated, waiting], 1).stop).toBe(
       "ATTEMPT_LIMIT",
@@ -91,5 +101,25 @@ describe("parseLoopResult", () => {
 
   it("結果行が無ければ null", () => {
     expect(parseLoopResult("途中で終わった")).toBeNull();
+  });
+});
+
+describe("usageLimitWaitMs", () => {
+  const now = new Date("2026-10-18T02:00:00Z");
+
+  it("解除時刻に 1 分の余裕を足した時刻まで待つ", () => {
+    expect(usageLimitWaitMs("2026-10-18T03:20:00.000Z", now, 1_800_000)).toBe(
+      80 * 60_000 + 60_000,
+    );
+  });
+
+  it("解除時刻を過ぎていれば、余裕の分だけ待つ", () => {
+    expect(usageLimitWaitMs("2026-10-18T01:00:00.000Z", now, 1_800_000)).toBe(
+      60_000,
+    );
+  });
+
+  it("解除時刻が分からなければ、決めた間隔だけ待つ", () => {
+    expect(usageLimitWaitMs(null, now, 1_800_000)).toBe(1_800_000);
   });
 });
