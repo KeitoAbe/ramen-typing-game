@@ -346,10 +346,11 @@ export function RamenPlay({
         )}
       </div>
 
-      {/* 替え玉の知らせ: 店主の顔の右に出す吹き出し */}
+      {/* 替え玉の知らせ: 店主の顔の右に出す吹き出し。
+          三角の先が、はちまきの結び目の下で顔の右の縁（舞台の x 74.3%, y 59%）から少し離れた所に来るよう置く */}
       <div
         aria-live="polite"
-        className="absolute top-[52%] left-[75.4%] w-[14.4%]"
+        className="absolute top-[56.2%] left-[75.7%] w-[14.4%]"
       >
         {state.isKaedamaNoticeShown && (
           // 替え玉のたびに作り直して、飛び出す演出をやり直す

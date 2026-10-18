@@ -210,9 +210,12 @@ export function RamenResult({
         <p className="text-[1.6cqw] leading-snug font-bold">
           「{title.remark}」
         </p>
+        {/* 三角: 店主の頭の真上にはのれんが下がっているので、のれんと右の提灯のあいだを通して、
+            右上から店主の顔を指す。先はのれんの下端（揺れて右に寄ったときも含む）より下、頭の右上に置き、
+            延長線が口のあたりに向かうよう傾ける */}
         <span
           aria-hidden="true"
-          className="absolute -bottom-[0.9cqw] left-[38%] size-[2cqw] rotate-45 bg-yatai-kinari"
+          className="absolute -bottom-[8.3cqw] left-[14.6cqw] h-[8.4cqw] w-[6.4cqw] bg-yatai-kinari [clip-path:polygon(66%_0,100%_0,0_100%)]"
         />
       </div>
 
