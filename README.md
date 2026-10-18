@@ -59,6 +59,15 @@ pnpm verify     # lint / typecheck / test / depcruise / knip
 pnpm build      # 本番ビルド
 ```
 
+### 環境変数
+
+| 名前 | 用途 | 未設定のとき |
+|------|------|-------------|
+| `NEXT_PUBLIC_CONTACT_FORM_URL` | お問い合わせページ（`/contact`）から新しいタブで開く Google フォームの URL | リンクを出さずに「準備中」と出す |
+
+`NEXT_PUBLIC_` の変数は**ビルド時に値が埋め込まれる**。ホスティング（AWS Amplify など）のコンソールで設定し、変えたら再ビルドする。
+ローカルでは `.env.local` に書く。
+
 ### ループを回す
 
 GitHub 側の設定（ラベル、CodeRabbit、ブランチ保護、auto-merge）が済んでいないと、ループは安全に回せない。
