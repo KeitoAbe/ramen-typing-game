@@ -28,6 +28,27 @@ describe("parseContactEmail", () => {
     expect(parseContactEmail("con tact@example.com")).toBeNull();
     expect(parseContactEmail("https://forms.gle/abc")).toBeNull();
   });
+
+  it("連続したドットや空のラベルを含むときは null を返す", () => {
+    expect(parseContactEmail("contact@example..com")).toBeNull();
+    expect(parseContactEmail("contact@.example.com")).toBeNull();
+    expect(parseContactEmail("con..tact@example.com")).toBeNull();
+    expect(parseContactEmail(".contact@example.com")).toBeNull();
+  });
+
+  it("エンコードできない文字や mailto: で予約された文字を含むときは null を返す", () => {
+    expect(parseContactEmail("info@例え.テスト")).toBeNull();
+    expect(parseContactEmail("help?desk@example.com")).toBeNull();
+    expect(parseContactEmail("a#b@example.com")).toBeNull();
+    expect(parseContactEmail("a&b@example.com")).toBeNull();
+    expect(parseContactEmail("a%b@example.com")).toBeNull();
+  });
+
+  it("よく使われる記号を含むアドレスは受け付ける", () => {
+    expect(parseContactEmail("first.last+tag@mail.example.co.jp")).toBe(
+      "first.last+tag@mail.example.co.jp",
+    );
+  });
 });
 
 describe("encodeContactEmail / decodeContactEmail", () => {
