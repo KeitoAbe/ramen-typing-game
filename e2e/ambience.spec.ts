@@ -60,7 +60,11 @@ test("環境音・BGM はプレイ中だけ流れ、タブが裏に回ると止�
   ).toBeVisible();
   expect(await loopingSources(page)).toBe(0);
 
+  // 「いただきます」のあと、スペースで始めるまでは流さない
   await page.getByRole("button", { name: "いただきます" }).click();
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+  expect(await loopingSources(page)).toBe(0);
+  await page.keyboard.press(" ");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
   await expect.poll(() => loopingSources(page)).toBe(1);
 
@@ -105,6 +109,7 @@ test("環境音・BGM の札は効果音とは別に切り替えられ、キー�
   // オフのまま遊んでも流れない。プレイ中にオンにすると流れ、オフにすると止まる
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("button", { name: "いただきます" }).click();
+  await page.keyboard.press(" ");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
   expect(await loopingSources(page)).toBe(0);
   await ambience.click();
