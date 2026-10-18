@@ -174,16 +174,26 @@ function useIsTouchPrimaryDevice() {
 type Props = {
   courses: readonly Course[];
   onSelect: (course: Course) => void;
+  /** タッチ端末への案内を出したときに呼ぶ（計測用） */
+  onTouchNoticeShown: () => void;
 };
 
 /** 開始前の画面。屋台の脇の券売機で食券を買うと、そのコースでプレイが始まる */
-export function TicketMachine({ courses, onSelect }: Props) {
+export function TicketMachine({
+  courses,
+  onSelect,
+  onTouchNoticeShown,
+}: Props) {
   // 取出口から出てくる途中の食券。出てくる動きのあとにプレイを始める
   const [issuedCourse, setIssuedCourse] = useState<Course | null>(null);
   const issueTimerRef = useRef<number | undefined>(undefined);
   const isTouchPrimary = useIsTouchPrimaryDevice();
 
   useEffect(() => () => window.clearTimeout(issueTimerRef.current), []);
+
+  useEffect(() => {
+    if (isTouchPrimary) onTouchNoticeShown();
+  }, [isTouchPrimary, onTouchNoticeShown]);
 
   const buy = (course: Course) => {
     if (issuedCourse !== null) return;

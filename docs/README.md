@@ -12,6 +12,7 @@
 
 | ファイル | 内容 |
 |---------|------|
+| [analytics.md](analytics.md) | GA4 に送るカスタムイベントの名前・送るとき・パラメータの一覧 |
 | [architecture.md](architecture.md) | アプリのコード構成とレイヤーのルール |
 | [design.md](design.md) | 画面の見た目（書体・面・色）の使い分けの規則 |
 | [loop-engineering.md](loop-engineering.md) | ループの運用ルール（判定順、ラベル、CodeRabbit の扱い、GitHub 側のセットアップ） |

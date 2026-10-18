@@ -10,7 +10,15 @@ import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { ToppingSelect } from "@/client/components/ramen-game/topping-select";
 import { GameStage } from "@/client/components/stage/game-stage";
-import { trackPlayEnd, trackPlayStart } from "@/client/lib/analytics";
+import {
+  trackImeNoticeShown,
+  trackPlayEnd,
+  trackPlayStart,
+  trackReplay,
+  trackSoundToggle,
+  trackTicketAbandon,
+  trackTouchNoticeShown,
+} from "@/client/lib/analytics";
 import { isImeKeyInput } from "@/client/lib/ime-input";
 import { isPageScrollKey } from "@/client/lib/page-scroll-keys";
 import {
@@ -41,6 +49,7 @@ import {
   loadSoundEnabled,
   saveSoundEnabled,
 } from "@/client/lib/ramen-sound";
+import { decideTitle } from "@/client/lib/ramen-title";
 import type { ToppingId } from "@/client/lib/ramen-topping";
 import type { Order } from "@/types/order";
 
@@ -72,6 +81,11 @@ export function RamenGame({ orders }: Props) {
   const [shopkeeperMood, setShopkeeperMood] =
     useState<ShopkeeperMood>("normal");
   const moodTimerRef = useRef<number | undefined>(undefined);
+  // 計測を 1 回に留めるための目印。IME の案内は 1 プレイに 1 回、タッチ端末の案内は 1 ページの表示に 1 回
+  const isImeNoticeTrackedRef = useRef(false);
+  const isTouchNoticeTrackedRef = useRef(false);
+  // ページを離れるときに読む、プレイを始めずに持っている食券
+  const ticketCourseRef = useRef<Course | null>(null);
 
   useEffect(() => {
     setIsSoundEnabled(loadSoundEnabled(browserStorage()));
@@ -82,7 +96,35 @@ export function RamenGame({ orders }: Props) {
     const enabled = !isSoundEnabled;
     setIsSoundEnabled(enabled);
     saveSoundEnabled(browserStorage(), enabled);
+    trackSoundToggle(enabled);
   };
+
+  const trackTouchNotice = () => {
+    if (isTouchNoticeTrackedRef.current) return;
+    isTouchNoticeTrackedRef.current = true;
+    trackTouchNoticeShown();
+  };
+
+  // 食券を買ったまま、プレイを始めずにページを離れたら計測する。
+  // タブを閉じたときは pagehide、アプリの中で別のページに移ったときはアンマウントで気づく
+  useEffect(() => {
+    ticketCourseRef.current = ticketCourse;
+  }, [ticketCourse]);
+
+  useEffect(() => {
+    const trackAbandon = () => {
+      const course = ticketCourseRef.current;
+      if (course === null) return;
+      ticketCourseRef.current = null;
+      trackTicketAbandon(course);
+    };
+    // GA4 のタグが自分の pagehide で送信を済ませる前に積めるよう、capture で先に受ける
+    window.addEventListener("pagehide", trackAbandon, { capture: true });
+    return () => {
+      window.removeEventListener("pagehide", trackAbandon, { capture: true });
+      trackAbandon();
+    };
+  }, []);
 
   // 状態の移り変わりから出来事を読み取り、効果音・店主の表情・丼を下げる演出を出す
   useEffect(() => {
@@ -90,6 +132,14 @@ export function RamenGame({ orders }: Props) {
     previousStateRef.current = state;
     if (previous === state) return;
     const events = detectGameEvents(previous, state);
+    if (
+      state.status === "playing" &&
+      state.isImeNoticeShown &&
+      !isImeNoticeTrackedRef.current
+    ) {
+      isImeNoticeTrackedRef.current = true;
+      trackImeNoticeShown(state.course);
+    }
     if (isSoundEnabled) {
       for (const event of events) playSound(event);
     }
@@ -135,11 +185,21 @@ export function RamenGame({ orders }: Props) {
     if (state.status !== "closed") return;
     if (recordedStatsRef.current === state.stats) return;
     recordedStatsRef.current = state.stats;
-    trackPlayEnd(state.course);
     const balance = courseBalance(state.stats.bill, state.course);
-    setPersonalBest(
-      recordPersonalBest(browserStorage(), state.course.id, balance),
+    const record = recordPersonalBest(
+      browserStorage(),
+      state.course.id,
+      balance,
     );
+    setPersonalBest(record);
+    const result = summarizePlay(state.stats, state.playedMs);
+    trackPlayEnd({
+      course: state.course,
+      toppings: state.toppings,
+      result,
+      title: decideTitle(result, state.course),
+      isPersonalBest: record.isUpdated,
+    });
   }, [state]);
 
   useEffect(() => {
@@ -174,7 +234,10 @@ export function RamenGame({ orders }: Props) {
 
   const start = (course: Course, toppings: readonly ToppingId[]) => {
     setTicketCourse(null);
-    trackPlayStart(course);
+    // 食券を使ったので、このあとページを離れても途中でやめたとはみなさない
+    ticketCourseRef.current = null;
+    isImeNoticeTrackedRef.current = false;
+    trackPlayStart(course, toppings);
     dispatch({
       type: "start",
       course,
@@ -197,7 +260,11 @@ export function RamenGame({ orders }: Props) {
   if (state.status === "ready") {
     // 券売機の画面は看板も絵の中に置くので、舞台いっぱいに描く
     return onStage(
-      <TicketMachine courses={COURSES} onSelect={setTicketCourse} />,
+      <TicketMachine
+        courses={COURSES}
+        onSelect={setTicketCourse}
+        onTouchNoticeShown={trackTouchNotice}
+      />,
     );
   }
 
@@ -210,6 +277,7 @@ export function RamenGame({ orders }: Props) {
         result={summarizePlay(state.stats, state.playedMs)}
         personalBest={personalBest}
         onReplay={() => {
+          trackReplay(state.course);
           setPersonalBest(null);
           // 入力のないプレイは毎回同じ emptyPlayStats で閉店するので、目印も戻しておく
           recordedStatsRef.current = null;

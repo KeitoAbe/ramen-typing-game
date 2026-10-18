@@ -1,5 +1,6 @@
 import { YataiScene } from "@/client/components/ramen-game/yatai-scene";
 import { StageSign } from "@/client/components/stage/stage-sign";
+import { trackShare } from "@/client/lib/analytics";
 import {
   type Course,
   courseBalance,
@@ -37,6 +38,7 @@ type Props = {
  * デプロイ先が決まっていないので、ゲームの URL はいま開いているページから作る（クエリやハッシュは除く）
  */
 function shareOnX(course: Course, result: PlayResult, title: RamenTitle) {
+  trackShare(course);
   const gameUrl = `${window.location.origin}${window.location.pathname}`;
   const shareUrl = buildXShareUrl(
     buildShareText(course, result, title),
