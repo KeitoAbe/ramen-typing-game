@@ -19,9 +19,11 @@ export default defineConfig({
     command: `pnpm build && pnpm start --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     // シェルに NODE_ENV=development が残っていると、本番ビルドのプリレンダリングが落ちる。
-    // 広告枠の配置を確かめるため、ダミーの広告の ID を渡す（スクリプトは e2e/fixtures.ts で差し替える）
+    // 広告枠の配置を確かめるため、ダミーの広告の ID を渡す（スクリプトは e2e/fixtures.ts で差し替える）。
+    // お問い合わせのリンクを確かめるため、架空のメールアドレスを渡す
     env: {
       NODE_ENV: "production",
+      NEXT_PUBLIC_CONTACT_EMAIL: "contact@example.com",
       NEXT_PUBLIC_ADSENSE_PUBLISHER_ID: "ca-pub-0000000000000000",
       NEXT_PUBLIC_ADSENSE_SLOT_ID: "1111111111",
       NEXT_PUBLIC_ADSENSE_STAGE_BOTTOM_SLOT_ID: "2222222222",

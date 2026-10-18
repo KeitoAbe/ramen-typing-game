@@ -66,7 +66,7 @@ E2E テストは初回だけ `pnpm exec playwright install chromium` でブラ�
 | 名前 | 用途 | 未設定のとき |
 |------|------|-------------|
 | `NEXT_PUBLIC_SITE_URL` | サイトの URL（例: `https://example.com`）。メタデータの基準 URL（OGP 画像などの絶対 URL）・各ページの正規 URL（canonical）・`/sitemap.xml`・`/robots.txt`・トップページの構造化データ（JSON-LD）がこの値を使う | `http://localhost:3000` を使う（ページは表示されるが、検索エンジン向けの URL がローカルのものになる） |
-| `NEXT_PUBLIC_CONTACT_FORM_URL` | お問い合わせページ（`/contact`）から新しいタブで開く Google フォームの URL | リンクを出さずに「準備中」と出す |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | お問い合わせを受け付けるメールアドレス（例: `contact@example.com`）。お問い合わせページ（`/contact`）に、宛先と件名が入った状態でメールソフトを開くリンクを出す。収集ボットに拾われにくくするため、サーバーから返す HTML にはアドレスを平文で載せず、ブラウザで表示する | メールの手段を出さずに「準備中」と出す（メールアドレスの形でない値のときも同じ） |
 | `NEXT_PUBLIC_ADSENSE_PUBLISHER_ID` | Google アドセンスのパブリッシャー ID（`ca-pub-…`）。全ページの head にアドセンスのスクリプト（審査用のコードを兼ねる）を読み込み、`/ads.txt` を返す | スクリプト・`/ads.txt`・広告枠のどれも出さない（`/ads.txt` は 404） |
 | `NEXT_PUBLIC_ADSENSE_SLOT_ID` | トップページの紹介の下に出す広告ユニットの ID（数字） | 広告枠を出さない（パブリッシャー ID が無いときも出さない） |
 | `NEXT_PUBLIC_ADSENSE_STAGE_BOTTOM_SLOT_ID` | トップページの舞台のすぐ下に出す横長の広告（728×90、狭い画面では幅に合わせて縮む）の広告ユニットの ID（数字） | 広告枠を出さず、場所も空けない（パブリッシャー ID が無いときも出さない） |
