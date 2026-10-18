@@ -8,7 +8,8 @@ export const PUBLIC_PAGE_PATHS = ["/", "/privacy", "/about", "/contact"];
 
 /**
  * サイトの URL（`https://example.com`）を、環境変数の値から取り出す。
- * 末尾のスラッシュは取り除く。未設定や http(s) でない値のときは null
+ * 末尾のスラッシュは取り除く。未設定・http(s) でない値・パスを含む値のときは null
+ * （basePath を設定していないので、サブパスを受け入れるとサイトマップなどの URL が 404 になる）
  */
 export function parseSiteUrl(value: string | undefined): string | null {
   const trimmed = value?.trim();
@@ -16,7 +17,8 @@ export function parseSiteUrl(value: string | undefined): string | null {
   try {
     const url = new URL(trimmed);
     if (url.protocol !== "https:" && url.protocol !== "http:") return null;
-    return `${url.origin}${url.pathname}`.replace(/\/+$/, "");
+    if (url.pathname !== "/") return null;
+    return url.origin;
   } catch {
     return null;
   }

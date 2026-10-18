@@ -16,9 +16,10 @@ afterEach(() => {
 describe("parseSiteUrl", () => {
   it("末尾のスラッシュを取り除く", () => {
     expect(parseSiteUrl(" https://example.com/ ")).toBe("https://example.com");
-    expect(parseSiteUrl("https://example.com/typing/")).toBe(
-      "https://example.com/typing",
-    );
+  });
+
+  it("サブパスでは配信していないので、パスを含む値は null", () => {
+    expect(parseSiteUrl("https://example.com/typing/")).toBeNull();
   });
 
   it("未設定・URL でない値・http(s) でない値は null", () => {
