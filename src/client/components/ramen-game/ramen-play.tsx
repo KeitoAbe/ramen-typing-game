@@ -12,6 +12,7 @@ import { KAEDAMA_GAUGE_MAX } from "@/client/lib/ramen-kaedama";
 import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
 import { SPECIAL_BOWL_PRICE_RATE } from "@/client/lib/ramen-special-bowl";
 import { streakPriceRate } from "@/client/lib/ramen-streak";
+import { toppingNames, toppingPriceRate } from "@/client/lib/ramen-topping";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
 
@@ -63,6 +64,8 @@ export function RamenPlay({
   const stackedBowlCount = Math.min(state.stats.servedCount, STACKED_BOWL_MAX);
   // いま出ている丼をミスなしで平らげたときにかかる、連続杯数の倍率
   const streakRate = state.isCleanBowl ? streakPriceRate(state.streak + 1) : 1;
+  const toppingNameList = toppingNames(state.toppings);
+  const toppingRate = toppingPriceRate(state.toppings);
 
   return (
     <section className="absolute inset-0">
@@ -322,6 +325,28 @@ export function RamenPlay({
           ))}
         </div>
       </div>
+      {/* トッピング: 左上の夜空に掛けた札。足していなければ出さない */}
+      {toppingNameList.length > 0 && (
+        <div
+          className={`${WOOD_PLATE} absolute top-[1.5cqw] left-[1.5cqw] flex flex-col px-[0.8cqw] py-[0.4cqw]`}
+        >
+          <p className="text-[1.1cqw] font-bold">
+            {/* 両方なら 1.3 × 1.3 = 1.69 倍。小数の誤差は表示に出さない */}
+            トッピング（値段 ×{Math.round(toppingRate * 100) / 100}）
+          </p>
+          <ul className="flex gap-[0.6cqw]">
+            {toppingNameList.map((name) => (
+              <li
+                key={name}
+                className="rounded-[0.4cqw] bg-yatai-lantern px-[0.5cqw] font-display text-[1.4cqw] leading-tight whitespace-nowrap text-yatai-kinari"
+              >
+                {name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* 日本語入力の案内: 屋根より上の夜空に掲げる札。読み上げられるよう、入れ物は常に置いておく */}
       <div
         aria-live="polite"

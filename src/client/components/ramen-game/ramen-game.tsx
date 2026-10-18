@@ -8,6 +8,7 @@ import {
 import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
+import { ToppingSelect } from "@/client/components/ramen-game/topping-select";
 import { GameStage } from "@/client/components/stage/game-stage";
 import { isImeKeyInput } from "@/client/lib/ime-input";
 import { isPageScrollKey } from "@/client/lib/page-scroll-keys";
@@ -23,7 +24,6 @@ import {
   ramenGameReducer,
   shuffleOrders,
 } from "@/client/lib/ramen-game";
-import { playTimeMs } from "@/client/lib/ramen-kaedama";
 import {
   browserStorage,
   type PersonalBestRecord,
@@ -46,6 +46,7 @@ import {
   recordStampCard,
   type Stamp,
 } from "@/client/lib/ramen-stamp-card";
+import type { ToppingId } from "@/client/lib/ramen-topping";
 import type { Order } from "@/types/order";
 
 type Props = {
@@ -61,6 +62,8 @@ function bowlIdOf(stats: PlayStats): number {
 export function RamenGame({ orders }: Props) {
   const [state, dispatch] = useReducer(ramenGameReducer, initialRamenGameState);
   const isPlaying = state.status === "playing";
+  // 食券を買ってトッピングを選んでいるあいだの食券。プレイを始めたら null に戻す
+  const [ticketCourse, setTicketCourse] = useState<Course | null>(null);
   const [personalBest, setPersonalBest] = useState<PersonalBestRecord | null>(
     null,
   );
@@ -153,10 +156,7 @@ export function RamenGame({ orders }: Props) {
       storage,
       stampCard,
       state.course,
-      summarizePlay(
-        state.stats,
-        playTimeMs(state.course.timeLimitMs, state.stats.kaedamaCount),
-      ),
+      summarizePlay(state.stats, state.playedMs),
     );
     setStampCard(stampRecord.card);
     setNewStamps(stampRecord.newStamps);
@@ -192,37 +192,45 @@ export function RamenGame({ orders }: Props) {
     };
   }, [isPlaying]);
 
-  const start = (course: Course) => {
+  const start = (course: Course, toppings: readonly ToppingId[]) => {
+    setTicketCourse(null);
     dispatch({
       type: "start",
       course,
+      toppings,
       orders: shuffleOrders(ordersForCourse(orders, course)),
       now: Date.now(),
       roll: Math.random(),
     });
   };
 
+  if (state.status === "ready" && ticketCourse !== null) {
+    return onStage(
+      <ToppingSelect
+        course={ticketCourse}
+        onStart={(toppings) => start(ticketCourse, toppings)}
+      />,
+    );
+  }
+
   if (state.status === "ready") {
     // 券売機の画面は看板も絵の中に置くので、舞台いっぱいに描く
     return onStage(
       <TicketMachine
         courses={COURSES}
-        onSelect={start}
+        onSelect={setTicketCourse}
         stampCard={stampCard}
       />,
     );
   }
 
   if (state.status === "closed") {
-    // 閉店は時間切れでしか起きないので、プレイ時間は制限時間に替え玉で延びた分を足したもの
     // 伝票の画面は看板も絵の中に置くので、舞台いっぱいに描く
     return onStage(
       <RamenResult
         course={state.course}
-        result={summarizePlay(
-          state.stats,
-          playTimeMs(state.course.timeLimitMs, state.stats.kaedamaCount),
-        )}
+        toppings={state.toppings}
+        result={summarizePlay(state.stats, state.playedMs)}
         personalBest={personalBest}
         newStamps={newStamps}
         onReplay={() => {
