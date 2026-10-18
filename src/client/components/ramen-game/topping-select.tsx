@@ -91,7 +91,7 @@ export function ToppingSelect({ course, onStart }: Props) {
           </ul>
         </fieldset>
 
-        <p className="mt-[1.2cqw] text-center text-[1.2cqw] font-bold">
+        <p className="mt-[1.2cqw] text-center text-[1.25cqw] font-bold">
           両方足すと ×{TOPPING_PRICE_RATE} × {TOPPING_PRICE_RATE}
           。何も足さずに始めてもよい
         </p>

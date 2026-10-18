@@ -79,9 +79,9 @@ export function RamenResult({
     // 効果音の札と看板の文字は最小の大きさ（px）で止まり、狭い舞台では舞台の幅ほど縮まない。
     // そこで看板の上端は「効果音の札の下端」、吹き出しの上端は「看板の下端」より下に来るよう、
     // 札と看板の寸法（SoundToggle / StageSign / GameStage の corner）から計算した値を下限にする。
-    // 1024px 以上の幅では % の値のほうが大きいので、位置は変わらない
+    // 幅 960px（いちばん大きい舞台）では % の値のほうが大きいので、位置は変わらない
     // - 札の下端 + 隙間: 置き場所 1.5cqw + 上下の余白 0.6cqw + 影 0.3cqw + 隙間 0.5cqw + 上下の枠 + 文字の行の高さ
-    <section className="absolute inset-0 [--sign-top:max(9.5%,calc(2.9cqw+max(4px,0.5cqw)+1.5*max(11px,1.2cqw)))]">
+    <section className="absolute inset-0 [--sign-top:max(9.5%,calc(2.9cqw+max(4px,0.5cqw)+1.5*max(11px,1.25cqw)))]">
       {/* 伝票と札が読みやすいよう、屋台の絵を夜の色で少し沈める */}
       <YataiScene />
       <div aria-hidden="true" className="absolute inset-0 bg-yatai-night/45" />
@@ -97,18 +97,18 @@ export function RamenResult({
         <h2 className="font-display text-[3cqw] leading-tight tracking-[0.4em]">
           御会計
         </h2>
-        <p className="text-[1.2cqw] font-bold">本日は閉店しました</p>
+        <p className="text-[1.25cqw] font-bold">本日は閉店しました</p>
 
         {/* 称号の判子: 伝票の右上に、朱肉で斜めに押す。押す動きは傾き（rotate）と別の transform で付ける */}
         <div className="absolute top-[0.8cqw] right-[1.2cqw] flex rotate-[-10deg] flex-col items-center rounded-[0.8cqw] border-[0.4cqw] border-double border-yatai-lantern px-[0.8cqw] py-[0.3cqw] text-yatai-lantern opacity-90 mix-blend-multiply motion-safe:animate-stamp-press">
-          <span className="text-[1cqw] leading-tight font-bold">称号</span>
+          <span className="text-[1.25cqw] leading-tight font-bold">称号</span>
           <span className="font-display text-[1.8cqw] leading-tight">
             {title.name}
           </span>
         </div>
 
         {/* 振り返りの欄を入れる場所をあけるため、成績は 2 列に並べる */}
-        <dl className="mt-[1cqw] grid grid-cols-[1fr_auto_1fr_auto] gap-x-[1.5cqw] border-y-[0.25cqw] border-double border-yatai-sumi text-[1.2cqw]">
+        <dl className="mt-[1cqw] grid grid-cols-[1fr_auto_1fr_auto] gap-x-[1.5cqw] border-y-[0.25cqw] border-double border-yatai-sumi text-[1.25cqw]">
           {rows.map((row) => (
             <div
               key={row.label}
@@ -121,7 +121,7 @@ export function RamenResult({
         </dl>
 
         {/* 振り返り: 打ち間違いの多いキー */}
-        <div className="mt-[0.8cqw] flex items-center gap-x-[1cqw] text-[1.2cqw] whitespace-nowrap">
+        <div className="mt-[0.8cqw] flex items-center gap-x-[1cqw] text-[1.25cqw] whitespace-nowrap">
           <h3 className="font-bold">打ち間違いの多いキー</h3>
           {missedKeys.length === 0 ? (
             <p className="font-bold text-yatai-lantern">打ち間違いなし</p>
@@ -190,7 +190,7 @@ export function RamenResult({
 
       {/* 店主のひとこと: 頭の上の吹き出し。看板の下端（文字の行の高さ + 上下の余白 1.6cqw + 上下の枠 0.8cqw）に隙間 0.5cqw をあけて置く */}
       <div className="absolute top-[max(22%,calc(var(--sign-top)+1.25*max(20px,3.2cqw)+2.9cqw))] left-[61%] w-[35%] rounded-[1.4cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[1.4cqw] py-[0.8cqw] text-yatai-sumi">
-        <p className="text-[1.1cqw] font-bold">店主</p>
+        <p className="text-[1.25cqw] font-bold">店主</p>
         <p className="text-[1.6cqw] leading-snug font-bold">
           「{title.remark}」
         </p>

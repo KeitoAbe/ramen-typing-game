@@ -217,7 +217,7 @@ export function TicketMachine({ courses, onSelect }: Props) {
           className="pointer-events-none absolute top-[70%] left-[15.6%] flex h-[21.1%] w-[18.75%] items-end justify-center overflow-hidden"
         >
           <div className="flex h-[70%] w-[55%] animate-ticket-issue flex-col items-center justify-center rounded-[0.3cqw] border-[0.25cqw] border-yatai-sumi bg-yatai-kinari text-yatai-sumi">
-            <span className="text-[1cqw] leading-tight font-bold">食券</span>
+            <span className="text-[1.25cqw] leading-tight font-bold">食券</span>
             <span className="font-display text-[2.2cqw] leading-tight">
               {issuedCourse.name}
             </span>
@@ -250,7 +250,7 @@ export function TicketMachine({ courses, onSelect }: Props) {
         <h2 className="text-center font-display text-[1.5cqw] leading-tight">
           遊び方
         </h2>
-        <p className="text-[1.15cqw] leading-snug font-bold">
+        <p className="text-[1.25cqw] leading-snug font-bold">
           食券の時間内は食べ放題。出てくる注文をローマ字で打って平らげよう。
           お会計が食券代を超えれば元が取れる。
         </p>
@@ -279,9 +279,9 @@ export function TicketMachine({ courses, onSelect }: Props) {
               <span className="ml-auto flex shrink-0 flex-col items-end leading-tight whitespace-nowrap">
                 <span className="font-display text-[1.8cqw]">
                   {course.price.toLocaleString("ja-JP")}
-                  <span className="text-[1.2cqw]"> 円</span>
+                  <span className="text-[1.25cqw]"> 円</span>
                 </span>
-                <span className="text-[1.2cqw] font-bold">
+                <span className="text-[1.25cqw] font-bold">
                   {course.timeLimitMs / 1000} 秒 食べ放題
                 </span>
               </span>
