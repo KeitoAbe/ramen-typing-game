@@ -47,10 +47,14 @@ import {
 import {
   createSoundPlayer,
   loadSoundEnabled,
+  PERSONAL_BEST_AFTER_STAMP_SECONDS,
+  type SoundCue,
+  STAMP_LANDING_SECONDS,
   saveSoundEnabled,
 } from "@/client/lib/ramen-sound";
 import { decideTitle } from "@/client/lib/ramen-title";
 import type { ToppingId } from "@/client/lib/ramen-topping";
+import { prefersReducedMotion } from "@/client/lib/reduced-motion";
 import type { Order } from "@/types/order";
 
 type Props = {
@@ -91,6 +95,11 @@ export function RamenGame({ orders }: Props) {
     setIsSoundEnabled(loadSoundEnabled(browserStorage()));
     return () => window.clearTimeout(moodTimerRef.current);
   }, []);
+
+  /** 効果音がオンのときだけ鳴らす */
+  const playCue = (cue: SoundCue) => {
+    if (isSoundEnabled) playSound(cue);
+  };
 
   const toggleSound = () => {
     const enabled = !isSoundEnabled;
@@ -180,7 +189,7 @@ export function RamenGame({ orders }: Props) {
   );
 
   // 閉店したら、プレイを終えたことを計測し、そのコースの自己ベストと比べて保存する。
-  // localStorage を使うので effect で行う
+  // localStorage を使うので effect で行う。判子と自己ベスト更新の音も、1 プレイに 1 回だけここで鳴らす
   useEffect(() => {
     if (state.status !== "closed") return;
     if (recordedStatsRef.current === state.stats) return;
@@ -192,6 +201,17 @@ export function RamenGame({ orders }: Props) {
       balance,
     );
     setPersonalBest(record);
+    if (isSoundEnabled) {
+      // 動きを抑える設定では判子が最初から押されているので、待たずに鳴らす
+      const stampSeconds = prefersReducedMotion() ? 0 : STAMP_LANDING_SECONDS;
+      playSound("stamp", stampSeconds);
+      if (record.isUpdated) {
+        playSound(
+          "personalBest",
+          stampSeconds + PERSONAL_BEST_AFTER_STAMP_SECONDS,
+        );
+      }
+    }
     const result = summarizePlay(state.stats, state.playedMs);
     trackPlayEnd({
       course: state.course,
@@ -200,7 +220,7 @@ export function RamenGame({ orders }: Props) {
       title: decideTitle(result, state.course),
       isPersonalBest: record.isUpdated,
     });
-  }, [state]);
+  }, [state, isSoundEnabled, playSound]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -263,6 +283,7 @@ export function RamenGame({ orders }: Props) {
       <TicketMachine
         courses={COURSES}
         onSelect={setTicketCourse}
+        onBuy={() => playCue("ticket")}
         onTouchNoticeShown={trackTouchNotice}
       />,
     );

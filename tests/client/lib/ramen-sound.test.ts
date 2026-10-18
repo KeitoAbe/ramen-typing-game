@@ -1,12 +1,16 @@
-import type { RamenGameEvent } from "@/client/lib/ramen-events";
 import type { PersonalBestStorage } from "@/client/lib/ramen-personal-best";
 import {
   loadSoundEnabled,
+  PERSONAL_BEST_AFTER_STAMP_SECONDS,
   resolveSoundLayers,
   SOUND_PATTERNS,
   SOUND_SETTING_STORAGE_KEY,
+  type SoundCue,
+  STAMP_LANDING_SECONDS,
   saveSoundEnabled,
 } from "@/client/lib/ramen-sound";
+
+type SoundLayer = (typeof SOUND_PATTERNS)[SoundCue]["layers"][number];
 
 function memoryStorage(initial?: string): PersonalBestStorage {
   let value: string | null = initial ?? null;
@@ -62,7 +66,7 @@ describe("saveSoundEnabled", () => {
 });
 
 /** 鳴り終わるまでの長さ（秒） */
-function soundLength(event: RamenGameEvent): number {
+function soundLength(event: SoundCue): number {
   return Math.max(
     ...SOUND_PATTERNS[event].layers.map(
       (layer) => layer.delay + layer.duration,
@@ -71,7 +75,7 @@ function soundLength(event: RamenGameEvent): number {
 }
 
 /** 層の音量の合計。すべての層が同時に最大になったときの大きさ（最悪の場合）とみなす */
-function totalVolume(event: RamenGameEvent): number {
+function totalVolume(event: SoundCue): number {
   return SOUND_PATTERNS[event].layers.reduce(
     (sum, layer) => sum + layer.volume,
     0,
@@ -132,7 +136,7 @@ describe("SOUND_PATTERNS", () => {
     }
   });
 
-  it("すべての音が同時に鳴っても、音量の合計が 1.0 を超えない", () => {
+  it("今ある 5 つの音が同時に鳴っても、音量の合計が 1.0 を超えない", () => {
     const sum = PLAYED_EVENTS.reduce(
       (total, event) => total + totalVolume(event),
       0,
@@ -151,6 +155,206 @@ describe("SOUND_PATTERNS", () => {
       if (event === "correct") continue;
       expect(totalVolume("correct")).toBeLessThan(totalVolume(event));
     }
+  });
+});
+
+/** 鳴らし始めを offset 秒ずらした層 */
+function layersAt(cue: SoundCue, offset = 0) {
+  return SOUND_PATTERNS[cue].layers.map((layer) => ({
+    ...layer,
+    delay: layer.delay + offset,
+  }));
+}
+
+/**
+ * 重なって鳴る層の音量の合計の最大値。
+ * 層はすべて立ち上がってから減衰するので、ある時刻の大きさは、そのとき鳴っている層の最大の音量の合計を超えない。
+ * 鳴っている層が増えるのは層の鳴り始めだけなので、鳴り始めの時刻だけを調べればよい
+ */
+function peakVolume(layers: readonly SoundLayer[]): number {
+  return Math.max(
+    ...layers.map(({ delay: time }) =>
+      layers
+        .filter(
+          (layer) => layer.delay <= time && time < layer.delay + layer.duration,
+        )
+        .reduce((sum, layer) => sum + layer.volume, 0),
+    ),
+  );
+}
+
+describe("SOUND_PATTERNS（足した 7 つの場面）", () => {
+  const ADDED_CUES = [
+    "ticket",
+    "opened",
+    "specialBowl",
+    "streakUp1",
+    "streakUp2",
+    "streakUp3",
+    "closingRush",
+    "stamp",
+    "personalBest",
+  ] as const;
+
+  it.each([
+    ["ticket", 0.6],
+    ["opened", 0.4],
+    ["specialBowl", 0.5],
+    ["streakUp1", 0.5],
+    ["streakUp2", 0.5],
+    ["streakUp3", 0.5],
+    ["closingRush", 0.8],
+    ["stamp", 0.3],
+    ["personalBest", 1.0],
+  ] as const)("%s は %f 秒以内に鳴り終わる", (cue, limit) => {
+    expect(soundLength(cue)).toBeLessThanOrEqual(limit);
+  });
+
+  it.each(ADDED_CUES)("%s は複数の層を重ねた音が鳴る", (cue) => {
+    expect(SOUND_PATTERNS[cue].layers.length).toBeGreaterThan(1);
+  });
+
+  it("すべての層は、音量が 0 より大きく、立ち上がりが鳴る長さより短い", () => {
+    for (const cue of ADDED_CUES) {
+      for (const layer of SOUND_PATTERNS[cue].layers) {
+        expect(layer.volume).toBeGreaterThan(0);
+        expect(layer.attack).toBeGreaterThan(0);
+        expect(layer.attack).toBeLessThan(layer.duration);
+      }
+    }
+  });
+
+  it.each(
+    ADDED_CUES,
+  )("%s は 1 つだけでも、正しく打ったときの音より大きく聞こえる", (cue) => {
+    expect(peakVolume(layersAt(cue))).toBeGreaterThan(
+      peakVolume(layersAt("correct")),
+    );
+  });
+
+  it("食券は、ボタンのカチッのあとに、券が出てくるガシャンが鳴る（鳴り始めが 2 つある）", () => {
+    const starts = new Set(
+      SOUND_PATTERNS.ticket.layers.map((layer) => layer.delay),
+    );
+    expect(starts.size).toBe(2);
+  });
+
+  it("いただきますは、拍子木を 1 回だけ打つ（閉店と同じ拍子木の音を使う）", () => {
+    const starts = new Set(
+      SOUND_PATTERNS.opened.layers.map((layer) => layer.delay),
+    );
+    expect(starts.size).toBe(1);
+    expect(SOUND_PATTERNS.opened.layers.map((layer) => layer.kind)).toEqual(
+      SOUND_PATTERNS.closed.layers.slice(0, 3).map((layer) => layer.kind),
+    );
+  });
+
+  it("閉店間際は、閉店より速く、3 回以上拍子木を打つ", () => {
+    const starts = [
+      ...new Set(SOUND_PATTERNS.closingRush.layers.map((layer) => layer.delay)),
+    ];
+    expect(starts.length).toBeGreaterThanOrEqual(3);
+    const interval = starts[1] - starts[0];
+    expect(interval).toBeLessThan(0.45);
+  });
+
+  it("特別な丼は、高い音（2000Hz 以上）の鈴が鳴る", () => {
+    const frequencies = SOUND_PATTERNS.specialBowl.layers.flatMap((layer) =>
+      layer.kind === "tone" ? [layer.frequency] : [],
+    );
+    expect(Math.min(...frequencies)).toBeGreaterThanOrEqual(2000);
+  });
+
+  it("判子は、低く鈍い音（いちばん大きい層が 200Hz 以下）", () => {
+    const loudest = SOUND_PATTERNS.stamp.layers.reduce((a, b) =>
+      a.volume >= b.volume ? a : b,
+    );
+    expect(loudest.kind).toBe("tone");
+    if (loudest.kind === "tone") {
+      expect(loudest.frequency).toBeLessThanOrEqual(200);
+    }
+  });
+
+  it("自己ベスト更新は、鳴る順に音が高くなっていく（上昇するファンファーレ）", () => {
+    const melody = SOUND_PATTERNS.personalBest.layers.flatMap((layer) =>
+      layer.kind === "tone" ? [layer] : [],
+    );
+    const firstOfEachStart = [
+      ...new Map(melody.map((layer) => [layer.delay, layer.frequency])),
+    ].sort(([a], [b]) => a - b);
+    const frequencies = firstOfEachStart.map(([, frequency]) => frequency);
+    expect(frequencies).toEqual([...frequencies].sort((a, b) => a - b));
+  });
+
+  describe("連続ボーナス", () => {
+    const tiers = ["streakUp1", "streakUp2", "streakUp3"] as const;
+    const highest = (cue: SoundCue) =>
+      Math.max(
+        ...SOUND_PATTERNS[cue].layers.flatMap((layer) =>
+          layer.kind === "tone" ? [layer.frequency] : [],
+        ),
+      );
+
+    it("段が上がるほど、いちばん高い音が高くなる", () => {
+      expect(highest("streakUp1")).toBeLessThan(highest("streakUp2"));
+      expect(highest("streakUp2")).toBeLessThan(highest("streakUp3"));
+    });
+
+    it("段が上がるほど、重ねる層が増えて華やかになる", () => {
+      expect(SOUND_PATTERNS.streakUp1.layers.length).toBeLessThan(
+        SOUND_PATTERNS.streakUp2.layers.length,
+      );
+      expect(SOUND_PATTERNS.streakUp2.layers.length).toBeLessThan(
+        SOUND_PATTERNS.streakUp3.layers.length,
+      );
+    });
+
+    it.each(tiers)("%s は、音が下から上へ駆け上がる", (cue) => {
+      const notes = SOUND_PATTERNS[cue].layers
+        .filter((layer) => layer.kind === "tone" && layer.wave === "triangle")
+        .map((layer) => (layer.kind === "tone" ? layer.frequency : 0));
+      expect(notes.length).toBeGreaterThanOrEqual(2);
+      expect(notes).toEqual([...notes].sort((a, b) => a - b));
+    });
+  });
+
+  describe("同時に起きた場面でも、音量の合計の最大が 1.0 を超えない", () => {
+    it("プレイ中: 平らげた瞬間に、連続ボーナス・特別な丼・替え玉・閉店間際が重なり、直前の打鍵とミスの音が残っている", () => {
+      const layers = [
+        "correct",
+        "miss",
+        "served",
+        "streakUp3",
+        "specialBowl",
+        "kaedama",
+        "closingRush",
+      ].flatMap((cue) => layersAt(cue as SoundCue));
+      expect(peakVolume(layers)).toBeLessThanOrEqual(1);
+    });
+
+    it("始めるとき: 食券を買ってすぐ始め、最初の丼が特別な丼", () => {
+      const layers = ["ticket", "opened", "specialBowl"].flatMap((cue) =>
+        layersAt(cue as SoundCue),
+      );
+      expect(peakVolume(layers)).toBeLessThanOrEqual(1);
+    });
+
+    it.each([
+      0,
+      STAMP_LANDING_SECONDS,
+    ])("閉店したとき: 平らげた直後の閉店に、判子（%f 秒後）と自己ベスト更新が続く", (stampSeconds) => {
+      const layers = [
+        ...layersAt("served"),
+        ...layersAt("closingRush"),
+        ...layersAt("closed"),
+        ...layersAt("stamp", stampSeconds),
+        ...layersAt(
+          "personalBest",
+          stampSeconds + PERSONAL_BEST_AFTER_STAMP_SECONDS,
+        ),
+      ];
+      expect(peakVolume(layers)).toBeLessThanOrEqual(1);
+    });
   });
 });
 

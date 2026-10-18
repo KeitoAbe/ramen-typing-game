@@ -69,8 +69,37 @@ type SoundPattern = {
   pitchVariation: number;
 };
 
+/** ゲームの出来事のほかに、画面の操作や結果画面の演出で鳴らす音 */
+export type SoundCue =
+  | RamenGameEvent
+  /** 券売機で食券を買った */
+  | "ticket"
+  /** 結果画面で称号の判子が押された */
+  | "stamp"
+  /** 結果画面で自己ベストを更新した */
+  | "personalBest";
+
+/**
+ * 結果画面が出てから、称号の判子が伝票に着くまでの時間（秒）。
+ * globals.css の stamp-press（0.3 秒待ってから 0.35 秒で押し、70% の時点で伝票に着く）に合わせる
+ */
+export const STAMP_LANDING_SECONDS = 0.3 + 0.35 * 0.7;
+
+/** 判子の音から、自己ベスト更新のファンファーレを鳴らし始めるまでの間（秒）。判子の音と重ならないようにする */
+export const PERSONAL_BEST_AFTER_STAMP_SECONDS = 0.25;
+
+type HyoshigiOptions = {
+  /** 木の胴が響き続ける長さ（秒） */
+  ring?: number;
+  /** 音量の倍率 */
+  gain?: number;
+};
+
 /** 拍子木を 1 回打った音。乾いたカツッ（ノイズ）に、木の胴の高い響き（発振器 2 つ）を重ねる */
-function hyoshigiStrike(delay: number): readonly SoundLayer[] {
+function hyoshigiStrike(
+  delay: number,
+  { ring = 0.5, gain = 1 }: HyoshigiOptions = {},
+): readonly SoundLayer[] {
   return [
     {
       kind: "noise",
@@ -79,7 +108,7 @@ function hyoshigiStrike(delay: number): readonly SoundLayer[] {
       delay,
       duration: 0.06,
       attack: 0.001,
-      volume: 0.07,
+      volume: 0.07 * gain,
     },
     {
       kind: "tone",
@@ -87,9 +116,9 @@ function hyoshigiStrike(delay: number): readonly SoundLayer[] {
       frequency: 1760,
       endFrequency: 1720,
       delay,
-      duration: 0.5,
+      duration: ring,
       attack: 0.002,
-      volume: 0.06,
+      volume: 0.06 * gain,
     },
     {
       // 木の響きらしさを出すため、倍音から外れた高さを薄く重ねる
@@ -97,18 +126,106 @@ function hyoshigiStrike(delay: number): readonly SoundLayer[] {
       wave: "sine",
       frequency: 4580,
       delay,
-      duration: 0.12,
+      duration: Math.min(0.12, ring),
+      attack: 0.001,
+      volume: 0.02 * gain,
+    },
+  ];
+}
+
+/** 鈴を 1 回振った音。打った瞬間の硬いノイズに、倍音から外れた高い響きを重ねて、金属らしくキラッと鳴らす */
+function bellStrike(
+  delay: number,
+  frequency: number,
+  ring: number,
+): readonly SoundLayer[] {
+  return [
+    {
+      kind: "noise",
+      filterFrequency: 6000,
+      q: 5,
+      delay,
+      duration: 0.03,
       attack: 0.001,
       volume: 0.02,
     },
+    {
+      kind: "tone",
+      wave: "sine",
+      frequency,
+      delay,
+      duration: ring,
+      attack: 0.002,
+      volume: 0.035,
+    },
+    {
+      kind: "tone",
+      wave: "sine",
+      frequency: frequency * 2.76,
+      delay,
+      duration: ring * 0.5,
+      attack: 0.001,
+      volume: 0.012,
+    },
   ];
+}
+
+/** 連続ボーナスの段ごとに、駆け上がる音の高さ（Hz）。段が上がるほど高く、音の数も増える */
+const STREAK_UP_NOTES = [
+  [784, 1047],
+  [880, 1175, 1480],
+  [1047, 1319, 1568, 2093],
+] as const;
+
+/**
+ * 連続ボーナスの倍率が上がった音。拍子木のような短いカツッに続けて、音を駆け上がる。
+ * いちばん上の段では、最後に鈴の響きを足して華やかにする
+ */
+function streakUp(tier: 0 | 1 | 2): SoundPattern {
+  const notes = STREAK_UP_NOTES[tier];
+  const step = 0.06;
+  const layers: SoundLayer[] = [
+    {
+      kind: "noise",
+      filterFrequency: 3000,
+      q: 4,
+      delay: 0,
+      duration: 0.03,
+      attack: 0.001,
+      volume: 0.02,
+    },
+    ...notes.map(
+      (frequency, index): SoundLayer => ({
+        kind: "tone",
+        wave: "triangle",
+        frequency,
+        delay: step * index,
+        // 最後の音だけ少し伸ばして、上がりきった感じを出す
+        duration: index === notes.length - 1 ? 0.22 : 0.12,
+        attack: 0.004,
+        volume: 0.04,
+      }),
+    ),
+  ];
+  if (tier === 2) {
+    layers.push({
+      kind: "tone",
+      wave: "sine",
+      frequency: 4186,
+      delay: step * (notes.length - 1),
+      duration: 0.25,
+      attack: 0.002,
+      volume: 0.012,
+    });
+  }
+  return { pitchVariation: 0, layers };
 }
 
 /**
  * 出来事ごとの効果音。外部の音源は使わず、ブラウザで合成する。
  * 丼を下げられたときは、のびていることが画面の動きで分かるので鳴らさない
  */
-export const SOUND_PATTERNS: Readonly<Record<RamenGameEvent, SoundPattern>> = {
+export const SOUND_PATTERNS: Readonly<Record<SoundCue, SoundPattern>> = {
   // 木のカウンターを指先で叩くコッ。帯域を絞った短いノイズに、高さが落ちる胴鳴りを重ねる
   correct: {
     pitchVariation: 0.06,
@@ -259,6 +376,179 @@ export const SOUND_PATTERNS: Readonly<Record<RamenGameEvent, SoundPattern>> = {
     pitchVariation: 0,
     layers: [...hyoshigiStrike(0), ...hyoshigiStrike(0.45)],
   },
+  // 券売機のボタンのカチッ（高く短いノイズと発振器）に続けて、券が出てくるガシャン
+  // （広い帯域のノイズに、金属の受け口の響きと、券が落ちる鈍い音を重ねる）
+  ticket: {
+    pitchVariation: 0,
+    layers: [
+      {
+        kind: "noise",
+        filterFrequency: 4000,
+        q: 3,
+        delay: 0,
+        duration: 0.025,
+        attack: 0.001,
+        volume: 0.04,
+      },
+      {
+        kind: "tone",
+        wave: "sine",
+        frequency: 2200,
+        endFrequency: 1800,
+        delay: 0,
+        duration: 0.03,
+        attack: 0.001,
+        volume: 0.03,
+      },
+      {
+        kind: "noise",
+        filterFrequency: 1200,
+        q: 0.8,
+        delay: 0.15,
+        duration: 0.25,
+        attack: 0.002,
+        volume: 0.06,
+      },
+      {
+        kind: "tone",
+        wave: "sine",
+        frequency: 620,
+        delay: 0.15,
+        duration: 0.3,
+        attack: 0.002,
+        volume: 0.03,
+      },
+      {
+        kind: "tone",
+        wave: "sine",
+        frequency: 1470,
+        delay: 0.15,
+        duration: 0.2,
+        attack: 0.002,
+        volume: 0.02,
+      },
+      {
+        kind: "tone",
+        wave: "sine",
+        frequency: 150,
+        endFrequency: 90,
+        delay: 0.15,
+        duration: 0.12,
+        attack: 0.002,
+        volume: 0.05,
+      },
+    ],
+  },
+  // 「いただきます」の拍子木を 1 回「カン」。閉店の音より響きを短くして、始まりの合図らしく歯切れよくする
+  opened: {
+    pitchVariation: 0,
+    layers: hyoshigiStrike(0, { ring: 0.35 }),
+  },
+  // 店主のおすすめが出たときの、鈴のキラッ。高さの違う鈴を 2 回振る
+  specialBowl: {
+    pitchVariation: 0,
+    layers: [...bellStrike(0, 2637, 0.35), ...bellStrike(0.08, 3136, 0.4)],
+  },
+  streakUp1: streakUp(0),
+  streakUp2: streakUp(1),
+  streakUp3: streakUp(2),
+  // 閉店間際を知らせる、拍子木の速い連打「カカカカン」。響きを短く切って急かす感じを出し、最後の 1 打だけ響かせる
+  closingRush: {
+    pitchVariation: 0,
+    layers: [
+      ...hyoshigiStrike(0, { ring: 0.12, gain: 0.7 }),
+      ...hyoshigiStrike(0.11, { ring: 0.12, gain: 0.7 }),
+      ...hyoshigiStrike(0.22, { ring: 0.12, gain: 0.7 }),
+      ...hyoshigiStrike(0.33, { ring: 0.35, gain: 0.7 }),
+    ],
+  },
+  // 判子を押すトン。低く落ちる胴鳴りに、こもったノイズと、紙を打つ乾いたノイズを重ねる
+  stamp: {
+    pitchVariation: 0,
+    layers: [
+      {
+        kind: "tone",
+        wave: "sine",
+        frequency: 140,
+        endFrequency: 70,
+        delay: 0,
+        duration: 0.16,
+        attack: 0.002,
+        volume: 0.1,
+      },
+      {
+        kind: "noise",
+        filterFrequency: 500,
+        q: 1,
+        delay: 0,
+        duration: 0.06,
+        attack: 0.001,
+        volume: 0.06,
+      },
+      {
+        kind: "noise",
+        filterFrequency: 1800,
+        q: 0.7,
+        delay: 0,
+        duration: 0.03,
+        attack: 0.001,
+        volume: 0.02,
+      },
+    ],
+  },
+  // 自己ベスト更新のファンファーレ。ド・ミ・ソと駆け上がり、高いドの和音を伸ばして、鈴の響きを添える
+  personalBest: {
+    pitchVariation: 0,
+    layers: [
+      ...[523, 659, 784].map(
+        (frequency, index): SoundLayer => ({
+          kind: "tone",
+          wave: "triangle",
+          frequency,
+          delay: 0.1 * index,
+          duration: 0.12,
+          attack: 0.005,
+          volume: 0.05,
+        }),
+      ),
+      {
+        kind: "tone",
+        wave: "triangle",
+        frequency: 1047,
+        delay: 0.3,
+        duration: 0.6,
+        attack: 0.01,
+        volume: 0.05,
+      },
+      {
+        kind: "tone",
+        wave: "triangle",
+        frequency: 1319,
+        delay: 0.3,
+        duration: 0.5,
+        attack: 0.01,
+        volume: 0.03,
+      },
+      {
+        kind: "tone",
+        wave: "triangle",
+        frequency: 784,
+        delay: 0.3,
+        duration: 0.5,
+        attack: 0.01,
+        volume: 0.03,
+      },
+      {
+        kind: "noise",
+        filterFrequency: 6000,
+        q: 3,
+        delay: 0.3,
+        duration: 0.05,
+        attack: 0.001,
+        volume: 0.015,
+      },
+    ],
+  },
 };
 
 /**
@@ -266,10 +556,10 @@ export const SOUND_PATTERNS: Readonly<Record<RamenGameEvent, SoundPattern>> = {
  * 同じ割合で揺らす。random は 0 以上 1 未満を返す関数で、テストで差し替えられる
  */
 export function resolveSoundLayers(
-  event: RamenGameEvent,
+  cue: SoundCue,
   random: () => number = Math.random,
 ): readonly SoundLayer[] {
-  const { layers, pitchVariation } = SOUND_PATTERNS[event];
+  const { layers, pitchVariation } = SOUND_PATTERNS[cue];
   if (pitchVariation === 0) return layers;
   const ratio = 1 + (random() * 2 - 1) * pitchVariation;
   return layers.map((layer) =>
@@ -313,14 +603,19 @@ function applyEnvelope(
 /**
  * Web Audio で効果音を鳴らす関数を作る。
  * ブラウザはユーザー操作の前に音を出せないので、AudioContext は最初に鳴らすときに作る
- * （食券を選ぶクリックのあとなので、鳴らせる）
+ * （食券を選ぶクリックのあとなので、鳴らせる）。
+ * delaySeconds を渡すと、その秒数だけ遅らせて鳴らす。タイマーを使わず Web Audio の時刻で予約するので、
+ * 画面の動きに合わせる音でもゲームの進行を止めない
  */
-export function createSoundPlayer(): (event: RamenGameEvent) => void {
+export function createSoundPlayer(): (
+  cue: SoundCue,
+  delaySeconds?: number,
+) => void {
   let context: AudioContext | undefined;
   let output: AudioNode | undefined;
   let noiseBuffer: AudioBuffer | undefined;
-  return (event) => {
-    if (SOUND_PATTERNS[event].layers.length === 0) return;
+  return (cue, delaySeconds = 0) => {
+    if (SOUND_PATTERNS[cue].layers.length === 0) return;
     try {
       context ??= new AudioContext();
       if (context.state === "suspended") void context.resume();
@@ -336,8 +631,8 @@ export function createSoundPlayer(): (event: RamenGameEvent) => void {
         output = limiter;
       }
       noiseBuffer ??= createNoiseBuffer(context);
-      const start = context.currentTime;
-      for (const layer of resolveSoundLayers(event)) {
+      const start = context.currentTime + delaySeconds;
+      for (const layer of resolveSoundLayers(cue)) {
         const begin = start + layer.delay;
         const end = begin + layer.duration;
         const gain = context.createGain();

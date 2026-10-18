@@ -1,4 +1,5 @@
 import { soggyLimitMs } from "@/client/lib/ramen-bowl";
+import { CLOSING_RUSH_THRESHOLD_MS } from "@/client/lib/ramen-closing-rush";
 import type { Course } from "@/client/lib/ramen-course";
 import { detectGameEvents } from "@/client/lib/ramen-events";
 import {
@@ -97,8 +98,85 @@ describe("detectGameEvents", () => {
     expect(eventsOf(start(), { type: "tick", now: 100 })).toEqual([]);
   });
 
+  it("プレイを始めると opened", () => {
+    expect(detectGameEvents(initialRamenGameState, start())).toEqual([
+      "opened",
+    ]);
+  });
+
+  it("最初の丼が特別な丼なら、opened と specialBowl", () => {
+    const special = ramenGameReducer(initialRamenGameState, {
+      type: "start",
+      course,
+      orders,
+      now: 0,
+      roll: 0,
+    });
+    expect(detectGameEvents(initialRamenGameState, special)).toEqual([
+      "opened",
+      "specialBowl",
+    ]);
+  });
+
+  it("平らげて次に特別な丼が出ると specialBowl", () => {
+    const state = typeKeys(start(), "shi");
+    expect(eventsOf(state, { type: "key", key: "o", now: 0, roll: 0 })).toEqual(
+      ["served", "specialBowl"],
+    );
+  });
+
+  it("のびきって下げられ、次に特別な丼が出ても specialBowl", () => {
+    const now = soggyLimitMs(orders[0]);
+    expect(eventsOf(start(), { type: "tick", now, roll: 0 })).toEqual([
+      "discarded",
+      "specialBowl",
+    ]);
+  });
+
+  it("普通の丼が続くときは specialBowl にしない", () => {
+    const state = typeKeys(start(), "shi");
+    expect(
+      eventsOf(state, { type: "key", key: "o", now: 0, roll: 0.99 }),
+    ).toEqual(["served"]);
+  });
+
+  it.each([
+    [3, "streakUp1"],
+    [5, "streakUp2"],
+    [10, "streakUp3"],
+  ] as const)("連続 %i 杯目を平らげて倍率が上がると %s", (bowls, expected) => {
+    // 「しお」「みそ」（どちらも 4 キー）を交互にミスなしで平らげ、bowls 杯目の最後のキーの手前まで打つ
+    const keys = "shiomiso".repeat(bowls).slice(0, bowls * 4);
+    const state = typeKeys(start(), keys.slice(0, -1));
+    const events = eventsOf(state, {
+      type: "key",
+      key: keys.slice(-1),
+      now: 0,
+    });
+    expect(events.filter((event) => event.startsWith("streakUp"))).toEqual([
+      expected,
+    ]);
+  });
+
+  it("倍率が変わらない杯数では streakUp を出さない", () => {
+    // 2 杯目までは倍率がかからない
+    const state = typeKeys(start(), "shiomis");
+    expect(eventsOf(state, { type: "key", key: "o", now: 0 })).toEqual([
+      "served",
+    ]);
+  });
+
+  it("残り時間が閉店間際に入ると closingRush（1 回だけ）", () => {
+    const now = course.timeLimitMs - CLOSING_RUSH_THRESHOLD_MS;
+    const before = ramenGameReducer(start(), { type: "tick", now: now - 100 });
+    const rush = ramenGameReducer(before, { type: "tick", now });
+    expect(detectGameEvents(before, rush)).toContain("closingRush");
+    expect(eventsOf(rush, { type: "tick", now: now + 100 })).not.toContain(
+      "closingRush",
+    );
+  });
+
   it("プレイ中でないときの変化は出来事にしない", () => {
-    expect(detectGameEvents(initialRamenGameState, start())).toEqual([]);
     const closed = ramenGameReducer(start(), {
       type: "tick",
       now: course.timeLimitMs,
