@@ -1,3 +1,4 @@
+import { GuideAd } from "@/client/components/adsense/guide-ad";
 import { GameGuide } from "@/client/components/game-guide/game-guide";
 import { RamenGame } from "@/client/components/ramen-game/ramen-game";
 import { SiteFooter } from "@/client/components/site-footer/site-footer";
@@ -5,7 +6,8 @@ import { loadOrders } from "@/server/contexts/order/presentation/loaders/load-or
 
 export default async function Home() {
   const orders = await loadOrders();
-  // 開いたときは舞台だけが画面に収まり、下にスクロールすると紹介（ページの見出しを含む）が読める
+  // 開いたときは舞台だけが画面に収まり、下にスクロールすると紹介（ページの見出しを含む）が読める。
+  // 広告は紹介の後ろに置き、誤クリックを誘わないよう舞台から離す
   return (
     <>
       <main className="flex w-full flex-1 flex-col">
@@ -13,6 +15,7 @@ export default async function Home() {
           <RamenGame orders={orders} />
         </div>
         <GameGuide />
+        <GuideAd />
       </main>
       <SiteFooter />
     </>

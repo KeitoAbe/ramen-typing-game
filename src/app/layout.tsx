@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Dela_Gothic_One, Geist_Mono, Zen_Maru_Gothic } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/site-metadata";
+import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import "./globals.css";
 
 // 日本語の書体は subsets に日本語がなく、先読みすると重いので preload しない
@@ -46,6 +47,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       className={`${delaGothicOne.variable} ${zenMaruGothic.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <AdsenseScript />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
