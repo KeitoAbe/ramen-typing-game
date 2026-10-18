@@ -42,3 +42,8 @@ next-env.d.ts
 
 # loop runner logs
 /.loop/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/

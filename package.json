@@ -11,6 +11,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:e2e": "playwright test",
     "depcruise": "depcruise src scripts --config .dependency-cruiser.cjs",
     "knip": "knip",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm depcruise && pnpm knip",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.19.2",

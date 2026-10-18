@@ -277,7 +277,10 @@ export function RamenPlay({
           <span className="text-yatai-lantern underline decoration-[0.15cqw] underline-offset-[0.3cqw]">
             {typedRomaji(state.typing)}
           </span>
-          <span className="font-bold">{remainingRomaji(state.typing)}</span>
+          {/* E2E テストが、これから打つローマ字を読んで打つための目印 */}
+          <span data-testid="remaining-romaji" className="font-bold">
+            {remainingRomaji(state.typing)}
+          </span>
         </p>
       </div>
 

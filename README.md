@@ -57,7 +57,11 @@ pnpm install
 pnpm dev        # http://localhost:3000
 pnpm verify     # lint / typecheck / test / depcruise / knip
 pnpm build      # 本番ビルド
+pnpm test:e2e   # 本番ビルドをブラウザで開いて通しで遊ぶ E2E テスト（e2e/）
 ```
+
+E2E テストは初回だけ `pnpm exec playwright install chromium` でブラウザを入れてから実行する。
+ブラウザが要って時間がかかるので `pnpm verify` には含めず、CI の `e2e` ジョブで実行している。
 
 ### 環境変数
 
