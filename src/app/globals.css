@@ -42,7 +42,16 @@
   --animate-lantern-sway: lantern-sway 3.6s ease-in-out infinite alternate;
   --animate-steam-waver: steam-waver 1.8s ease-in-out infinite alternate;
   --animate-ticket-issue: ticket-issue 0.5s ease-out both;
-  --animate-stamp-press: stamp-press 0.35s 0.3s ease-in both;
+  --animate-stamp-press: stamp-press 0.35s ease-in both;
+
+  /* 結果発表の演出（docs/design.md の「結果発表の演出」）。同じく motion-safe: で付ける。
+     長さと待ち時間は src/client/lib/ramen-result-reveal.ts の段取りから style で上書きする */
+  --animate-receipt-row-in: receipt-row-in 0.2s ease-out both;
+  --animate-balance-pop: balance-pop 0.35s ease-out both;
+  --animate-bubble-in: bubble-in 0.25s ease-out both;
+  --animate-record-pop: record-pop 0.4s ease-out both;
+  --animate-shopkeeper-cheer: shopkeeper-cheer 0.6s ease-in-out both;
+  --animate-confetti-fall: confetti-fall 0.6s ease-in both;
 
   /* 屋台の背景の生活感のある動き（docs/design.md の「動き」）。同じく motion-safe: で付ける。
      星の瞬きの長さと始まりは星ごとに style で上書きする */
@@ -384,6 +393,96 @@
     }
     100% {
       transform: scale(1);
+    }
+  }
+
+  /* 伝票の成績の行が、上から少し下りながら現れる */
+  @keyframes receipt-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(-40%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 差し引きが大きく弾んで出る。右端を支点に膨らませて、伝票の外にはみ出さないようにする */
+  @keyframes balance-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.25);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* 店主の吹き出しが、ふわっと浮かび上がる */
+  @keyframes bubble-in {
+    from {
+      opacity: 0;
+      transform: translateY(15%) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* 「新記録」ののぼりが弾む */
+  @keyframes record-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    55% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+    80% {
+      transform: scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* 店主が 2 度跳び上がって喜ぶ。服の裾がカウンターの天板から出ない高さに留める */
+  @keyframes shopkeeper-cheer {
+    0%,
+    50%,
+    100% {
+      transform: translateY(0);
+    }
+    25%,
+    75% {
+      transform: translateY(-8px);
+    }
+  }
+
+  /* 紙吹雪がくるくる回りながら舞い落ち、消える */
+  @keyframes confetti-fall {
+    0% {
+      opacity: 0;
+      transform: translateY(0) rotate(0);
+    }
+    15% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(var(--confetti-drop)) rotate(var(--confetti-spin));
     }
   }
 

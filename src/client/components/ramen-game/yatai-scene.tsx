@@ -349,6 +349,7 @@ const NOREN_CHARS = ["ら", "ー", "め", "ん"] as const;
  */
 export function YataiScene({
   shopkeeperMood = "normal",
+  isShopkeeperCheering = false,
   isClosingRush = false,
   hasStrayCat = false,
 }: YataiStallProps & { hasStrayCat?: boolean }) {
@@ -363,6 +364,7 @@ export function YataiScene({
       {hasStrayCat && <StrayCat />}
       <YataiStall
         shopkeeperMood={shopkeeperMood}
+        isShopkeeperCheering={isShopkeeperCheering}
         isClosingRush={isClosingRush}
       />
     </svg>
@@ -453,6 +455,8 @@ export function YataiSky({
 
 type YataiStallProps = {
   shopkeeperMood?: ShopkeeperMood;
+  /** 店主が跳び上がって喜んでいる */
+  isShopkeeperCheering?: boolean;
   /** 閉店間際は提灯の灯りを強める */
   isClosingRush?: boolean;
 };
@@ -460,6 +464,7 @@ type YataiStallProps = {
 /** 屋台の壁・屋根・のれん・提灯・店主・カウンター（1280×720 の座標） */
 export function YataiStall({
   shopkeeperMood = "normal",
+  isShopkeeperCheering = false,
   isClosingRush = false,
 }: YataiStallProps) {
   return (
@@ -557,8 +562,17 @@ export function YataiStall({
       <Lantern cx={196} label={["中", "華"]} isClosingRush={isClosingRush} />
       <Lantern cx={1084} label={["そ", "ば"]} isClosingRush={isClosingRush} />
 
-      <Shopkeeper mood={shopkeeperMood} />
-      <ShopkeeperYuchiri />
+      {/* 結果画面で上の称号が出たら、腕ごと跳び上がって喜ぶ */}
+      <g
+        className={
+          isShopkeeperCheering
+            ? "motion-safe:animate-shopkeeper-cheer"
+            : undefined
+        }
+      >
+        <Shopkeeper mood={shopkeeperMood} />
+        <ShopkeeperYuchiri />
+      </g>
 
       {/* 木のカウンター。脇には夜空を見せる（ページの背景と同じ色で塗ると、舞台の外と見分けられない）。
           券売機の画面で縮小して置いても舞台の下端まで届くよう、下に長く伸ばしておく */}

@@ -67,6 +67,8 @@ test("券売機から並を遊び、結果画面を見て券売機に戻れる",
   // 制限時間（60 秒）を過ぎると閉店して、結果画面が出る
   await page.clock.runFor(61_000);
   await expect(page.getByRole("heading", { name: "御会計" })).toBeVisible();
+  // 結果発表の演出は Space で飛ばして、最終の表示を確かめる（演出は result-reveal.spec.ts で確かめる）
+  await page.keyboard.press("Space");
   await expect(receiptValue(page, "平らげた杯数")).toHaveText("1 杯");
   // 始めるために押したスペースや、待っている間に押したキーはミスに数えない
   await expect(receiptValue(page, "ミスタイプ数")).toHaveText("1 回");

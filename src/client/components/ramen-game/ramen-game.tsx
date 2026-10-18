@@ -412,6 +412,18 @@ export function RamenGame({ orders }: Props) {
         toppings={state.toppings}
         result={summarizePlay(state.stats, state.playedMs)}
         personalBest={personalBest}
+        onRevealSkip={(elapsedSeconds) => {
+          // 判子が着く前に演出を飛ばしたら、予約した判子と自己ベストの音を取り消し、いま押された判子に合わせて鳴らし直す。
+          // 取り消しは鳴っている音も止めるので、判子が着いたあと（判子の音が鳴っている）なら何もしない
+          if (!isSoundEnabled || elapsedSeconds >= STAMP_LANDING_SECONDS) {
+            return;
+          }
+          stopSounds();
+          playSound("stamp");
+          if (personalBest?.isUpdated) {
+            playSound("personalBest", PERSONAL_BEST_AFTER_STAMP_SECONDS);
+          }
+        }}
         onReplay={() => {
           trackReplay(state.course);
           // 判子や自己ベストの音が、次の券売機の画面まで残らないようにする
