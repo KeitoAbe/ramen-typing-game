@@ -11,7 +11,7 @@ type OgImageFont = {
 };
 
 /**
- * OGP 画像に使う、画面と同じ書体（看板の Dela Gothic One・本文の Zen Maru Gothic）を読み込む。
+ * OGP 画像に使う、画面と同じ書体（看板の Dela Gothic One・本文の Zen Kaku Gothic New）を読み込む。
  * 描く文字だけを取り寄せるので、それぞれの書体で描く文字を渡す。
  * キャッシュして、OGP 画像をビルド時に作れるようにする（開くたびに Google Fonts へ取りに行かない）
  */
@@ -25,10 +25,10 @@ export async function loadOgImageFonts({
   "use cache";
   const [display, body] = await Promise.all([
     loadGoogleFont("Dela Gothic One", 400, displayText),
-    loadGoogleFont("Zen Maru Gothic", 700, bodyText),
+    loadGoogleFont("Zen Kaku Gothic New", 700, bodyText),
   ]);
   return [
     { name: "Dela Gothic One", data: display, weight: 400, style: "normal" },
-    { name: "Zen Maru Gothic", data: body, weight: 700, style: "normal" },
+    { name: "Zen Kaku Gothic New", data: body, weight: 700, style: "normal" },
   ];
 }

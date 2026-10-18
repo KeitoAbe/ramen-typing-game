@@ -107,8 +107,8 @@ function TicketMachineScene() {
         y={576}
         textAnchor="middle"
         fontSize={20}
+        fontWeight={700}
         fill={SUMI}
-        className="font-display"
       >
         硬貨
       </text>
@@ -127,8 +127,8 @@ function TicketMachineScene() {
         y={576}
         textAnchor="middle"
         fontSize={20}
+        fontWeight={700}
         fill={SUMI}
-        className="font-display"
       >
         千円札
       </text>
@@ -141,8 +141,8 @@ function TicketMachineScene() {
         y={642}
         textAnchor="middle"
         fontSize={18}
+        fontWeight={700}
         fill="var(--color-yatai-kinari)"
-        className="font-display"
       >
         取出口
       </text>
@@ -222,8 +222,8 @@ export function TicketMachine({ courses, onSelect }: Props) {
           390px 幅でも読めるよう、文字の大きさに下限を付ける */}
       {isTouchPrimary && (
         <p className="absolute top-[max(34px,5cqw)] left-[44%] w-[54%] text-center">
-          <span className="inline-flex flex-col items-center rounded-[0.6cqw] border-[max(2px,0.35cqw)] border-yatai-sumi bg-yatai-wood px-[max(6px,1.2cqw)] py-[max(2px,0.5cqw)] font-bold text-yatai-kinari shadow-[0_0.4cqw_0_var(--color-yatai-wood-dark)]">
-            <span className="text-[max(11px,1.8cqw)] leading-tight text-yatai-lantern">
+          <span className="inline-flex stage-wood-board flex-col items-center px-[max(6px,1.2cqw)] py-[max(2px,0.5cqw)] font-bold">
+            <span className="text-[max(11px,1.8cqw)] leading-tight text-yatai-amber">
               PC のキーボードで遊んでください
             </span>
             <span className="text-[max(10px,1.4cqw)] leading-tight">
@@ -239,11 +239,11 @@ export function TicketMachine({ courses, onSelect }: Props) {
       </div>
 
       {/* 遊び方: 屋台の壁に貼った貼り紙 */}
-      <div className="absolute top-[63.6%] left-[55%] w-[24.2%] -rotate-2 rounded-[0.2cqw] border-[0.25cqw] border-yatai-sumi bg-yatai-kinari px-[1cqw] py-[0.6cqw] text-yatai-sumi shadow-[0.3cqw_0.3cqw_0_rgb(0_0_0/0.35)]">
-        <h2 className="text-center font-display text-[1.5cqw] leading-tight">
+      <div className="absolute top-[63.6%] left-[55%] w-[24.2%] -rotate-2 stage-paper px-[1cqw] py-[0.6cqw]">
+        <h2 className="text-center text-[1.5cqw] leading-tight font-bold">
           遊び方
         </h2>
-        <p className="text-[1.25cqw] leading-snug font-bold">
+        <p className="text-[1.25cqw] leading-snug">
           食券の時間内は食べ放題。出てくる注文をローマ字で打って平らげよう。
           お会計が食券代を超えれば元が取れる。
         </p>
@@ -264,17 +264,16 @@ export function TicketMachine({ courses, onSelect }: Props) {
                 aria-hidden="true"
                 className="size-[1.4cqw] shrink-0 rounded-full border-[0.25cqw] border-yatai-sumi bg-yatai-wood-dark group-hover:bg-yatai-lantern group-focus-visible:bg-yatai-lantern"
               />
-              {/* 品名と値段は折り返さない。Dela Gothic One は数字の幅が広いので、
-                  値段が 6 桁（例: 200,000 円）になっても収まる大きさにしている */}
+              {/* 品名と値段は折り返さない。値段が 6 桁（例: 200,000 円）になっても収まる大きさにしている */}
               <span className="shrink-0 font-display text-[2.6cqw] leading-none whitespace-nowrap">
                 {course.name}
               </span>
               <span className="ml-auto flex shrink-0 flex-col items-end leading-tight whitespace-nowrap">
-                <span className="font-display text-[1.8cqw]">
+                <span className="text-[1.8cqw] font-bold tabular-nums">
                   {course.price.toLocaleString("ja-JP")}
                   <span className="text-[1.25cqw]"> 円</span>
                 </span>
-                <span className="text-[1.25cqw] font-bold">
+                <span className="text-[1.25cqw]">
                   {course.timeLimitMs / 1000} 秒 食べ放題
                 </span>
               </span>

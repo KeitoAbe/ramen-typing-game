@@ -100,7 +100,7 @@ export default function PrivacyPage() {
           ご質問は
           <Link
             href="/contact"
-            className="text-yatai-amber underline underline-offset-4 hover:text-yatai-kinari"
+            className="underline underline-offset-4 hover:text-yatai-amber"
           >
             お問い合わせ
           </Link>
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
         </p>
       </LegalSection>
 
-      <p className="mt-10 text-right text-sm text-yatai-wood-light">
+      <p className="mt-10 text-right text-sm text-yatai-kinari/75">
         制定日: {ESTABLISHED_ON}
       </p>
     </LegalPage>

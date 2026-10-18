@@ -46,13 +46,13 @@ export function ToppingSelect({ course, onStart }: Props) {
 
       <form
         onSubmit={submit}
-        className="absolute top-[12%] left-[18%] flex h-[78%] w-[64%] flex-col rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-kinari px-[2.4cqw] py-[1.6cqw] text-yatai-sumi shadow-[0.5cqw_0.5cqw_0_rgb(0_0_0/0.4)]"
+        className="absolute top-[12%] left-[18%] flex h-[78%] w-[64%] flex-col stage-paper px-[2.4cqw] py-[1.6cqw]"
       >
         <fieldset className="flex min-h-0 flex-1 flex-col">
           <legend className="w-full text-center font-display text-[3cqw] leading-tight tracking-[0.3em]">
             トッピング
           </legend>
-          <p className="mt-[0.4cqw] text-center text-[1.3cqw] leading-snug font-bold">
+          <p className="mt-[0.4cqw] text-center text-[1.3cqw] leading-snug">
             食券「{course.name}」を受け取りました。
             トッピングを足すと難しくなる代わりに、丼が 1 つにつき{" "}
             {TOPPING_PRICE_RATE} 倍で売れる
@@ -78,10 +78,10 @@ export function ToppingSelect({ course, onStart }: Props) {
                         {topping.name}
                       </span>
                     </span>
-                    <span className="text-[1.3cqw] leading-snug font-bold">
+                    <span className="text-[1.3cqw] leading-snug">
                       {topping.effect}
                     </span>
-                    <span className="text-[1.4cqw] font-bold text-yatai-lantern">
+                    <span className="text-[1.4cqw] font-bold text-yatai-lantern-dark">
                       値段 ×{TOPPING_PRICE_RATE}
                     </span>
                   </label>
@@ -91,7 +91,7 @@ export function ToppingSelect({ course, onStart }: Props) {
           </ul>
         </fieldset>
 
-        <p className="mt-[1.2cqw] text-center text-[1.25cqw] font-bold">
+        <p className="mt-[1.2cqw] text-center text-[1.25cqw]">
           両方足すと ×{TOPPING_PRICE_RATE} × {TOPPING_PRICE_RATE}
           。何も足さずに始めてもよい
         </p>

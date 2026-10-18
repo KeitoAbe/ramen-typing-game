@@ -13,6 +13,7 @@
 | ファイル | 内容 |
 |---------|------|
 | [architecture.md](architecture.md) | アプリのコード構成とレイヤーのルール |
+| [design.md](design.md) | 画面の見た目（書体・面・色）の使い分けの規則 |
 | [loop-engineering.md](loop-engineering.md) | ループの運用ルール（判定順、ラベル、CodeRabbit の扱い、GitHub 側のセットアップ） |
 | [loop-session-rules.md](loop-session-rules.md) | ループの各セッションに共通する規則 |
 

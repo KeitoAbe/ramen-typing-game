@@ -49,7 +49,7 @@ const FAQS: readonly Faq[] = [
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-12">
-      <h2 className="border-b-2 border-yatai-wood pb-2 font-display text-xl leading-snug text-yatai-amber sm:text-2xl">
+      <h2 className="border-b-2 border-yatai-wood pb-2 text-xl leading-heading font-bold sm:text-2xl">
         {title}
       </h2>
       <div className="mt-4 space-y-4">{children}</div>
@@ -65,11 +65,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export function GameGuide() {
   const specialBowlInterval = Math.round(1 / SPECIAL_BOWL_CHANCE);
   return (
-    <article className="mx-auto w-full max-w-3xl px-5 py-16 text-base leading-relaxed wrap-break-word sm:px-8">
+    <article className="mx-auto w-full max-w-3xl px-5 py-16 text-base leading-body wrap-break-word sm:px-8">
       <header>
-        <h1 className="font-display text-2xl leading-snug text-yatai-kinari sm:text-3xl">
+        <h1 className="font-display text-2xl leading-heading text-yatai-kinari sm:text-3xl">
           ラーメン屋台タイピング
-          <span className="mt-1 block text-base text-yatai-amber sm:text-lg">
+          <span className="mt-1 block font-sans text-base font-bold text-yatai-kinari/75 sm:text-lg">
             注文をローマ字で打って、ラーメンを平らげるタイピングゲーム
           </span>
         </h1>
@@ -85,40 +85,38 @@ export function GameGuide() {
       </Section>
 
       <Section title="遊び方">
-        <ol className="list-decimal space-y-3 pl-6 marker:font-bold marker:text-yatai-amber">
+        <ol className="list-decimal space-y-3 pl-6 marker:font-bold marker:text-yatai-kinari/75">
           <li>
-            <strong className="text-yatai-amber">食券を買う。</strong>
+            <strong>食券を買う。</strong>
             並・大盛り・特盛りから選ぶと始まります。
           </li>
           <li>
-            <strong className="text-yatai-amber">注文をローマ字で打つ。</strong>
+            <strong>注文をローマ字で打つ。</strong>
             木札の注文を打ち切ると、次の丼が出ます。
           </li>
           <li>
-            <strong className="text-yatai-amber">麺がのびる前に食べる。</strong>
+            <strong>麺がのびる前に食べる。</strong>
             丼はよみ 1 文字 {PRICE_PER_KANA} 円で、できたてなら{" "}
             {FRESH_PRICE_RATE} 倍で売れます。のびるほど安くなり（最低{" "}
             {MIN_PRICE_RATE} 倍）、のびきると下げられます。
           </li>
           <li>
-            <strong className="text-yatai-amber">替え玉で時間を延ばす。</strong>
+            <strong>替え玉で時間を延ばす。</strong>
             ミスなしで {KAEDAMA_GAUGE_MAX} キー打つと、制限時間が{" "}
             {KAEDAMA_EXTENSION_MS / 1000} 秒延びます。
           </li>
           <li>
-            <strong className="text-yatai-amber">連続ボーナスを狙う。</strong>
+            <strong>連続ボーナスを狙う。</strong>
             ミスせず続けて平らげると倍率がかかります（
             {describeStreakBonus()}）。
           </li>
           <li>
-            <strong className="text-yatai-amber">
-              店主のおすすめを逃さない。
-            </strong>
+            <strong>店主のおすすめを逃さない。</strong>
             およそ {specialBowlInterval} 杯に 1 杯、値段が{" "}
             {SPECIAL_BOWL_PRICE_RATE} 倍の特別な丼が出ます。
           </li>
           <li>
-            <strong className="text-yatai-amber">伝票で成績を見る。</strong>
+            <strong>伝票で成績を見る。</strong>
             閉店すると、損得や速さ、苦手なキー、称号が出ます。成績は X
             で共有できます。
           </li>
@@ -133,17 +131,17 @@ export function GameGuide() {
             return (
               <li
                 key={course.id}
-                className="rounded-md border-2 border-yatai-wood bg-yatai-night p-4"
+                className="rounded-md bg-yatai-wood-dark p-4 shadow-[inset_0_2px_0_rgb(255_255_255/0.12)]"
               >
-                <h3 className="font-display text-xl text-yatai-kinari">
+                <h3 className="text-lg leading-heading font-bold">
                   {course.name}
                 </h3>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 text-sm">
-                  <dt className="text-yatai-amber">食券代</dt>
+                  <dt className="text-yatai-kinari/75">食券代</dt>
                   <dd>{guide.priceLabel}</dd>
-                  <dt className="text-yatai-amber">食べ放題</dt>
+                  <dt className="text-yatai-kinari/75">食べ放題</dt>
                   <dd>{guide.timeLabel}</dd>
-                  <dt className="text-yatai-amber">注文</dt>
+                  <dt className="text-yatai-kinari/75">注文</dt>
                   <dd>{guide.readingLengthLabel}</dd>
                 </dl>
                 <p className="mt-3 text-sm">{COURSE_NOTES[course.id]}</p>
@@ -157,7 +155,7 @@ export function GameGuide() {
         <dl className="space-y-6">
           {FAQS.map(({ question, answer }) => (
             <div key={question}>
-              <dt className="font-bold text-yatai-amber">Q. {question}</dt>
+              <dt className="font-bold">Q. {question}</dt>
               <dd className="mt-1">A. {answer}</dd>
             </div>
           ))}

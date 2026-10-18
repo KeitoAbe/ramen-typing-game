@@ -17,7 +17,7 @@ export function SoundToggle({ enabled, onToggle }: Props) {
         if (event.key === " " || event.key === "Enter") event.stopPropagation();
       }}
       // 屋台に掛けた小さな木札に見せる
-      className="rounded-[0.5cqw] border-[max(2px,0.25cqw)] border-yatai-sumi bg-yatai-wood px-[1cqw] py-[0.3cqw] text-[max(11px,1.25cqw)] font-bold text-yatai-kinari shadow-[0_0.3cqw_0_var(--color-yatai-wood-dark)] hover:bg-yatai-wood-light"
+      className="rounded-[0.6cqw] border-[max(2px,0.25cqw)] border-yatai-sumi bg-yatai-wood px-[1cqw] py-[0.3cqw] text-[max(11px,1.25cqw)] font-bold text-yatai-kinari shadow-[0_0.3cqw_0_var(--color-yatai-wood-dark)] hover:bg-yatai-wood-light"
     >
       効果音: {enabled ? "オン" : "オフ"}
     </button>
