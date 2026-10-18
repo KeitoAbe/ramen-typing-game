@@ -2,7 +2,7 @@
 // 上限に当たったセッションは仕事をしていないので、失敗として数えずに解除を待つ（runner.ts）。
 
 /** 利用上限に当たったときの出力。例: "You've hit your session limit · resets 12:20pm (Asia/Tokyo)" */
-const LIMIT_PATTERN = /hit your (?:[a-z]+ )?limit|usage limit reached/i;
+const LIMIT_PATTERN = /hit your (?:[a-z]+ )?limit|usage limit reached/gi;
 
 /** 解除時刻の部分。日付が付く形（"resets Oct 20, 3pm (Asia/Tokyo)"）も読む */
 const RESET_PATTERN =
@@ -140,8 +140,13 @@ function parseResetAt(text: string, now: Date): Date | null {
   }
 }
 
-/** セッションの出力が利用上限によるものなら、解除時刻を返す。そうでなければ null */
+/**
+ * セッションの出力が利用上限によるものなら、解除時刻を返す。そうでなければ null。
+ * 出力にはセッションの途中のログも含まれるので、最後の上限の通知より後ろだけから解除時刻を読む
+ */
 export function detectUsageLimit(text: string, now: Date): UsageLimit | null {
-  if (!LIMIT_PATTERN.test(text)) return null;
-  return { resetAt: parseResetAt(text, now) };
+  const limit = [...text.matchAll(LIMIT_PATTERN)].at(-1);
+  if (!limit) return null;
+  const notice = text.slice(limit.index + limit[0].length);
+  return { resetAt: parseResetAt(notice, now) };
 }

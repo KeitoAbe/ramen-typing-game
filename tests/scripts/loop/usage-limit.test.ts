@@ -78,6 +78,22 @@ describe("detectUsageLimit", () => {
     ).toEqual({ resetAt: null });
   });
 
+  it("途中のログにある解除時刻は読まず、最後の上限の通知より後ろだけを読む", () => {
+    const text = [
+      "docs を読む: 例 resets 7am (Asia/Tokyo)",
+      "You've hit your session limit · resets 12:20pm (Asia/Tokyo)",
+    ].join("\n");
+    expect(detectUsageLimit(text, now)?.resetAt).toEqual(
+      new Date("2026-10-18T03:20:00Z"),
+    );
+    expect(
+      detectUsageLimit(
+        "resets 7am (Asia/Tokyo)\nYou've hit your usage limit.",
+        now,
+      ),
+    ).toEqual({ resetAt: null });
+  });
+
   it("利用上限の文言が無ければ null", () => {
     expect(detectUsageLimit("途中で終わった", now)).toBeNull();
     expect(
