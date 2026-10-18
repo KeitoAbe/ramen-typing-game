@@ -13,8 +13,9 @@ type Props = {
 };
 
 /**
- * 食券を買ったあと、プレイを始める前の画面。屋台の前に出したお品書きの板で、トッピングを足すかを選ぶ。
- * 何も足さずに始めることもできる。チェックボックスとボタンなので、キーボードだけで選んで始められる
+ * 食券を買ったあと、プレイを始める前の画面。屋台のカウンターに買った食券を出し、
+ * 横に並べた追加の券を押して、トッピングを足すかを選ぶ。何も足さずに始めることもできる。
+ * 追加の券はチェックボックスなので、キーボードだけで選んで始められる
  */
 export function ToppingSelect({ course, onStart }: Props) {
   const [toppings, setToppings] = useState<readonly ToppingId[]>([]);
@@ -40,64 +41,85 @@ export function ToppingSelect({ course, onStart }: Props) {
 
   return (
     <section className="absolute inset-0">
-      {/* お品書きが読みやすいよう、屋台の絵を夜の色で少し沈める */}
       <YataiScene />
-      <div aria-hidden="true" className="absolute inset-0 bg-yatai-night/55" />
 
+      {/* 店主のひとこと: 頭（舞台の x 66〜75%, y 47〜63%）の左の吹き出しで、トッピングを聞く */}
+      <div className="absolute top-[46%] right-[36.5%] w-[22%] rounded-[1.2cqw] bg-yatai-kinari px-[1.4cqw] py-[0.8cqw] text-yatai-sumi shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.3)]">
+        <p className="text-[1.25cqw]">店主</p>
+        <p className="text-[1.6cqw] leading-snug font-bold">
+          「トッピングは？」
+        </p>
+        <span
+          aria-hidden="true"
+          className="absolute top-[45%] -right-[0.9cqw] size-[2cqw] rotate-45 bg-yatai-kinari"
+        />
+      </div>
+
+      {/* カウンターの上: 買った食券の横に、追加の券といただきますを並べる */}
       <form
         onSubmit={submit}
-        className="absolute top-[12%] left-[18%] flex h-[78%] w-[64%] flex-col stage-paper px-[2.4cqw] py-[1.6cqw]"
+        className="absolute top-[78%] right-[4%] left-[4%] flex h-[16%] items-stretch gap-[1.5cqw]"
       >
-        <fieldset className="flex min-h-0 flex-1 flex-col">
-          <legend className="w-full text-center font-display text-[3cqw] leading-tight tracking-[0.3em]">
-            トッピング
-          </legend>
-          <p className="mt-[0.4cqw] text-center text-[1.3cqw] leading-snug">
-            食券「{course.name}」を受け取りました。
-            トッピングを足すと難しくなる代わりに、丼が 1 つにつき{" "}
-            {TOPPING_PRICE_RATE} 倍で売れる
+        <div className="flex w-[17%] shrink-0 -rotate-2 flex-col items-center justify-center stage-paper px-[1cqw] leading-tight">
+          <p className="text-[1.25cqw] font-bold">食券</p>
+          <p className="font-display text-[3cqw]">{course.name}</p>
+          <p className="text-[1.25cqw] whitespace-nowrap tabular-nums">
+            {course.price.toLocaleString("ja-JP")} 円・
+            {course.timeLimitMs / 1000} 秒
           </p>
+        </div>
 
-          <ul className="mt-[1.4cqw] grid flex-1 grid-cols-2 gap-[1.6cqw]">
-            {TOPPINGS.map((topping, index) => {
-              const isChecked = toppings.includes(topping.id);
-              return (
-                <li key={topping.id}>
-                  <label
-                    className={`flex size-full cursor-pointer flex-col items-center justify-center gap-[0.6cqw] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi px-[1cqw] py-[1cqw] text-center shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] transition-colors duration-75 has-focus-visible:outline-[0.4cqw] has-focus-visible:outline-offset-[0.3cqw] has-focus-visible:outline-yatai-amber ${isChecked ? "bg-yatai-amber" : "bg-white/60 hover:bg-yatai-amber/50"}`}
+        <span
+          aria-hidden="true"
+          className="self-center font-display text-[2.6cqw] text-yatai-kinari"
+        >
+          ＋
+        </span>
+
+        <fieldset className="flex shrink-0 gap-[1.5cqw]">
+          <legend className="sr-only">トッピング</legend>
+          {TOPPINGS.map((topping, index) => {
+            const isChecked = toppings.includes(topping.id);
+            return (
+              // 小さな券の形の押せる札。選ぶと押し込まれて、ランプが灯る
+              <label
+                key={topping.id}
+                className={`relative flex h-full cursor-pointer flex-col justify-center gap-[0.4cqw] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi px-[1.2cqw] text-yatai-sumi transition-[translate,box-shadow,background-color] duration-75 has-focus-visible:outline-[0.4cqw] has-focus-visible:outline-offset-[0.3cqw] has-focus-visible:outline-yatai-amber ${isChecked ? "translate-y-[0.5cqw] bg-yatai-amber" : "bg-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] hover:bg-yatai-amber/50"}`}
+              >
+                {/* 見えないチェックボックスを札いっぱいに広げ、札のどこを押しても切り替わるようにする */}
+                <input
+                  ref={index === 0 ? firstToppingRef : undefined}
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggle(topping.id)}
+                  className="absolute inset-0 cursor-pointer appearance-none focus-visible:outline-none"
+                />
+                <span className="flex items-center gap-[0.8cqw]">
+                  <span
+                    aria-hidden="true"
+                    className={`size-[1.4cqw] shrink-0 rounded-full border-[0.25cqw] border-yatai-sumi ${isChecked ? "bg-yatai-lantern" : "bg-yatai-wood-dark"}`}
+                  />
+                  <span className="font-display text-[2.4cqw] leading-tight whitespace-nowrap">
+                    {topping.name}
+                  </span>
+                </span>
+                {/* 倍率の朱は、琥珀色の面では読みにくいので、灯っているあいだは墨にする */}
+                <span className="text-[1.25cqw] leading-tight whitespace-nowrap">
+                  {topping.effect}・
+                  <span
+                    className={`font-bold ${isChecked ? "" : "text-yatai-lantern-dark"}`}
                   >
-                    <span className="flex items-center gap-[0.8cqw]">
-                      <input
-                        ref={index === 0 ? firstToppingRef : undefined}
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggle(topping.id)}
-                        className="size-[2cqw] shrink-0 accent-yatai-lantern focus-visible:outline-none"
-                      />
-                      <span className="font-display text-[2.6cqw] leading-tight whitespace-nowrap">
-                        {topping.name}
-                      </span>
-                    </span>
-                    <span className="text-[1.3cqw] leading-snug">
-                      {topping.effect}
-                    </span>
-                    <span className="text-[1.4cqw] font-bold text-yatai-lantern-dark">
-                      値段 ×{TOPPING_PRICE_RATE}
-                    </span>
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
+                    値段 ×{TOPPING_PRICE_RATE}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
         </fieldset>
 
-        <p className="mt-[1.2cqw] text-center text-[1.25cqw]">
-          両方足すと ×{TOPPING_PRICE_RATE} × {TOPPING_PRICE_RATE}
-          。何も足さずに始めてもよい
-        </p>
         <button
           type="submit"
-          className="mx-auto mt-[0.8cqw] w-[50%] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-lantern py-[0.8cqw] font-display text-[2.6cqw] leading-tight tracking-widest text-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-sumi)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-lantern-dark focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
+          className="flex-1 rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-lantern font-display text-[2.6cqw] leading-tight tracking-widest whitespace-nowrap text-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-sumi)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-lantern-dark focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
         >
           いただきます
         </button>
