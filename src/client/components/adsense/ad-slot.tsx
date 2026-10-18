@@ -30,14 +30,30 @@ export function AdSlot({
   const insRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
-    // 狭い画面で隠している枠（display: none）には、広告を要求しない
-    if (!insRef.current || insRef.current.getClientRects().length === 0) return;
-    try {
-      window.adsbygoogle = window.adsbygoogle ?? [];
-      window.adsbygoogle.push({});
-    } catch {
-      // 広告ブロッカーなどで失敗しても、ゲームには影響させない
+    const ins = insRef.current;
+    if (!ins) return;
+    const requestAd = () => {
+      try {
+        window.adsbygoogle = window.adsbygoogle ?? [];
+        window.adsbygoogle.push({});
+      } catch {
+        // 広告ブロッカーなどで失敗しても、ゲームには影響させない
+      }
+    };
+    const isShown = () => ins.getClientRects().length > 0;
+    if (isShown()) {
+      requestAd();
+      return;
     }
+    // 狭い画面で隠している枠（display: none）には広告を要求せず、
+    // ウィンドウを広げるなどして表示されたときに一度だけ要求する
+    const observer = new ResizeObserver(() => {
+      if (!isShown()) return;
+      observer.disconnect();
+      requestAd();
+    });
+    observer.observe(ins);
+    return () => observer.disconnect();
   }, []);
 
   return (

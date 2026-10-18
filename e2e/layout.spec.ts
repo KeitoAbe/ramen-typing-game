@@ -247,6 +247,28 @@ test.describe("幅 1360px より狭いウィンドウ", () => {
     ).toBeLessThanOrEqual(1);
     await expectAdsApart(page);
   });
+
+  test("あとからウィンドウを広げると、右の縦長の枠を出して広告を一度だけ要求する", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    // スクリプトは空のものに差し替えているので、要求（push）は配列に残る
+    const requestCount = () =>
+      page.evaluate(() => window.adsbygoogle?.length ?? 0);
+    // 舞台の下の枠と紹介の後ろの枠だけを要求し、隠している右の枠は要求しない
+    await expect.poll(requestCount).toBe(2);
+
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeVisible();
+    await expect.poll(requestCount).toBe(3);
+
+    // 狭めて広げ直しても、同じ枠に二度は要求しない
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeHidden();
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeVisible();
+    expect(await requestCount()).toBe(3);
+  });
 });
 
 test.describe("幅 960px より狭いウィンドウ", () => {
