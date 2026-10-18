@@ -29,6 +29,12 @@ import {
   streakPriceRate,
 } from "@/client/lib/ramen-streak";
 import {
+  type ToppingId,
+  toppingMissPenaltyMs,
+  toppingPriceRate,
+  toppingSoggyLimitMs,
+} from "@/client/lib/ramen-topping";
+import {
   createTypingState,
   inputKey,
   isComplete,
@@ -40,12 +46,16 @@ import type { Order } from "@/types/order";
 type PlayingState = {
   status: "playing";
   course: Course;
+  /** 食券のあとに足したトッピング */
+  toppings: readonly ToppingId[];
+  /** 開店（プレイを始めた）時刻 */
+  startedAt: number;
   orders: readonly Order[];
   /** いま出ている注文の orders 内の位置 */
   orderIndex: number;
   /** いま出ている丼が出た時刻 */
   orderServedAt: number;
-  /** いま出ている丼が、出てからのびきるまでの時間（閉店間際に出た丼は短い） */
+  /** いま出ている丼が、出てからのびきるまでの時間（ニンニクマシマシや閉店間際に出た丼は短い） */
   orderSoggyLimitMs: number;
   /** いま出ている丼がのびきるまでの残り時間 */
   orderRemainingMs: number;
@@ -53,7 +63,7 @@ type PlayingState = {
   isSpecialBowl: boolean;
   typing: TypingState;
   stats: PlayStats;
-  /** 替え玉で延びた分を含む、閉店の時刻 */
+  /** 替え玉で延びた分と、激辛のミスで減った分を含む、閉店の時刻 */
   endsAt: number;
   remainingMs: number;
   /** いま「閉店間際」か（残り時間が少なく、丼が高く売れるが早くのびる） */
@@ -82,7 +92,14 @@ export type RamenGameState =
   /** 券売機の前で食券を選んでいる */
   | { status: "ready" }
   | PlayingState
-  | { status: "closed"; course: Course; stats: PlayStats };
+  | {
+      status: "closed";
+      course: Course;
+      toppings: readonly ToppingId[];
+      stats: PlayStats;
+      /** 開店から閉店までの、実際のプレイ時間（ミリ秒） */
+      playedMs: number;
+    };
 
 /**
  * 丼を出すときに、特別な丼にするかを決める乱数（0 以上 1 未満）。
@@ -95,6 +112,8 @@ export type RamenGameAction =
   | ({
       type: "start";
       course: Course;
+      /** 食券のあとに足したトッピング。省略したら何も足さない */
+      toppings?: readonly ToppingId[];
       orders: readonly Order[];
       now: number;
     } & BowlRoll)
@@ -120,8 +139,15 @@ export function shuffleOrders(
   return result;
 }
 
-function close(course: Course, stats: PlayStats): RamenGameState {
-  return { status: "closed", course, stats };
+/** closedAt に閉店する。プレイ時間は開店からそこまで */
+function close(state: PlayingState, closedAt: number): RamenGameState {
+  return {
+    status: "closed",
+    course: state.course,
+    toppings: state.toppings,
+    stats: state.stats,
+    playedMs: closedAt - state.startedAt,
+  };
 }
 
 function currentOrder(state: PlayingState): Order {
@@ -132,10 +158,18 @@ function isSpecialRoll(roll: number | undefined): boolean {
   return roll !== undefined && isSpecialBowlRoll(roll);
 }
 
-/** 丼を出すときに、その丼がのびきるまでの時間を決める。閉店間際に出た丼は早くのびる */
-function servedSoggyLimitMs(order: Order, endsAt: number, now: number): number {
+/**
+ * 丼を出すときに、その丼がのびきるまでの時間を決める。
+ * ニンニクマシマシと、閉店間際に出た丼は早くのびる（両方なら掛け合わせる）
+ */
+function servedSoggyLimitMs(
+  order: Order,
+  toppings: readonly ToppingId[],
+  endsAt: number,
+  now: number,
+): number {
   return closingRushSoggyLimitMs(
-    soggyLimitMs(order),
+    toppingSoggyLimitMs(soggyLimitMs(order), toppings),
     isClosingRush(endsAt - now),
   );
 }
@@ -149,7 +183,12 @@ function serveNext(
 ): PlayingState {
   const orderIndex = (state.orderIndex + 1) % state.orders.length;
   const order = state.orders[orderIndex];
-  const orderSoggyLimitMs = servedSoggyLimitMs(order, state.endsAt, now);
+  const orderSoggyLimitMs = servedSoggyLimitMs(
+    order,
+    state.toppings,
+    state.endsAt,
+    now,
+  );
   return {
     ...state,
     orderIndex,
@@ -225,6 +264,20 @@ function refillIfGaugeFull(state: PlayingState, now: number): PlayingState {
   };
 }
 
+/** 激辛なら、ミスタイプで残り時間を減らす。使い切ったらその場で閉店する */
+function penalizeMiss(state: PlayingState, now: number): RamenGameState {
+  const penaltyMs = toppingMissPenaltyMs(state.toppings);
+  if (penaltyMs === 0) return state;
+  const endsAt = state.endsAt - penaltyMs;
+  if (endsAt <= now) return close(state, now);
+  return {
+    ...state,
+    endsAt,
+    remainingMs: endsAt - now,
+    isClosingRush: isClosingRush(endsAt - now),
+  };
+}
+
 export function ramenGameReducer(
   state: RamenGameState,
   action: RamenGameAction,
@@ -233,11 +286,19 @@ export function ramenGameReducer(
     case "start": {
       const [first] = action.orders;
       if (!first) return state;
+      const toppings = action.toppings ?? [];
       const endsAt = action.now + action.course.timeLimitMs;
-      const orderSoggyLimitMs = servedSoggyLimitMs(first, endsAt, action.now);
+      const orderSoggyLimitMs = servedSoggyLimitMs(
+        first,
+        toppings,
+        endsAt,
+        action.now,
+      );
       return {
         status: "playing",
         course: action.course,
+        toppings,
+        startedAt: action.now,
         orders: action.orders,
         orderIndex: 0,
         orderServedAt: action.now,
@@ -265,7 +326,7 @@ export function ramenGameReducer(
     case "tick": {
       if (state.status !== "playing") return state;
       const remainingMs = Math.max(0, state.endsAt - action.now);
-      if (remainingMs === 0) return close(state.course, state.stats);
+      if (remainingMs === 0) return close(state, state.endsAt);
       const next = updateOrderRemaining(
         discardIfSoggy(state, action.now, action.roll),
         action.now,
@@ -285,7 +346,7 @@ export function ramenGameReducer(
     case "key": {
       if (state.status !== "playing") return state;
       // 時間切れのあとに届いたキーは受け付けない
-      if (action.now >= state.endsAt) return close(state.course, state.stats);
+      if (action.now >= state.endsAt) return close(state, state.endsAt);
       // tick より先にキーが届いても、のびきった丼には打たせず、残り時間も今の時刻に合わせる
       const current = updateOrderRemaining(
         discardIfSoggy(state, action.now, action.roll),
@@ -295,7 +356,7 @@ export function ramenGameReducer(
       if (!accepted) {
         // ミスすると替え玉ゲージと連続杯数は 0 に戻る。
         // 打つべきだったキーは、画面に出ている残りのローマ字の先頭（プレイヤーが見ていたもの）で数える
-        return {
+        const missed: PlayingState = {
           ...breakStreak(current, action.now),
           kaedamaGauge: 0,
           stats: {
@@ -307,6 +368,7 @@ export function ramenGameReducer(
             ),
           },
         };
+        return penalizeMiss(missed, action.now);
       }
       const afterKey = refillIfGaugeFull(
         {
@@ -324,7 +386,7 @@ export function ramenGameReducer(
       const { stats } = afterKey;
       if (!isComplete(typing)) return afterKey;
       // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ。
-      // 特別な丼・連続杯数・閉店間際の倍率は、その値段に掛け合わせる。
+      // 特別な丼・連続杯数・閉店間際・トッピングの倍率は、その値段に掛け合わせる。
       // 閉店間際かは、このキーで替え玉になる前の残り時間で決める（平らげた瞬間は閉店間際だったため）
       const streak = current.isCleanBowl ? current.streak + 1 : 0;
       const order = currentOrder(current);
@@ -336,7 +398,8 @@ export function ramenGameReducer(
         ) *
           specialBowlPriceRate(current.isSpecialBowl) *
           streakPriceRate(streak) *
-          closingRushPriceRate(isClosingRush(current.endsAt - action.now)),
+          closingRushPriceRate(isClosingRush(current.endsAt - action.now)) *
+          toppingPriceRate(current.toppings),
       );
       return serveNext(
         { ...afterKey, streak },
