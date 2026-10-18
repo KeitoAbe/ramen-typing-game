@@ -1,8 +1,6 @@
 import {
   fillKaedamaGauge,
-  KAEDAMA_EXTENSION_MS,
   KAEDAMA_GAUGE_MAX,
-  playTimeMs,
 } from "@/client/lib/ramen-kaedama";
 
 describe("fillKaedamaGauge", () => {
@@ -19,12 +17,5 @@ describe("fillKaedamaGauge", () => {
       gauge: 0,
       refilled: true,
     });
-  });
-});
-
-describe("playTimeMs", () => {
-  it("替え玉の回数だけ制限時間が延びる", () => {
-    expect(playTimeMs(60_000, 0)).toBe(60_000);
-    expect(playTimeMs(60_000, 3)).toBe(60_000 + 3 * KAEDAMA_EXTENSION_MS);
   });
 });

@@ -10,12 +10,15 @@ import { type PlayResult, topMissedKeys } from "@/client/lib/ramen-result";
 import { buildShareText, buildXShareUrl } from "@/client/lib/ramen-share";
 import type { Stamp } from "@/client/lib/ramen-stamp-card";
 import { decideTitle, type RamenTitle } from "@/client/lib/ramen-title";
+import { type ToppingId, toppingNames } from "@/client/lib/ramen-topping";
 
 /** 結果画面に出す、打ち間違いの多いキーの数 */
 const MISSED_KEY_RANK_LIMIT = 3;
 
 type Props = {
   course: Course;
+  /** 食券のあとに足したトッピング */
+  toppings: readonly ToppingId[];
   result: PlayResult;
   /** 自己ベストとの比較。記録が済むまでは null */
   personalBest: PersonalBestRecord | null;
@@ -49,11 +52,13 @@ function balanceColor(balance: number): string {
  */
 export function RamenResult({
   course,
+  toppings,
   result,
   personalBest,
   newStamps,
   onReplay,
 }: Props) {
+  const names = toppingNames(toppings);
   const balance = courseBalance(result.bill, course);
   const title = decideTitle(result, course);
   const missedKeys = topMissedKeys(result.missedKeys, MISSED_KEY_RANK_LIMIT);
@@ -167,6 +172,10 @@ export function RamenResult({
           <dt className="text-[1.4cqw] font-bold">食券</dt>
           <dd className="text-right text-[1.4cqw] font-bold">
             {course.name}（{course.price.toLocaleString("ja-JP")} 円）
+          </dd>
+          <dt className="text-[1.4cqw] font-bold">トッピング</dt>
+          <dd className="text-right text-[1.4cqw] font-bold">
+            {names.length === 0 ? "なし" : names.join("・")}
           </dd>
           <dt className="text-[1.6cqw] font-bold">お会計</dt>
           <dd className="text-right font-display text-[3.4cqw] leading-tight">

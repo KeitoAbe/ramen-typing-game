@@ -17,8 +17,3 @@ export function fillKaedamaGauge(gauge: number): {
   if (next >= KAEDAMA_GAUGE_MAX) return { gauge: 0, refilled: true };
   return { gauge: next, refilled: false };
 }
-
-/** 制限時間に替え玉で延びた分を足した、実際のプレイ時間（ミリ秒） */
-export function playTimeMs(timeLimitMs: number, kaedamaCount: number): number {
-  return timeLimitMs + kaedamaCount * KAEDAMA_EXTENSION_MS;
-}

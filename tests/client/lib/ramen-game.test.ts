@@ -18,6 +18,12 @@ import {
 } from "@/client/lib/ramen-kaedama";
 import { emptyPlayStats, orderPrice } from "@/client/lib/ramen-result";
 import { STREAK_BROKEN_NOTICE_MS } from "@/client/lib/ramen-streak";
+import {
+  GEKIKARA_MISS_PENALTY_MS,
+  NINNIKU_SOGGY_RATE,
+  TOPPING_PRICE_RATE,
+  type ToppingId,
+} from "@/client/lib/ramen-topping";
 import type { Order } from "@/types/order";
 
 const orders: Order[] = [
@@ -228,7 +234,9 @@ describe("ramenGameReducer", () => {
     expect(closed).toEqual({
       status: "closed",
       course,
+      toppings: [],
       stats: ticking.stats,
+      playedMs: course.timeLimitMs,
     });
     if (closed.status !== "closed") throw new Error("closed のはず");
     expect(closed.stats.servedCount).toBe(1);
@@ -240,7 +248,13 @@ describe("ramenGameReducer", () => {
       key: "s",
       now: course.timeLimitMs,
     });
-    expect(late).toEqual({ status: "closed", course, stats: emptyPlayStats });
+    expect(late).toEqual({
+      status: "closed",
+      course,
+      toppings: [],
+      stats: emptyPlayStats,
+      playedMs: course.timeLimitMs,
+    });
     expect(ramenGameReducer(late, { type: "key", key: "s", now: 0 })).toBe(
       late,
     );
@@ -329,6 +343,8 @@ describe("ramenGameReducer", () => {
       expect(closed.status).toBe("closed");
       if (closed.status !== "closed") throw new Error("closed のはず");
       expect(closed.stats.kaedamaCount).toBe(1);
+      // プレイ時間は延びた分を含む
+      expect(closed.playedMs).toBe(course.timeLimitMs + KAEDAMA_EXTENSION_MS);
     });
 
     it("途中でミスすると、満タンまでの打鍵数を数え直す", () => {
@@ -712,6 +728,166 @@ describe("ramenGameReducer", () => {
       // 平らげて次に出た丼から短くなる
       const next = playing(typeKeys(rush, "shio", 5_000));
       expect(next.orderSoggyLimitMs).toBe(rushLimitMs(orders[1]));
+    });
+  });
+
+  describe("トッピング", () => {
+    function playing(state: RamenGameState) {
+      if (state.status !== "playing") throw new Error("playing のはず");
+      return state;
+    }
+
+    function startWith(
+      toppings: readonly ToppingId[],
+      timeLimitMs = course.timeLimitMs,
+    ): RamenGameState {
+      return ramenGameReducer(initialRamenGameState, {
+        type: "start",
+        course: { ...course, timeLimitMs },
+        toppings,
+        orders,
+        now: 0,
+      });
+    }
+
+    it("選んだトッピングがプレイ中と閉店後に残り、省略すると何も足さない", () => {
+      expect(playing(start()).toppings).toEqual([]);
+      const state = startWith(["gekikara", "ninniku"]);
+      expect(playing(state).toppings).toEqual(["gekikara", "ninniku"]);
+      const closed = ramenGameReducer(state, {
+        type: "tick",
+        now: course.timeLimitMs,
+      });
+      if (closed.status !== "closed") throw new Error("closed のはず");
+      expect(closed.toppings).toEqual(["gekikara", "ninniku"]);
+    });
+
+    describe("激辛", () => {
+      it("ミスタイプするたびに残り時間が 1 秒減る", () => {
+        const missed = playing(typeKeys(startWith(["gekikara"]), "xx", 1_000));
+        expect(missed.stats.missCount).toBe(2);
+        expect(missed.endsAt).toBe(
+          course.timeLimitMs - 2 * GEKIKARA_MISS_PENALTY_MS,
+        );
+        expect(missed.remainingMs).toBe(
+          course.timeLimitMs - 2 * GEKIKARA_MISS_PENALTY_MS - 1_000,
+        );
+      });
+
+      it("激辛でなければ、ミスタイプしても残り時間は減らない", () => {
+        const missed = playing(typeKeys(startWith(["ninniku"]), "x", 1_000));
+        expect(missed.endsAt).toBe(course.timeLimitMs);
+      });
+
+      it("ミスで残り時間が 15 秒以下になると閉店間際になる", () => {
+        const state = startWith(["gekikara"], CLOSING_RUSH_THRESHOLD_MS + 500);
+        expect(playing(state).isClosingRush).toBe(false);
+        expect(playing(typeKeys(state, "x")).isClosingRush).toBe(true);
+      });
+
+      it("ミスで残り時間を使い切ったら、その場で閉店する", () => {
+        const almost = ramenGameReducer(startWith(["gekikara"]), {
+          type: "tick",
+          now: course.timeLimitMs - 500,
+        });
+        const closed = typeKeys(almost, "x", course.timeLimitMs - 500);
+        if (closed.status !== "closed") throw new Error("closed のはず");
+        expect(closed.stats.missCount).toBe(1);
+        expect(closed.playedMs).toBe(course.timeLimitMs - 500);
+      });
+
+      it("プレイ時間は、ミスで減った分を除いた時間になる", () => {
+        const missed = typeKeys(startWith(["gekikara"]), "xxx");
+        const closed = ramenGameReducer(missed, {
+          type: "tick",
+          now: course.timeLimitMs - 3 * GEKIKARA_MISS_PENALTY_MS,
+        });
+        if (closed.status !== "closed") throw new Error("closed のはず");
+        expect(closed.playedMs).toBe(
+          course.timeLimitMs - 3 * GEKIKARA_MISS_PENALTY_MS,
+        );
+      });
+    });
+
+    describe("ニンニクマシマシ", () => {
+      const garlicLimitMs = (order: Order) =>
+        soggyLimitMs(order) * NINNIKU_SOGGY_RATE;
+
+      it("どの丼も、のびきるまでの時間が 0.7 倍になる", () => {
+        const state = playing(startWith(["ninniku"]));
+        expect(state.orderSoggyLimitMs).toBe(garlicLimitMs(orders[0]));
+        expect(state.orderRemainingMs).toBe(garlicLimitMs(orders[0]));
+
+        const kept = playing(
+          ramenGameReducer(state, {
+            type: "tick",
+            now: garlicLimitMs(orders[0]) - 1,
+          }),
+        );
+        expect(kept.stats.discardedCount).toBe(0);
+        const discarded = playing(
+          ramenGameReducer(kept, {
+            type: "tick",
+            now: garlicLimitMs(orders[0]),
+          }),
+        );
+        expect(discarded.stats.discardedCount).toBe(1);
+        expect(discarded.orderSoggyLimitMs).toBe(garlicLimitMs(orders[1]));
+      });
+
+      it("閉店間際に出た丼は、閉店間際の倍率と掛け合わせる", () => {
+        const state = playing(
+          startWith(["ninniku"], CLOSING_RUSH_THRESHOLD_MS),
+        );
+        expect(state.orderSoggyLimitMs).toBe(
+          garlicLimitMs(orders[0]) * CLOSING_RUSH_SOGGY_RATE,
+        );
+      });
+    });
+
+    describe("値段", () => {
+      const freshPrice = bowlPrice(orders[0], 0);
+
+      it.each<[string, ToppingId[], number]>([
+        ["激辛", ["gekikara"], TOPPING_PRICE_RATE],
+        ["ニンニクマシマシ", ["ninniku"], TOPPING_PRICE_RATE],
+        [
+          "両方",
+          ["gekikara", "ninniku"],
+          TOPPING_PRICE_RATE * TOPPING_PRICE_RATE,
+        ],
+      ])("%s を選ぶと、平らげた丼の値段に倍率がかかる", (_, toppings, rate) => {
+        const served = playing(typeKeys(startWith(toppings), "shio"));
+        expect(served.stats.bill).toBe(roundPrice(freshPrice * rate));
+      });
+
+      it("特別な丼・連続杯数・閉店間際の倍率と掛け合わせる", () => {
+        // 2 杯平らげ、2 杯目を平らげたキーの乱数で 3 杯目を特別な丼にする
+        const twoServed = typeKeys(
+          startWith(["gekikara", "ninniku"], CLOSING_RUSH_THRESHOLD_MS),
+          "shiomis",
+        );
+        const special = playing(
+          ramenGameReducer(twoServed, {
+            type: "key",
+            key: "o",
+            now: 0,
+            roll: 0,
+          }),
+        );
+        expect(special.isSpecialBowl).toBe(true);
+        const served = playing(typeKeys(special, "shio"));
+        expect(served.stats.bill - special.stats.bill).toBe(
+          roundPrice(
+            freshPrice *
+              2 *
+              1.1 *
+              CLOSING_RUSH_PRICE_RATE *
+              TOPPING_PRICE_RATE *
+              TOPPING_PRICE_RATE,
+          ),
+        );
+      });
     });
   });
 
