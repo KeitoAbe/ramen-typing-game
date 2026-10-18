@@ -167,7 +167,9 @@ function TicketMachineScene() {
 
 /** 端末の入力の変化（タブレットにマウスをつないだときなど）を見張る */
 function subscribeTouchPrimary(onChange: () => void) {
-  const query = window.matchMedia(TOUCH_PRIMARY_QUERY);
+  // 判定と同じく、matchMedia が無い環境では見張らない
+  const query = window.matchMedia?.(TOUCH_PRIMARY_QUERY);
+  if (!query) return () => {};
   query.addEventListener("change", onChange);
   return () => query.removeEventListener("change", onChange);
 }
