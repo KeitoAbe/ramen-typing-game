@@ -23,6 +23,12 @@ import {
 import { isImeKeyInput } from "@/client/lib/ime-input";
 import { isPageScrollKey } from "@/client/lib/page-scroll-keys";
 import {
+  createAmbiencePlayer,
+  loadAmbienceEnabled,
+  saveAmbienceEnabled,
+  shouldPlayAmbience,
+} from "@/client/lib/ramen-ambience";
+import {
   COURSES,
   type Course,
   courseBalance,
@@ -46,6 +52,7 @@ import {
   shopkeeperMoodOf,
 } from "@/client/lib/ramen-shopkeeper";
 import {
+  createAudioOutput,
   createSoundPlayer,
   loadSoundEnabled,
   PERSONAL_BEST_AFTER_STAMP_SECONDS,
@@ -82,10 +89,24 @@ export function RamenGame({ orders }: Props) {
   const recordedStatsRef = useRef<PlayStats | null>(null);
   // 音の設定は localStorage にあるので、最初の描画ではオンとしておき、マウント後に読み直す
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  const [{ play: playSound, stopAll: stopSounds }] =
-    useState(createSoundPlayer);
+  const [isAmbienceEnabled, setIsAmbienceEnabled] = useState(true);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  // 効果音と環境音・BGM は同じ出口を通して、同時に鳴っても割れないようにする
+  const [
+    {
+      sound: { play: playSound, stopAll: stopSounds },
+      ambience,
+    },
+  ] = useState(() => {
+    const getOutput = createAudioOutput();
+    return {
+      sound: createSoundPlayer(getOutput),
+      ambience: createAmbiencePlayer(getOutput),
+    };
+  });
   // 判子や自己ベストの音は遅らせて予約しているので、画面を離れたら予約ごと止める
   useEffect(() => () => stopSounds(), [stopSounds]);
+  useEffect(() => () => ambience.stop(), [ambience]);
   const [leavingBowl, setLeavingBowl] = useState<LeavingBowl | null>(null);
   const previousStateRef = useRef(state);
   const [shopkeeperMood, setShopkeeperMood] =
@@ -99,8 +120,34 @@ export function RamenGame({ orders }: Props) {
 
   useEffect(() => {
     setIsSoundEnabled(loadSoundEnabled(browserStorage()));
+    setIsAmbienceEnabled(loadAmbienceEnabled(browserStorage()));
     return () => window.clearTimeout(moodTimerRef.current);
   }, []);
+
+  // タブが裏に回ったら環境音・BGM を止め、戻ったら再開する
+  useEffect(() => {
+    const update = () =>
+      setIsPageVisible(document.visibilityState === "visible");
+    update();
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+
+  // 環境音・BGM はプレイ中だけ流す。画面が切り替わるときは、プレイヤーの側でフェードする
+  useEffect(() => {
+    ambience.setActive(
+      shouldPlayAmbience({
+        status: state.status,
+        enabled: isAmbienceEnabled,
+        visible: isPageVisible,
+      }),
+    );
+  }, [ambience, state.status, isAmbienceEnabled, isPageVisible]);
+
+  const isClosingRushNow = state.status === "playing" && state.isClosingRush;
+  useEffect(() => {
+    ambience.setClosingRush(isClosingRushNow);
+  }, [ambience, isClosingRushNow]);
 
   /** 効果音がオンのときだけ鳴らす */
   const playCue = (cue: SoundCue) => {
@@ -114,6 +161,13 @@ export function RamenGame({ orders }: Props) {
     if (!enabled) stopSounds();
     saveSoundEnabled(browserStorage(), enabled);
     trackSoundToggle(enabled);
+  };
+
+  // 環境音・BGM の切り替えは、効果音の sound_toggle には混ぜず、計測もしない
+  const toggleAmbience = () => {
+    const enabled = !isAmbienceEnabled;
+    setIsAmbienceEnabled(enabled);
+    saveAmbienceEnabled(browserStorage(), enabled);
   };
 
   const trackTouchNotice = () => {
@@ -152,6 +206,7 @@ export function RamenGame({ orders }: Props) {
     // スペースか Enter で実際にプレイが始まったときに、1 回だけ計測する
     if (previous.status !== "playing" && state.status === "playing") {
       trackPlayStart(state.course, state.toppings);
+      ambience.startPlay(state.course.timeLimitMs / 1000);
     }
     if (
       (state.status === "playing" || state.status === "waiting") &&
@@ -190,11 +245,25 @@ export function RamenGame({ orders }: Props) {
       order: previous.orders[previous.orderIndex],
       reason,
     });
-  }, [state, isSoundEnabled, playSound]);
+  }, [state, isSoundEnabled, playSound, ambience]);
 
   const onStage = (screen: ReactNode) => (
     <GameStage
-      corner={<SoundToggle enabled={isSoundEnabled} onToggle={toggleSound} />}
+      corner={
+        // 札の高さは 1 枚のときと変えないよう、横に並べる
+        <div className="flex gap-[0.8cqw]">
+          <SoundToggle
+            label="効果音"
+            enabled={isSoundEnabled}
+            onToggle={toggleSound}
+          />
+          <SoundToggle
+            label="環境音・BGM"
+            enabled={isAmbienceEnabled}
+            onToggle={toggleAmbience}
+          />
+        </div>
+      }
     >
       {screen}
     </GameStage>
