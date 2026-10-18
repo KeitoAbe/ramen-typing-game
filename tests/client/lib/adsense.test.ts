@@ -23,6 +23,8 @@ describe("parseAdsensePublisherId", () => {
     expect(parseAdsensePublisherId("")).toBeNull();
     expect(parseAdsensePublisherId("ca-pub-")).toBeNull();
     expect(parseAdsensePublisherId("ca-pub-12ab")).toBeNull();
+    expect(parseAdsensePublisherId("ca-pub-1")).toBeNull();
+    expect(parseAdsensePublisherId("ca-pub-12345678901234567")).toBeNull();
     expect(parseAdsensePublisherId("1234567890123456")).toBeNull();
   });
 });

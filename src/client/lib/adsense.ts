@@ -6,12 +6,13 @@ const GOOGLE_CERTIFICATION_AUTHORITY_ID = "f08c47fec0942fa0";
 
 /**
  * アドセンスのパブリッシャー ID を、環境変数の値から取り出して `ca-pub-…` の形にそろえる。
- * `pub-…` の形でも受け付ける。未設定や形が違う値のときは null を返し、広告まわりを何も出さない
+ * `pub-…` の形でも受け付ける。数字は Google の形式どおり 16 桁に限る。
+ * 未設定や形が違う値のときは null を返し、広告まわりを何も出さない
  */
 export function parseAdsensePublisherId(
   value: string | undefined,
 ): string | null {
-  const match = value?.trim().match(/^(?:ca-)?pub-(\d+)$/);
+  const match = value?.trim().match(/^(?:ca-)?pub-(\d{16})$/);
   return match ? `ca-pub-${match[1]}` : null;
 }
 
