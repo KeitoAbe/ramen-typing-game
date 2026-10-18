@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { StampCard } from "@/client/components/ramen-game/stamp-card";
 import {
   OUTLINE,
@@ -11,6 +17,10 @@ import { StageSign } from "@/client/components/stage/stage-sign";
 import type { Course } from "@/client/lib/ramen-course";
 import type { StampCard as StampCardData } from "@/client/lib/ramen-stamp-card";
 import { prefersReducedMotion } from "@/client/lib/reduced-motion";
+import {
+  isTouchPrimaryDevice,
+  TOUCH_PRIMARY_QUERY,
+} from "@/client/lib/touch-device";
 
 /** 食券が出てきてからプレイを始めるまでの時間。出てくる動き（0.5 秒）のあと少し見せる */
 const TICKET_ISSUE_MS = 750;
@@ -155,6 +165,25 @@ function TicketMachineScene() {
   );
 }
 
+/** 端末の入力の変化（タブレットにマウスをつないだときなど）を見張る */
+function subscribeTouchPrimary(onChange: () => void) {
+  const query = window.matchMedia(TOUCH_PRIMARY_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/**
+ * 主な入力がタッチの端末か。サーバーで描くときと水和（hydration）のときは false にして、
+ * 画面の食い違いを起こさない
+ */
+function useIsTouchPrimaryDevice() {
+  return useSyncExternalStore(
+    subscribeTouchPrimary,
+    () => isTouchPrimaryDevice(),
+    () => false,
+  );
+}
+
 type Props = {
   courses: readonly Course[];
   onSelect: (course: Course) => void;
@@ -171,6 +200,7 @@ export function TicketMachine({ courses, onSelect, stampCard }: Props) {
   const issueTimerRef = useRef<number | undefined>(undefined);
   const [isStampCardOpen, setIsStampCardOpen] = useState(false);
   const stampCardButtonRef = useRef<HTMLButtonElement>(null);
+  const isTouchPrimary = useIsTouchPrimaryDevice();
 
   const wasStampCardOpenRef = useRef(false);
   const closeStampCard = useCallback(() => setIsStampCardOpen(false), []);
@@ -216,6 +246,21 @@ export function TicketMachine({ courses, onSelect, stampCard }: Props) {
             </span>
           </div>
         </div>
+      )}
+
+      {/* タッチ端末への案内: 効果音の札と屋台の看板のあいだの夜空に掲げる札。
+          390px 幅でも読めるよう、文字の大きさに下限を付ける */}
+      {isTouchPrimary && (
+        <p className="absolute top-[max(34px,5cqw)] left-[44%] w-[54%] text-center">
+          <span className="inline-flex flex-col items-center rounded-[0.6cqw] border-[max(2px,0.35cqw)] border-yatai-sumi bg-yatai-wood px-[max(6px,1.2cqw)] py-[max(2px,0.5cqw)] font-bold text-yatai-kinari shadow-[0_0.4cqw_0_var(--color-yatai-wood-dark)]">
+            <span className="text-[max(11px,1.8cqw)] leading-tight text-yatai-lantern">
+              PC のキーボードで遊んでください
+            </span>
+            <span className="text-[max(10px,1.4cqw)] leading-tight">
+              タッチ操作では文字を打てません
+            </span>
+          </span>
+        </p>
       )}
 
       {/* 屋台の屋根に載せた看板 */}
