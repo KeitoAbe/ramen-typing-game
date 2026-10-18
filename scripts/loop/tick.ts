@@ -4,7 +4,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { decide } from "./decide";
-import { applyRunnerActions } from "./escalate";
+import { applyRunnerActions, releaseInterruptedIssue } from "./escalate";
 import { gh, git, graphql } from "./gh";
 import { abortGitOperation, currentGitOperation } from "./git-operation";
 import { parseLoopResult, runSession } from "./session";
@@ -80,6 +80,7 @@ function syncWorkingTree(): TickResult | null {
     }
     git(["checkout", "-q", "main"]);
     git(["pull", "-q", "--ff-only", "origin", "main"]);
+    pruneMergedLoopBranches();
   } catch (error) {
     // 片付けに失敗しても、ランナーごと落とさずに一時的な失敗として返す
     log(`作業ツリーの片付けに失敗しました: ${(error as Error).message}`);
@@ -164,6 +165,7 @@ export async function runTick(
   // 利用上限で打ち切られたセッションは仕事をしていない。0 ターンで終わることもあるので、先に見分ける
   const usageLimit = result ? null : detectUsageLimit(outcome.text, new Date());
   if (usageLimit) {
+    releaseIfInterrupted(action);
     return {
       kind: "usage-limit",
       resetAt: usageLimit.resetAt?.toISOString() ?? null,
@@ -214,21 +216,7 @@ function verifySuccess(
   repo: string,
   headBefore?: string,
 ): string | null {
-  const openBranches = () =>
-    gh([
-      "pr",
-      "list",
-      "--state",
-      "open",
-      "--limit",
-      "100",
-      "--json",
-      "headRefName",
-      "--jq",
-      ".[].headRefName",
-    ])
-      .split("\n")
-      .filter(Boolean);
+  const openBranches = openPrBranches;
 
   switch (action.kind) {
     case "implement":
@@ -282,5 +270,92 @@ function verifySuccess(
     }
     default:
       return null;
+  }
+}
+
+/** open な PR の head のブランチ名 */
+function openPrBranches(): string[] {
+  return gh([
+    "pr",
+    "list",
+    "--state",
+    "open",
+    "--limit",
+    "100",
+    "--json",
+    "headRefName",
+    "--jq",
+    ".[].headRefName",
+  ])
+    .split("\n")
+    .filter(Boolean);
+}
+
+/**
+ * 利用上限で打ち切られたセッションのあと、loop:ready に戻すべき Issue の番号。戻さなくてよければ null。
+ * 実装のセッションが Issue に loop:wip を付けたまま、PR を作る前に打ち切られたときだけ戻す
+ * （PR があれば、続きは CI の修理や CodeRabbit への対応で拾える）
+ */
+export function interruptedIssueToRelease(
+  action: Action,
+  issueLabels: readonly string[],
+  openBranches: readonly string[],
+): number | null {
+  if (action.kind !== "implement") return null;
+  if (!issueLabels.includes("loop:wip")) return null;
+  const prefix = `loop/issue-${action.issue}-`;
+  if (openBranches.some((b) => b.startsWith(prefix))) return null;
+  return action.issue;
+}
+
+/** 打ち切られた実装の Issue を、次の tick で着手し直せるよう loop:ready に戻す */
+function releaseIfInterrupted(action: Action): void {
+  if (action.kind !== "implement") return;
+  try {
+    const labels = gh([
+      "issue",
+      "view",
+      String(action.issue),
+      "--json",
+      "labels",
+      "--jq",
+      ".labels[].name",
+    ])
+      .split("\n")
+      .filter(Boolean);
+    const issue = interruptedIssueToRelease(action, labels, openPrBranches());
+    if (issue === null) return;
+    releaseInterruptedIssue(issue);
+    log(
+      `Issue #${issue} を loop:ready に戻しました（利用上限で打ち切られたため）`,
+    );
+  } catch (error) {
+    // 戻せなくても、待って再開する流れは止めない（人間が loop:wip を見つけて戻せる）
+    log(
+      `Issue #${action.issue} を loop:ready に戻せませんでした: ${(error as Error).message}`,
+    );
+  }
+}
+
+/**
+ * 取り込み済み（独自のコミットがない）ローカルの loop/* ブランチを消す。
+ * 打ち切られたセッションのブランチが残ると、同じ Issue に着手し直すときに同じ名前で作れなくなる。
+ * git branch -d は独自のコミットがあるブランチを消さないので、作業は失われない
+ */
+function pruneMergedLoopBranches(): void {
+  const merged = git([
+    "branch",
+    "--merged",
+    "HEAD",
+    "--list",
+    "loop/*",
+    "--format=%(refname:short)",
+  ])
+    .split("\n")
+    .map((b) => b.trim())
+    .filter(Boolean);
+  for (const branch of merged) {
+    git(["branch", "-d", branch]);
+    log(`取り込み済みのブランチを消しました: ${branch}`);
   }
 }
