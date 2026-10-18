@@ -3,7 +3,7 @@ import {
   EmptyBowlIcon,
   RamenBowl,
 } from "@/client/components/ramen-game/ramen-bowl";
-import { YataiScene } from "@/client/components/ramen-game/yatai-scene";
+import { SUMI, YataiScene } from "@/client/components/ramen-game/yatai-scene";
 import { SOGGY_START_RATIO } from "@/client/lib/ramen-bowl";
 import { bowlStyleOf } from "@/client/lib/ramen-bowl-style";
 import { CLOSING_RUSH_PRICE_RATE } from "@/client/lib/ramen-closing-rush";
@@ -26,8 +26,6 @@ export type LeavingBowl = {
 
 /** 替え玉ゲージに並べる麺玉の数。ゲージがこの数に分けてたまる */
 const NOODLE_BALL_COUNT = 10;
-/** のびるまでの時間を表す湯気の数 */
-const STEAM_ICON_COUNT = 5;
 /** カウンターに積み上げる空の丼の上限。これを超えた分は杯数の数字だけで見せる */
 const STACKED_BOWL_MAX = 6;
 
@@ -54,13 +52,14 @@ export function RamenPlay({
   const order = state.orders[state.orderIndex];
   const freshness = state.orderRemainingMs / state.orderSoggyLimitMs;
   const isGettingSoggy = freshness < 1 - SOGGY_START_RATIO;
-  const filledSteamCount = Math.ceil(freshness * STEAM_ICON_COUNT);
   const filledNoodleBallCount = Math.floor(
     (state.kaedamaGauge / KAEDAMA_GAUGE_MAX) * NOODLE_BALL_COUNT,
   );
   const stackedBowlCount = Math.min(state.stats.servedCount, STACKED_BOWL_MAX);
   // いま出ている丼をミスなしで平らげたときにかかる、連続杯数の倍率
   const streakRate = state.isCleanBowl ? streakPriceRate(state.streak + 1) : 1;
+  // 連続ボーナスがかかる杯数（3 杯）まで続いたときだけ、連続杯数を見せる
+  const isStreakShown = streakPriceRate(state.streak) > 1;
   const toppingNameList = toppingNames(state.toppings);
   const toppingRate = toppingPriceRate(state.toppings);
 
@@ -68,147 +67,134 @@ export function RamenPlay({
     <section className="absolute inset-0">
       <YataiScene shopkeeperMood={shopkeeperMood} />
 
-      {/* 残り時間: 左の柱に掛けた木札の時計。閉店間際は見出しを琥珀色の 2 行に替え、札を縁取って知らせる。
-          2 行目が折り返して下の木札に重ならないよう、右の札との隙間まで幅を取る。
-          2 行の分だけ背が伸びても下の木札に届かないよう、提灯の下端まで上げる */}
-      <div
-        className={`stage-wood-board absolute top-[51%] left-[1%] flex w-[17.5%] flex-col items-center px-[0.5cqw] py-[0.6cqw] ${state.isClosingRush ? "outline-[0.3cqw] outline-yatai-amber" : ""}`}
-      >
-        {/* 切り替わりだけを読み上げる。毎秒変わる残り秒数は含めない */}
-        <p aria-live="polite" className="text-[1.25cqw] font-bold">
-          {state.isClosingRush ? (
-            <span className="flex flex-col items-center leading-tight text-yatai-amber">
-              <span>閉店間際！</span>
-              <span className="text-[1.25cqw]">
-                値段 {CLOSING_RUSH_PRICE_RATE} 倍・早くのびる
-              </span>
-            </span>
-          ) : (
-            "残り時間"
-          )}
-        </p>
-        <p className="flex items-center gap-[0.6cqw]">
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[2.6cqw]">
-            <circle
-              cx={12}
-              cy={12}
-              r={10}
-              fill="var(--color-yatai-amber)"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            />
-            <path
-              d="M12 6 V12 L16 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
+      {/* 残り時間: 左の柱に掛けた丸い時計。閉店間際は文字盤を琥珀色に替える。
+          提灯に重ならないよう、提灯の下端より下に掛ける */}
+      <div className="absolute top-[52%] left-[3.2%] aspect-square w-[11%]">
+        <svg
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+          className="absolute inset-0 size-full overflow-visible"
+        >
+          {/* 柱の釘から下げた紐 */}
+          <path
+            d="M50 -14 L36 6 M50 -14 L64 6"
+            fill="none"
+            stroke={SUMI}
+            strokeWidth={3}
+          />
+          <circle
+            cx={50}
+            cy={50}
+            r={46}
+            fill={
+              state.isClosingRush
+                ? "var(--color-yatai-amber)"
+                : "var(--color-yatai-kinari)"
+            }
+            stroke={SUMI}
+            strokeWidth={5}
+          />
+          {/* 文字盤の目盛り */}
+          {Array.from({ length: 12 }, (_, index) => (
+            <line
+              // biome-ignore lint/suspicious/noArrayIndexKey: 並び替わらない
+              key={index}
+              x1={50}
+              y1={9}
+              x2={50}
+              y2={index % 3 === 0 ? 17 : 13}
+              stroke={SUMI}
+              strokeWidth={index % 3 === 0 ? 4 : 2.5}
               strokeLinecap="round"
+              transform={`rotate(${index * 30} 50 50)`}
             />
-          </svg>
+          ))}
+        </svg>
+        <p className="relative flex size-full flex-col items-center justify-center text-yatai-sumi">
+          <span className="sr-only">残り時間</span>
           <span className="font-display text-[3.4cqw] leading-none">
             {Math.ceil(state.remainingMs / 1000)}
           </span>
-          <span className="text-[1.3cqw] font-bold">秒</span>
+          <span className="text-[1.3cqw] leading-tight font-bold">秒</span>
         </p>
       </div>
 
-      {/* 連続杯数: 時計の下に掛けた木札。途切れたときは上の行で知らせる。
-          上の行が 1 行に収まるよう、積み上げた丼の手前まで幅を取る */}
-      <div className="stage-wood-board absolute top-[67%] left-[1%] flex w-[18.5%] flex-col items-center px-[0.8cqw] py-[0.5cqw]">
-        <p aria-live="polite" className="text-[1.25cqw] font-bold">
-          {state.isStreakBrokenNoticeShown ? (
-            // 途切れるたびに作り直して、読み上げをやり直させる
-            <span
-              key={state.streakBrokenNoticeUntil}
-              className="text-yatai-amber"
-            >
-              {state.brokenStreak} 杯の連続が途切れた
+      {/* 閉店間際の知らせ: 時計の下のカウンターに掛けた木札。切り替わりだけを読み上げる */}
+      <div aria-live="polite" className="absolute top-[81%] left-[1.5%]">
+        {state.isClosingRush && (
+          <p className="stage-wood-board flex flex-col items-center px-[1cqw] py-[0.5cqw] leading-tight font-bold whitespace-nowrap text-yatai-amber">
+            <span className="text-[1.6cqw]">閉店間際！</span>
+            <span className="text-[1.25cqw]">
+              値段 {CLOSING_RUSH_PRICE_RATE} 倍・早くのびる
             </span>
-          ) : (
-            "ミスなしで続けて平らげる"
-          )}
-        </p>
-        <p className="flex items-baseline gap-[0.4cqw]">
-          <span className="font-display text-[2.6cqw] leading-none">
-            {state.streak}
-          </span>
-          <span className="text-[1.3cqw] font-bold">杯連続</span>
-        </p>
-        <p className="text-[1.25cqw] font-bold">
-          連続ボーナス{" "}
-          <span
-            className={`tabular-nums ${streakRate > 1 ? "text-yatai-amber" : ""}`}
-          >
-            ×{streakRate.toFixed(1)}
-          </span>
-        </p>
+          </p>
+        )}
       </div>
 
-      {/* のびるまでの時間: 丼の横に下げた札と、湯気の量。1 行では札に収まらないので、
-          残り秒数と「できたて / のびかけ」を分け、後者は湯気と同じ行に並べる */}
-      <div className="stage-wood-board absolute top-[46%] left-[19%] flex w-[16.5%] flex-col items-center gap-[0.3cqw] px-[0.6cqw] py-[0.5cqw]">
-        <p className="text-[1.25cqw] font-bold">
-          のびるまで{" "}
-          <span className="tabular-nums">
-            {Math.ceil(state.orderRemainingMs / 1000)}
-          </span>{" "}
-          秒
-        </p>
-        <div className="flex items-center gap-[0.8cqw]">
-          {/* 切り替わりだけを読み上げる。毎秒変わる残り秒数は含めない */}
-          <span
-            aria-live="polite"
-            className={`text-[1.25cqw] font-bold ${isGettingSoggy ? "text-yatai-amber" : ""}`}
+      {/* 連続杯数: 丼の左に短く出す。連続ボーナスがかかる杯数に届くまでは、読み上げにだけ出す */}
+      <p
+        className={
+          isStreakShown
+            ? "stage-wood-board absolute top-[46%] left-[21%] flex items-baseline gap-[0.4cqw] px-[0.8cqw] py-[0.3cqw] font-bold whitespace-nowrap"
+            : "sr-only"
+        }
+      >
+        <span className="font-display text-[2.2cqw] leading-none">
+          {state.streak}
+        </span>
+        <span className="text-[1.3cqw]">杯連続</span>
+        <span className="text-[1.4cqw] tabular-nums text-yatai-amber">
+          ×{streakRate.toFixed(1)}
+        </span>
+      </p>
+      {/* 連続が途切れた知らせ: 連続杯数と同じ場所に出す */}
+      <div aria-live="polite" className="absolute top-[52%] left-[21%]">
+        {state.isStreakBrokenNoticeShown && (
+          // 途切れるたびに作り直して、読み上げをやり直させる
+          <p
+            key={state.streakBrokenNoticeUntil}
+            className="stage-wood-board px-[0.8cqw] py-[0.3cqw] text-[1.4cqw] font-bold whitespace-nowrap text-yatai-amber"
           >
-            {isGettingSoggy ? "のびかけ" : "できたて"}
-          </span>
-          <div
-            role="progressbar"
-            aria-label="麺がのびるまでの残り時間"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(freshness * 100)}
-            className="flex gap-[0.4cqw]"
-          >
-            {Array.from({ length: STEAM_ICON_COUNT }, (_, index) => (
-              <svg
-                // 並びの位置しか区別がないので、位置をキーにする
-                // biome-ignore lint/suspicious/noArrayIndexKey: 並び替わらない
-                key={index}
-                viewBox="0 0 12 20"
-                aria-hidden="true"
-                className={`h-[1.8cqw] w-[1.1cqw] ${index < filledSteamCount ? "" : "opacity-20"}`}
-              >
-                <path
-                  d="M6 19 q-5 -4.5 0 -9 q5 -4.5 0 -9"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                />
-              </svg>
-            ))}
-          </div>
-        </div>
+            {state.brokenStreak} 杯の連続が途切れた
+          </p>
+        )}
       </div>
 
-      {/* 平らげた杯数: カウンターに積み上げた空の丼と、手前の札 */}
+      {/* 平らげた杯数: カウンターに積み上げた空の丼と、その左の小さな数字 */}
       {/* 重ねた丼は縁だけが見えるよう、上に積むものほど下の丼にかぶせる */}
-      <div className="absolute bottom-[24.6%] left-[20%] flex w-[9%] flex-col-reverse [&>*+*]:-mb-[1.4cqw]">
+      <div className="absolute bottom-[24.6%] left-[21.5%] flex w-[9%] flex-col-reverse [&>*+*]:-mb-[1.4cqw]">
         {Array.from({ length: stackedBowlCount }, (_, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: 積んだ順のまま並び替わらない
           <EmptyBowlIcon key={index} />
         ))}
       </div>
-      <div
-        className={`stage-wood-board absolute top-[82.5%] left-[4%] flex w-[20%] items-baseline justify-center gap-[0.6cqw] py-[0.8cqw]`}
-      >
-        <span className="text-[1.4cqw] font-bold">平らげた杯数</span>
-        <span className="font-display text-[3.2cqw] leading-none">
+      <p className="absolute right-[79%] bottom-[25%] flex items-baseline gap-[0.2cqw]">
+        <span className="sr-only">平らげた杯数</span>
+        <span className="font-display text-[2.4cqw] leading-none">
           {state.stats.servedCount}
         </span>
-        <span className="text-[1.4cqw] font-bold">杯</span>
+        <span className="text-[1.3cqw] font-bold">杯</span>
+      </p>
+
+      {/* 麺がのびるまでの時間: 丼の湯気と麺の色に加えて、丼の下に沿わせた細いゲージ */}
+      <div
+        role="progressbar"
+        aria-label="麺がのびるまでの残り時間"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(freshness * 100)}
+        aria-valuetext={`のびるまで ${Math.ceil(state.orderRemainingMs / 1000)} 秒`}
+        className="absolute top-[76.6%] left-[40%] h-[0.7cqw] w-[20%] overflow-hidden rounded-full bg-yatai-sumi"
+      >
+        <div
+          className={`h-full rounded-full ${isGettingSoggy ? "bg-yatai-amber" : "bg-yatai-kinari"}`}
+          style={{ width: `${Math.max(0, Math.min(1, freshness)) * 100}%` }}
+        />
       </div>
+      {/* 切り替わりだけを読み上げる。見た目は丼の湯気と麺の色で分かる */}
+      <p aria-live="polite" className="sr-only">
+        {isGettingSoggy ? "のびかけ" : "できたて"}
+      </p>
 
       {leavingBowl && (
         // 動きを抑える設定では animationend が来ず残ってしまうので、下げる丼ごと出さない
@@ -252,8 +238,8 @@ export function RamenPlay({
         )}
       </div>
 
-      {/* 注文の文・よみ・ローマ字: 丼の手前の木札 */}
-      <div className="stage-paper absolute top-[81%] left-[26.5%] flex h-[16.5%] w-[47%] flex-col items-center justify-center">
+      {/* 注文の文・よみ・ローマ字: 丼の手前に置いた注文の札。画面の主役なので、ほかの表示より大きく出す */}
+      <div className="stage-paper absolute top-[79.5%] left-[24%] flex h-[18.5%] w-[52%] flex-col items-center justify-center">
         {/* 注文の切り替わりだけを読み上げる。1 打ごとに変わるローマ字は含めない */}
         <div aria-live="polite" className="flex flex-col items-center">
           {/* 丼ごとに作り直して、同じ注文が続いても新しい注文として読み上げさせる */}
@@ -264,13 +250,13 @@ export function RamenPlay({
                 倍になります。
               </p>
             )}
-            <p className="text-[2.6cqw] leading-tight font-bold">
+            <p className="text-[3.2cqw] leading-tight font-bold">
               {order.text}
             </p>
-            <p className="text-[1.3cqw] leading-tight">{order.reading}</p>
+            <p className="text-[1.4cqw] leading-tight">{order.reading}</p>
           </Fragment>
         </div>
-        <p className="font-mono text-[2cqw] leading-tight tracking-wide">
+        <p className="font-mono text-[2.4cqw] leading-tight tracking-wide">
           <span className="text-yatai-lantern-dark underline decoration-[0.15cqw] underline-offset-[0.3cqw]">
             {typedRomaji(state.typing)}
           </span>
@@ -282,9 +268,9 @@ export function RamenPlay({
       </div>
 
       {/* 替え玉ゲージ: カウンターの右に並べた麺玉 */}
-      <div className="stage-wood-board absolute top-[81%] left-[75.5%] flex w-[21.5%] flex-col items-center gap-[0.3cqw] px-[0.6cqw] py-[0.5cqw]">
-        <p className="text-[1.25cqw] font-bold">
-          替え玉ゲージ（ミスなしで {KAEDAMA_GAUGE_MAX} 打で制限時間が延びる）
+      <div className="absolute top-[82%] left-[77.5%] flex flex-col items-start gap-[0.3cqw]">
+        <p aria-hidden="true" className="text-[1.4cqw] leading-tight font-bold">
+          替え玉
         </p>
         <div
           role="progressbar"
@@ -316,7 +302,7 @@ export function RamenPlay({
                   stroke="currentColor"
                   strokeWidth={2}
                   strokeDasharray="3 3"
-                  opacity={0.4}
+                  opacity={0.6}
                 />
               )}
             </svg>
