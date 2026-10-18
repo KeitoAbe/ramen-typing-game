@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
+import { starTwinkleTiming } from "@/client/lib/yatai-ambient";
 
 // 夜空の星の位置（舞台の座標 1280×720）。描くたびに変わらないよう固定しておく
 const STARS: readonly (readonly [number, number, number])[] = [
@@ -86,7 +87,21 @@ const FACE_LINE = {
   strokeLinecap: "round",
 } as const;
 
-/** 表情ごとの眉・目・口 */
+type BlinkingEyesProps = { cy: number; children: ReactNode };
+
+/** 開いた目。目の高さ（cy）を中心に縦につぶして、ときどきまばたきする */
+function BlinkingEyes({ cy, children }: BlinkingEyesProps) {
+  return (
+    <g
+      style={{ transformOrigin: `900px ${cy}px` }}
+      className="motion-safe:animate-shopkeeper-blink"
+    >
+      {children}
+    </g>
+  );
+}
+
+/** 表情ごとの眉・目・口。笑顔は目を細めているので、まばたきさせない */
 const SHOPKEEPER_FACES: Record<ShopkeeperMood, ReactNode> = {
   normal: (
     <>
@@ -96,8 +111,10 @@ const SHOPKEEPER_FACES: Record<ShopkeeperMood, ReactNode> = {
         strokeWidth={7}
         strokeLinecap="round"
       />
-      <circle cx={879} cy={415} r={5} fill={SUMI} />
-      <circle cx={921} cy={415} r={5} fill={SUMI} />
+      <BlinkingEyes cy={415}>
+        <circle cx={879} cy={415} r={5} fill={SUMI} />
+        <circle cx={921} cy={415} r={5} fill={SUMI} />
+      </BlinkingEyes>
       <path d="M884 432 q16 8 32 0" {...FACE_LINE} />
     </>
   ),
@@ -129,8 +146,10 @@ const SHOPKEEPER_FACES: Record<ShopkeeperMood, ReactNode> = {
         strokeWidth={7}
         strokeLinecap="round"
       />
-      <circle cx={879} cy={417} r={4} fill={SUMI} />
-      <circle cx={921} cy={417} r={4} fill={SUMI} />
+      <BlinkingEyes cy={417}>
+        <circle cx={879} cy={417} r={4} fill={SUMI} />
+        <circle cx={921} cy={417} r={4} fill={SUMI} />
+      </BlinkingEyes>
       <path d="M886 438 q14 -10 28 0" {...FACE_LINE} />
     </>
   ),
@@ -193,10 +212,124 @@ function Shopkeeper({ mood }: ShopkeeperProps) {
   );
 }
 
+/**
+ * 店主の右腕と、湯切りに使うテボ（麺を茹でるかご）。肩（962, 498）を支点に腕を上げ、テボを振って湯を切る。
+ * 下ろしている間はテボがカウンターに隠れるよう、店主とカウンターのあいだに描く。
+ * 動きを抑える設定では、腕を下ろしたままにする
+ */
+function ShopkeeperYuchiri() {
+  return (
+    <g
+      // transform 属性にも transform-origin が効くので、回す角度だけを書く
+      transform="rotate(70)"
+      style={{ transformOrigin: "962px 498px" }}
+      className="motion-safe:animate-shopkeeper-yuchiri"
+    >
+      {/* 袖と手、柄。袖は輪郭の太い線に服の色の線を重ねる */}
+      <path
+        d="M962 498 L1002 486"
+        stroke={SUMI}
+        strokeWidth={30}
+        strokeLinecap="round"
+      />
+      <path
+        d="M962 498 L1002 486"
+        stroke="var(--color-yatai-kinari)"
+        strokeWidth={20}
+        strokeLinecap="round"
+      />
+      <path
+        d="M1008 482 L1046 460"
+        stroke={SUMI}
+        strokeWidth={8}
+        strokeLinecap="round"
+      />
+      <circle cx={1008} cy={484} r={13} fill="#f2c79b" {...OUTLINE} />
+      {/* かごと麺 */}
+      <path d="M1040 454 h52 l-12 40 q-14 6 -28 0 z" fill={SUMI} {...OUTLINE} />
+      <path
+        d="M1048 466 h36 M1050 478 h32 M1058 456 l-4 36 M1074 456 l2 36"
+        stroke="var(--color-yatai-wood-light)"
+        strokeWidth={2}
+      />
+      <path
+        d="M1042 454 q6 -10 13 0 t13 0 t13 0 t11 0"
+        fill="none"
+        stroke="#f7d774"
+        strokeWidth={6}
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
+/**
+ * 屋根の棟を横切る猫（左向きに、足元を原点として描く）。
+ * 屋根より奥に描き、屋根の向こうから顔を出して棟を歩く。動きを抑える設定では出さない
+ */
+function StrayCat() {
+  return (
+    <g
+      transform="translate(1060 168)"
+      className="motion-safe:animate-stray-cat motion-reduce:hidden"
+    >
+      <g className="motion-safe:animate-stray-cat-step">
+        {/* しっぽ。輪郭の太い線に毛の色の細い線を重ねる */}
+        <path
+          d="M28 -18 q22 -4 14 -30"
+          fill="none"
+          stroke={SUMI}
+          strokeWidth={9}
+          strokeLinecap="round"
+        />
+        <path
+          d="M28 -18 q22 -4 14 -30"
+          fill="none"
+          stroke="var(--color-yatai-wood-light)"
+          strokeWidth={4}
+          strokeLinecap="round"
+        />
+        <path
+          d="M-18 -2 v-8 M-8 -2 v-8 M14 -2 v-8 M24 -2 v-8"
+          stroke={SUMI}
+          strokeWidth={6}
+          strokeLinecap="round"
+        />
+        <ellipse
+          cx={4}
+          cy={-16}
+          rx={28}
+          ry={12}
+          fill="var(--color-yatai-wood-light)"
+          stroke={SUMI}
+          strokeWidth={4}
+        />
+        <path
+          d="M-36 -30 l2 -14 l9 9 z M-21 -35 l7 -9 l2 13 z"
+          fill="var(--color-yatai-wood-light)"
+          stroke={SUMI}
+          strokeWidth={4}
+          strokeLinejoin="round"
+        />
+        <circle
+          cx={-26}
+          cy={-26}
+          r={12}
+          fill="var(--color-yatai-wood-light)"
+          stroke={SUMI}
+          strokeWidth={4}
+        />
+        <circle cx={-31} cy={-27} r={2} fill={SUMI} />
+        <circle cx={-22} cy={-27} r={2} fill={SUMI} />
+      </g>
+    </g>
+  );
+}
+
 const NOREN_CHARS = ["ら", "ー", "め", "ん"] as const;
 
 /**
- * プレイ画面の背景。奥から順に夜空、屋台の屋根、提灯、のれん、店主、カウンターを描く。
+ * プレイ画面の背景。奥から順に夜空、屋根の向こうを横切る猫、屋台の屋根、提灯、のれん、店主、カウンターを描く。
  * 舞台と同じ 16:9 の座標で描き、舞台いっぱいに広げる
  */
 export function YataiScene({ shopkeeperMood = "normal" }: YataiStallProps) {
@@ -208,6 +341,7 @@ export function YataiScene({ shopkeeperMood = "normal" }: YataiStallProps) {
     >
       <YataiDefs />
       <YataiSky />
+      <StrayCat />
       <YataiStall shopkeeperMood={shopkeeperMood} />
     </svg>
   );
@@ -247,15 +381,24 @@ export function YataiSky() {
     <>
       {/* 夜空と星、月 */}
       <rect width={1280} height={720} fill="url(#night-sky)" />
-      {STARS.map(([x, y, r]) => (
-        <circle
-          key={`${x}-${y}`}
-          cx={x}
-          cy={y}
-          r={r}
-          fill="var(--color-yatai-kinari)"
-        />
-      ))}
+      {/* 星はそれぞれ違う長さと始まりで瞬かせ、一斉に点滅させない */}
+      {STARS.map(([x, y, r], index) => {
+        const { durationS, delayS } = starTwinkleTiming(index);
+        return (
+          <circle
+            key={`${x}-${y}`}
+            cx={x}
+            cy={y}
+            r={r}
+            fill="var(--color-yatai-kinari)"
+            style={{
+              animationDuration: `${durationS}s`,
+              animationDelay: `${delayS}s`,
+            }}
+            className="motion-safe:animate-star-twinkle"
+          />
+        );
+      })}
       <circle cx={1130} cy={56} r={30} fill="var(--color-yatai-amber)" />
       <circle cx={1144} cy={48} r={26} fill="var(--color-yatai-night-deep)" />
     </>
@@ -327,11 +470,18 @@ export function YataiStall({ shopkeeperMood = "normal" }: YataiStallProps) {
         {...OUTLINE}
       />
 
-      {/* のれん */}
+      {/* のれん。上端を支点にときどき揺らす。布ごとに少し遅らせて、風が端から渡っていくように見せる */}
       {NOREN_CHARS.map((char, index) => {
         const x = 330 + index * 157;
         return (
-          <g key={char}>
+          <g
+            key={char}
+            style={{
+              transformOrigin: `${x + 75}px 228px`,
+              animationDelay: `${index * 0.15}s`,
+            }}
+            className="motion-safe:animate-noren-flutter"
+          >
             <path
               d={`M${x} 228 h150 v104 q-75 10 -150 0 z`}
               fill="var(--color-yatai-lantern-dark)"
@@ -355,6 +505,7 @@ export function YataiStall({ shopkeeperMood = "normal" }: YataiStallProps) {
       <Lantern cx={1084} label={["そ", "ば"]} />
 
       <Shopkeeper mood={shopkeeperMood} />
+      <ShopkeeperYuchiri />
 
       {/* 木のカウンター。脇には夜空を見せる（ページの背景と同じ色で塗ると、舞台の外と見分けられない）。
           券売機の画面で縮小して置いても舞台の下端まで届くよう、下に長く伸ばしておく */}
