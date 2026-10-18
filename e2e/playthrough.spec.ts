@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@e2e/fixtures";
 
 // 券売機で食券を買い、注文を打って、時間切れで結果画面が出るまでを通しで遊ぶ。
 // 時間は page.clock で早送りし、制限時間（並は 60 秒）を実際には待たない

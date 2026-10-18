@@ -1,5 +1,6 @@
 import { AdSlot } from "@/client/components/adsense/ad-slot";
 import {
+  AD_SLOT_HEIGHT_PX,
   parseAdsensePublisherId,
   parseAdsenseSlotId,
 } from "@/client/lib/adsense";
@@ -14,5 +15,12 @@ export function GuideAd() {
   );
   const slotId = parseAdsenseSlotId(process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID);
   if (!publisherId || !slotId) return null;
-  return <AdSlot publisherId={publisherId} slotId={slotId} />;
+  return (
+    <AdSlot
+      publisherId={publisherId}
+      slotId={slotId}
+      height={AD_SLOT_HEIGHT_PX}
+      className="mx-auto w-full max-w-3xl px-5 pb-16 sm:px-8"
+    />
+  );
 }

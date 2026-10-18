@@ -1,5 +1,10 @@
-/** アドセンスの広告枠が確保する高さ（px）。読み込みの前後でレイアウトがずれないよう、先に場所を取っておく */
+/**
+ * 広告枠が確保する高さ（px）。読み込みの前後でレイアウトがずれないよう、先に場所を取っておく。
+ * 紹介の後ろの枠・舞台の下の横長の枠（728×90）・舞台の右の縦長の枠（300×600）の順
+ */
 export const AD_SLOT_HEIGHT_PX = 280;
+export const STAGE_BOTTOM_AD_HEIGHT_PX = 90;
+export const STAGE_SIDE_AD_HEIGHT_PX = 600;
 
 /** ads.txt に書く、Google の認証機関 ID（アドセンスで共通の固定値） */
 const GOOGLE_CERTIFICATION_AUTHORITY_ID = "f08c47fec0942fa0";

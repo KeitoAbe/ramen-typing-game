@@ -18,8 +18,15 @@ export default defineConfig({
   webServer: {
     command: `pnpm build && pnpm start --port ${PORT}`,
     url: `http://localhost:${PORT}`,
-    // シェルに NODE_ENV=development が残っていると、本番ビルドのプリレンダリングが落ちる
-    env: { NODE_ENV: "production" },
+    // シェルに NODE_ENV=development が残っていると、本番ビルドのプリレンダリングが落ちる。
+    // 広告枠の配置を確かめるため、ダミーの広告の ID を渡す（スクリプトは e2e/fixtures.ts で差し替える）
+    env: {
+      NODE_ENV: "production",
+      NEXT_PUBLIC_ADSENSE_PUBLISHER_ID: "ca-pub-0000000000000000",
+      NEXT_PUBLIC_ADSENSE_SLOT_ID: "1111111111",
+      NEXT_PUBLIC_ADSENSE_STAGE_BOTTOM_SLOT_ID: "2222222222",
+      NEXT_PUBLIC_ADSENSE_STAGE_SIDE_SLOT_ID: "3333333333",
+    },
     // 別のサーバー（開発サーバーや古いビルド）を検証してしまわないよう、ポートが使われていたら失敗させる
     reuseExistingServer: false,
     timeout: 300_000,
