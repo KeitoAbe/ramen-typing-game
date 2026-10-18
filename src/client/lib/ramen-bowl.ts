@@ -49,8 +49,12 @@ export function bowlPriceRate(order: Order, elapsedMs: number): number {
   );
 }
 
+/** 値段を 10 円単位に丸める */
+export function roundPrice(price: number): number {
+  return Math.round(price / 10) * 10;
+}
+
 /** 完食した丼の値段（10 円単位に丸める）。のびきっていたら 0 */
 export function bowlPrice(order: Order, elapsedMs: number): number {
-  const price = orderPrice(order) * bowlPriceRate(order, elapsedMs);
-  return Math.round(price / 10) * 10;
+  return roundPrice(orderPrice(order) * bowlPriceRate(order, elapsedMs));
 }

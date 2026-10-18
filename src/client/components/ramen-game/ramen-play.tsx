@@ -10,6 +10,7 @@ import type { RamenGameState } from "@/client/lib/ramen-game";
 import { KAEDAMA_GAUGE_MAX } from "@/client/lib/ramen-kaedama";
 import type { ShopkeeperMood } from "@/client/lib/ramen-shopkeeper";
 import { SPECIAL_BOWL_PRICE_RATE } from "@/client/lib/ramen-special-bowl";
+import { streakPriceRate } from "@/client/lib/ramen-streak";
 import { remainingRomaji, typedRomaji } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
 
@@ -59,6 +60,8 @@ export function RamenPlay({
     (state.kaedamaGauge / KAEDAMA_GAUGE_MAX) * NOODLE_BALL_COUNT,
   );
   const stackedBowlCount = Math.min(state.stats.servedCount, STACKED_BOWL_MAX);
+  // いま出ている丼をミスなしで平らげたときにかかる、連続杯数の倍率
+  const streakRate = state.isCleanBowl ? streakPriceRate(state.streak + 1) : 1;
 
   return (
     <section className="absolute inset-0">
@@ -91,6 +94,39 @@ export function RamenPlay({
             {Math.ceil(state.remainingMs / 1000)}
           </span>
           <span className="text-[1.3cqw] font-bold">秒</span>
+        </p>
+      </div>
+
+      {/* 連続杯数: 時計の下に掛けた木札。途切れたときは上の行で知らせる */}
+      <div
+        className={`${WOOD_PLATE} absolute top-[66%] left-[1.5%] flex w-[15.6%] flex-col items-center px-[0.8cqw] py-[0.5cqw]`}
+      >
+        <p aria-live="polite" className="text-[1.1cqw] font-bold">
+          {state.isStreakBrokenNoticeShown ? (
+            // 途切れるたびに作り直して、読み上げをやり直させる
+            <span
+              key={state.streakBrokenNoticeUntil}
+              className="text-yatai-lantern"
+            >
+              {state.brokenStreak} 杯の連続が途切れた
+            </span>
+          ) : (
+            "ミスなしで続けて平らげる"
+          )}
+        </p>
+        <p className="flex items-baseline gap-[0.4cqw]">
+          <span className="font-display text-[2.6cqw] leading-none">
+            {state.streak}
+          </span>
+          <span className="text-[1.3cqw] font-bold">杯連続</span>
+        </p>
+        <p className="text-[1.1cqw] font-bold">
+          連続ボーナス{" "}
+          <span
+            className={`font-display ${streakRate > 1 ? "text-yatai-lantern" : ""}`}
+          >
+            ×{streakRate.toFixed(1)}
+          </span>
         </p>
       </div>
 

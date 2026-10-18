@@ -1,4 +1,4 @@
-import { bowlPrice, soggyLimitMs } from "@/client/lib/ramen-bowl";
+import { bowlPrice, roundPrice, soggyLimitMs } from "@/client/lib/ramen-bowl";
 import type { Course } from "@/client/lib/ramen-course";
 import {
   initialRamenGameState,
@@ -12,6 +12,7 @@ import {
   KAEDAMA_NOTICE_MS,
 } from "@/client/lib/ramen-kaedama";
 import { emptyPlayStats, orderPrice } from "@/client/lib/ramen-result";
+import { STREAK_BROKEN_NOTICE_MS } from "@/client/lib/ramen-streak";
 import type { Order } from "@/types/order";
 
 const orders: Order[] = [
@@ -442,6 +443,104 @@ describe("ramenGameReducer", () => {
       const typed = typeKeysWith(ticking, "s", 100, NORMAL_ROLL);
       if (typed.status !== "playing") throw new Error("playing のはず");
       expect(typed.isSpecialBowl).toBe(true);
+    });
+  });
+
+  describe("連続杯数", () => {
+    /** しお・みそを交互に count 杯ぶん打つキー */
+    function bowlKeys(count: number): string {
+      return "shiomiso".repeat(Math.ceil(count / 2)).slice(0, count * 4);
+    }
+
+    function playing(state: RamenGameState) {
+      if (state.status !== "playing") throw new Error("playing のはず");
+      return state;
+    }
+
+    /** 出てすぐ平らげたしお・みその値段（どちらも 2 文字なので同じ） */
+    const freshPrice = bowlPrice(orders[0], 0);
+
+    it("ミスなしで平らげるたびに連続杯数が増え、最大連続杯数も記録される", () => {
+      const state = playing(typeKeys(start(), bowlKeys(3)));
+      expect(state.streak).toBe(3);
+      expect(state.stats.maxStreak).toBe(3);
+    });
+
+    it("3 杯目から ×1.1、5 杯目から ×1.2、10 杯目から ×1.5 の値段で売れる", () => {
+      const expectedRates = [1, 1, 1.1, 1.1, 1.2, 1.2, 1.2, 1.2, 1.2, 1.5, 1.5];
+      let state = start();
+      expectedRates.forEach((rate, index) => {
+        const before = playing(state).stats.bill;
+        state = typeKeys(state, bowlKeys(index + 1).slice(-4));
+        expect(playing(state).stats.bill - before).toBe(
+          roundPrice(freshPrice * rate),
+        );
+      });
+    });
+
+    it("ミスタイプすると連続杯数は 0 に戻り、その丼は平らげても連続に数えない", () => {
+      const missed = playing(typeKeys(typeKeys(start(), bowlKeys(2)), "sx"));
+      expect(missed.streak).toBe(0);
+      expect(missed.isCleanBowl).toBe(false);
+
+      const served = playing(typeKeys(missed, "hio"));
+      expect(served.streak).toBe(0);
+      expect(served.stats.maxStreak).toBe(2);
+
+      const next = playing(typeKeys(served, "miso"));
+      expect(next.streak).toBe(1);
+    });
+
+    it("丼がのびきって下げられると連続杯数は 0 に戻る", () => {
+      const twoServed = playing(typeKeys(start(), bowlKeys(2)));
+      const discarded = playing(
+        ramenGameReducer(twoServed, {
+          type: "tick",
+          now: soggyLimitMs(orders[0]),
+        }),
+      );
+      expect(discarded.stats.discardedCount).toBe(1);
+      expect(discarded.streak).toBe(0);
+      // 次に出た丼はミスなしで打てば連続の 1 杯目になる
+      expect(discarded.isCleanBowl).toBe(true);
+    });
+
+    it("途切れると「連続が途切れた」が出て、しばらくすると消える", () => {
+      const missed = playing(typeKeys(typeKeys(start(), bowlKeys(3)), "x", 0));
+      expect(missed.isStreakBrokenNoticeShown).toBe(true);
+      expect(missed.brokenStreak).toBe(3);
+
+      const shown = playing(
+        ramenGameReducer(missed, {
+          type: "tick",
+          now: STREAK_BROKEN_NOTICE_MS - 1,
+        }),
+      );
+      expect(shown.isStreakBrokenNoticeShown).toBe(true);
+
+      const hidden = playing(
+        ramenGameReducer(shown, { type: "tick", now: STREAK_BROKEN_NOTICE_MS }),
+      );
+      expect(hidden.isStreakBrokenNoticeShown).toBe(false);
+    });
+
+    it("連続していないときのミスでは「連続が途切れた」は出ない", () => {
+      const missed = playing(typeKeys(start(), "x"));
+      expect(missed.isStreakBrokenNoticeShown).toBe(false);
+    });
+
+    it("特別な丼の倍率と掛け合わせる", () => {
+      const twoServed = typeKeys(start(), bowlKeys(2).slice(0, -1));
+      // 2 杯目を平らげたキーの乱数で、3 杯目を特別な丼にする
+      const special = playing(
+        ramenGameReducer(twoServed, { type: "key", key: "o", now: 0, roll: 0 }),
+      );
+      expect(special.isSpecialBowl).toBe(true);
+
+      const served = playing(typeKeys(special, "shio"));
+      expect(served.stats.bill - special.stats.bill).toBe(
+        roundPrice(freshPrice * 2 * 1.1),
+      );
     });
   });
 

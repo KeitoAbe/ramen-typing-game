@@ -26,6 +26,8 @@ export type PlayStats = {
   missCount: number;
   /** 替え玉の回数（替え玉ゲージが満タンになった回数） */
   kaedamaCount: number;
+  /** ミスなし・下げられなしで続けて平らげた杯数の、そのプレイでの最大 */
+  maxStreak: number;
   /** 平らげた丼（平らげた順） */
   servedBowls: readonly ServedBowl[];
   /** 打ち間違えたときに打つべきだったキーごとの回数 */
@@ -53,6 +55,7 @@ export const emptyPlayStats: PlayStats = {
   correctKeyCount: 0,
   missCount: 0,
   kaedamaCount: 0,
+  maxStreak: 0,
   servedBowls: [],
   missedKeys: {},
 };

@@ -1,4 +1,9 @@
-import { bowlPrice, isSoggy, soggyLimitMs } from "@/client/lib/ramen-bowl";
+import {
+  bowlPrice,
+  isSoggy,
+  roundPrice,
+  soggyLimitMs,
+} from "@/client/lib/ramen-bowl";
 import type { Course } from "@/client/lib/ramen-course";
 import {
   fillKaedamaGauge,
@@ -14,6 +19,10 @@ import {
   isSpecialBowlRoll,
   specialBowlPriceRate,
 } from "@/client/lib/ramen-special-bowl";
+import {
+  STREAK_BROKEN_NOTICE_MS,
+  streakPriceRate,
+} from "@/client/lib/ramen-streak";
 import {
   createTypingState,
   inputKey,
@@ -46,6 +55,16 @@ type PlayingState = {
   kaedamaNoticeUntil: number;
   /** いま「替え玉！」を出しているか */
   isKaedamaNoticeShown: boolean;
+  /** ミスなし・下げられなしで続けて平らげた杯数（連続杯数） */
+  streak: number;
+  /** いま出ている丼を、まだミスなしで打てているか。ミスした丼は平らげても連続に数えない */
+  isCleanBowl: boolean;
+  /** 最後に途切れた連続杯数（「連続が途切れた」に出す） */
+  brokenStreak: number;
+  /** 「連続が途切れた」を出しておく期限の時刻 */
+  streakBrokenNoticeUntil: number;
+  /** いま「連続が途切れた」を出しているか */
+  isStreakBrokenNoticeShown: boolean;
   /** いま「半角英数に切り替えて」の案内を出しているか（IME がオンのまま打ったら出し、正しく打てたら消す） */
   isImeNoticeShown: boolean;
 };
@@ -119,12 +138,28 @@ function serveNext(
     orderServedAt: now,
     orderRemainingMs: soggyLimitMs(order),
     isSpecialBowl: isSpecialRoll(roll),
+    isCleanBowl: true,
     typing: createTypingState(order.reading),
     stats,
   };
 }
 
-/** のびきっていれば丼を下げて次の丼を出す。お会計には入れない */
+/**
+ * ミスや丼を下げられたことで、連続杯数を 0 に戻す。
+ * 続いていた連続があれば「連続が途切れた」を出す
+ */
+function breakStreak(state: PlayingState, now: number): PlayingState {
+  const broken = { ...state, streak: 0, isCleanBowl: false };
+  if (state.streak === 0) return broken;
+  return {
+    ...broken,
+    brokenStreak: state.streak,
+    streakBrokenNoticeUntil: now + STREAK_BROKEN_NOTICE_MS,
+    isStreakBrokenNoticeShown: true,
+  };
+}
+
+/** のびきっていれば丼を下げて次の丼を出す。お会計には入れず、連続も途切れる */
 function discardIfSoggy(
   state: PlayingState,
   now: number,
@@ -132,7 +167,7 @@ function discardIfSoggy(
 ): PlayingState {
   if (!isSoggy(currentOrder(state), now - state.orderServedAt)) return state;
   return serveNext(
-    state,
+    breakStreak(state, now),
     { ...state.stats, discardedCount: state.stats.discardedCount + 1 },
     now,
     roll,
@@ -190,6 +225,11 @@ export function ramenGameReducer(
         kaedamaGauge: 0,
         kaedamaNoticeUntil: action.now,
         isKaedamaNoticeShown: false,
+        streak: 0,
+        isCleanBowl: true,
+        brokenStreak: 0,
+        streakBrokenNoticeUntil: action.now,
+        isStreakBrokenNoticeShown: false,
         isImeNoticeShown: false,
       };
     }
@@ -207,6 +247,7 @@ export function ramenGameReducer(
         ...next,
         remainingMs,
         isKaedamaNoticeShown: action.now < next.kaedamaNoticeUntil,
+        isStreakBrokenNoticeShown: action.now < next.streakBrokenNoticeUntil,
       };
     }
     case "ime":
@@ -224,10 +265,10 @@ export function ramenGameReducer(
       );
       const { state: typing, accepted } = inputKey(current.typing, action.key);
       if (!accepted) {
-        // ミスすると替え玉ゲージは 0 に戻る。
+        // ミスすると替え玉ゲージと連続杯数は 0 に戻る。
         // 打つべきだったキーは、画面に出ている残りのローマ字の先頭（プレイヤーが見ていたもの）で数える
         return {
-          ...current,
+          ...breakStreak(current, action.now),
           kaedamaGauge: 0,
           stats: {
             ...current.stats,
@@ -255,19 +296,23 @@ export function ramenGameReducer(
       const { stats } = afterKey;
       if (!isComplete(typing)) return afterKey;
       // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ。
-      // 特別な丼は、その値段にさらに倍率をかける
+      // 特別な丼や連続杯数の倍率は、その値段に掛け合わせる
+      const streak = current.isCleanBowl ? current.streak + 1 : 0;
       const order = currentOrder(current);
-      const price =
+      const price = roundPrice(
         bowlPrice(order, action.now - current.orderServedAt) *
-        specialBowlPriceRate(current.isSpecialBowl);
+          specialBowlPriceRate(current.isSpecialBowl) *
+          streakPriceRate(streak),
+      );
       return serveNext(
-        afterKey,
+        { ...afterKey, streak },
         {
           ...stats,
           servedCount: stats.servedCount + 1,
           specialServedCount:
             stats.specialServedCount + (current.isSpecialBowl ? 1 : 0),
           bill: stats.bill + price,
+          maxStreak: Math.max(stats.maxStreak, streak),
           servedBowls: [...stats.servedBowls, { order, price }],
         },
         action.now,

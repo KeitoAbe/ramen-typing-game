@@ -30,6 +30,7 @@ function play(overrides: Partial<PlayResult> = {}): PlayResult {
         missCount: 5,
         kaedamaCount: 0,
         specialServedCount: 0,
+        maxStreak: 0,
         servedBowls: [],
         missedKeys: {},
       },
