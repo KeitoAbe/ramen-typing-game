@@ -17,6 +17,9 @@ export const DAILY_BEST_STORAGE_KEY = "ramen-game:daily-bests";
 /** 日本時間は UTC より 9 時間進んでいる（夏時間はない） */
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
+/** 「YYYY-MM-DD」の形の日付 */
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 /** 時刻から、日本時間の日付を「YYYY-MM-DD」の形で返す。お題はこの日付で区切る */
 export function dailyDateKey(now: number): string {
   return new Date(now + JST_OFFSET_MS).toISOString().slice(0, 10);
@@ -100,10 +103,14 @@ function parseDailyBests(
   if (typeof parsed !== "object" || parsed === null) return empty;
   const { date, bests } = parsed as Record<string, unknown>;
   if (date !== dateKey) {
-    // 「YYYY-MM-DD」は文字列のまま比べても日付の前後と一致する
+    // 「YYYY-MM-DD」は文字列のまま比べても日付の前後と一致する。
+    // 形の違う日付（壊れた値）は前後を比べられないので、新しい日の記録とはみなさない
     return {
       bests: {},
-      isNewerSaved: typeof date === "string" && date > dateKey,
+      isNewerSaved:
+        typeof date === "string" &&
+        DATE_KEY_PATTERN.test(date) &&
+        date > dateKey,
     };
   }
   return {

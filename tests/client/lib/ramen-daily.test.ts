@@ -181,6 +181,21 @@ describe("recordDailyBest", () => {
     expect(storage.saved()).toBe(saved);
   });
 
+  it("保存されていた日付の形が壊れていたら、空の記録として扱い新しい日の記録で上書きする", () => {
+    const storage = memoryStorage(
+      JSON.stringify({ date: "zzzz", bests: { nami: 9_000 } }),
+    );
+    expect(recordDailyBest(storage, "2026-10-18", "nami", 100)).toEqual({
+      best: 100,
+      isUpdated: true,
+      dateKey: "2026-10-18",
+    });
+    expect(JSON.parse(storage.saved() ?? "null")).toEqual({
+      date: "2026-10-18",
+      bests: { nami: 100 },
+    });
+  });
+
   it("壊れた値は記録が無いものとして扱う", () => {
     const storage = memoryStorage("{broken");
     expect(recordDailyBest(storage, "2026-10-18", "nami", 100).isUpdated).toBe(
