@@ -268,6 +268,8 @@ export function RamenGame({ orders }: Props) {
   useEffect(() => {
     if (!isWaiting) return;
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Alt+← で戻るなど、ブラウザのショートカットは止めない（プレイ中と同じ）
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (isPageScrollKey(event.key)) event.preventDefault();
       const action = waitingKeyAction(event);
       if (action === "ime") {
