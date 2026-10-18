@@ -49,6 +49,10 @@ test("1 プレイの流れで、開始・案内・効果音・終了・共有・
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("checkbox", { name: /激辛/ }).check();
   await page.getByRole("button", { name: "いただきます" }).click();
+  // 「いただきます」を押しただけでは始まっていないので、play_start はまだ送らない
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+  expect(await eventsNamed(page, "play_start")).toEqual([]);
+  await page.keyboard.press("Enter");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
 
   // IME がオンのまま 2 回打っても、案内の計測は 1 回だけ
@@ -142,12 +146,29 @@ test("食券を買ってから、ページを離れると ticket_abandon が 1 �
   ]);
 });
 
+test("「いただきます」のあと、始める前にページを離れると ticket_abandon が 1 回送られ、play_start は送らない", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^並/ }).click();
+  await page.getByRole("button", { name: "いただきます" }).click();
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+
+  await page.goto("/about");
+
+  expect(await eventsNamed(page, "ticket_abandon")).toEqual([
+    ["ticket_abandon", { course_id: "nami", transport_type: "beacon" }],
+  ]);
+  expect(await eventsNamed(page, "play_start")).toEqual([]);
+});
+
 test("プレイを始めたあとにページを離れても、ticket_abandon は送らない", async ({
   page,
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /^並/ }).click();
   await page.getByRole("button", { name: "いただきます" }).click();
+  await page.keyboard.press("Enter");
   await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
 
   await page.goto("/about");

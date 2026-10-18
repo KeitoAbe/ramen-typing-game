@@ -239,8 +239,21 @@ test.describe("1366×768 のウィンドウ", () => {
     await page.getByRole("checkbox").first().check();
     await expectIntactStage(page);
 
-    // プレイ中
+    // 始めるのを待つ画面（日本語入力の案内も出した状態で測る）
     await page.getByRole("button", { name: "いただきます" }).click();
+    await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Process", keyCode: 229 }),
+      );
+    });
+    await expect(
+      page.getByText("日本語入力がオンになっています"),
+    ).toBeVisible();
+    await expectIntactStage(page);
+
+    // プレイ中
+    await page.keyboard.press("Enter");
     const remaining = page.getByTestId("remaining-romaji");
     await expect(remaining).not.toBeEmpty();
     await expectIntactStage(page);
