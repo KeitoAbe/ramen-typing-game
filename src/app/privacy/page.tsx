@@ -36,7 +36,8 @@ export default function PrivacyPage() {
           当サイトは、利用状況を把握するために、Google
           が提供するアクセス解析ツール「Google
           アナリティクス」を使います。Google アナリティクスは、Cookie
-          を使って利用者の訪問の情報を集めます。集める情報は匿名で、個人を特定するものではありません。
+          を使って利用者の訪問の情報を集めます。Cookie
+          に保存した識別子で、ブラウザや複数回の訪問を区別することがありますが、この識別子だけで個人を直接特定するものではありません。
         </p>
         <p>
           集めたデータは Google
@@ -53,8 +54,9 @@ export default function PrivacyPage() {
           <ExternalLink href="https://tools.google.com/dlpage/gaoptout?hl=ja">
             Google アナリティクス オプトアウト アドオン
           </ExternalLink>
-          をブラウザに入れるか、ブラウザの設定で Cookie
-          を無効にすると止められます。
+          をブラウザに入れると止められます。ブラウザの設定で Cookie
+          を無効にしても、Cookie
+          を使わずにデータが送られる場合があるため、それだけでは収集が止まるとは限りません。
         </p>
       </LegalSection>
 
