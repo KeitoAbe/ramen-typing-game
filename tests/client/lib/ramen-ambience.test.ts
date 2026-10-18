@@ -407,8 +407,14 @@ describe("createAmbiencePlayer", () => {
   }
   class FakeAudioContext {
     state = "running";
+    resumeCount = 0;
     currentTime = 0;
     sampleRate = 8000;
+    resume() {
+      this.resumeCount += 1;
+      this.state = "running";
+      return Promise.resolve();
+    }
     createBuffer(_channels: number, length: number) {
       return { getChannelData: () => new Float32Array(length) };
     }
@@ -513,6 +519,17 @@ describe("createAmbiencePlayer", () => {
     jest.advanceTimersByTime(AMBIENCE_FADE_SECONDS * 1000 + 100);
     expect(sources.filter((source) => source.loop)).toHaveLength(1);
     expect(playing().length).toBeGreaterThan(0);
+  });
+
+  it("止めている間に AudioContext が止められていたら、流し直すときに動かし直す", () => {
+    const player = createPlayer();
+    player.setActive(true);
+    player.setActive(false);
+    jest.advanceTimersByTime(AMBIENCE_FADE_SECONDS * 1000 + 100);
+    context.state = "suspended";
+    player.setActive(true);
+    expect(context.resumeCount).toBe(1);
+    expect(context.state).toBe("running");
   });
 
   it("閉店間際になると BGM の音量を上げ、終わると戻す", () => {

@@ -691,6 +691,8 @@ export function createAmbiencePlayer(
           clearTimeout(stopTimer);
           stopTimer = undefined;
           const g = ensureGraph();
+          // 裏に回っている間にブラウザが AudioContext を止めることがあるので、流し直す前に動かし直す
+          if (g.context.state === "suspended") void g.context.resume();
           rampTo(
             g.master.gain,
             1,
