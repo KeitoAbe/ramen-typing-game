@@ -23,6 +23,13 @@ describe("GameGuide", () => {
     }
   });
 
+  it("検索で探されそうな言葉を本文に含める", () => {
+    const body = html.replace(/<h1[^>]*>.*?<\/h1>/, "");
+    for (const word of ["ラーメン", "タイピングゲーム", "ローマ字", "無料"]) {
+      expect(body).toContain(word);
+    }
+  });
+
   it("コースの食券代と時間を、ゲームの設定どおりに載せる", () => {
     expect(html).toContain("3,000 円");
     expect(html).toContain("90 秒");
