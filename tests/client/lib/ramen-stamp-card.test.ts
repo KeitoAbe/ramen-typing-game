@@ -144,14 +144,14 @@ describe("stampPlay", () => {
   });
 
   it("称号「屋台の伝説」を取ると「屋台の伝説」を押す", () => {
-    // 特盛りで食券代の 3 倍お得、正確率 97% 以上で屋台の伝説になる
-    const legend = play({ bill: 40_000, accuracy: 0.97 });
+    // 特盛りで食券代の 7 倍お得、正確率 97.5% 以上で屋台の伝説になる
+    const legend = play({ bill: 80_000, accuracy: 0.975 });
     expect(newStampIds(playedCard, "tokumori", legend)).toEqual([
       "tokumori-cleared",
       "legend",
     ]);
     expect(
-      newStampIds(playedCard, "tokumori", { ...legend, accuracy: 0.96 }),
+      newStampIds(playedCard, "tokumori", { ...legend, accuracy: 0.97 }),
     ).not.toContain("legend");
   });
 
