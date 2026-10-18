@@ -191,6 +191,14 @@ test.describe("1366×768 のウィンドウ", () => {
     expect(guideBox.y).toBeGreaterThanOrEqual(
       bottomAdBox.y + bottomAdBox.height,
     );
+    // 舞台の下の広告枠から紹介の見出しまでは 48〜64px に詰める
+    const h1Box = await boxOf(page.getByRole("heading", { level: 1 }));
+    const gap = h1Box.y - (bottomAdBox.y + bottomAdBox.height);
+    expect(gap).toBeGreaterThanOrEqual(48);
+    expect(gap).toBeLessThanOrEqual(64);
+    // ヘッダーのサイト名は舞台の左端にそろえる
+    const logoBox = await boxOf(header.getByRole("link"));
+    expect(Math.abs(logoBox.x - stageBox.x)).toBeLessThanOrEqual(1);
     await expectAdsApart(page);
   });
 
@@ -274,6 +282,9 @@ test.describe("幅 1360px より狭いウィンドウ", () => {
     expect(
       Math.abs(stageBox.x + stageBox.width / 2 - viewportWidth / 2),
     ).toBeLessThanOrEqual(1);
+    // 右の枠が隠れても、ヘッダーのサイト名は舞台の左端にそろう
+    const logoBox = await boxOf(page.getByRole("banner").getByRole("link"));
+    expect(Math.abs(logoBox.x - stageBox.x)).toBeLessThanOrEqual(1);
     await expectAdsApart(page);
   });
 

@@ -16,7 +16,7 @@ export default function ContactPage() {
   // NEXT_PUBLIC_ の変数はビルド時に値が埋め込まれるので、実行時に環境変数が渡らないホスティングでも読める
   const formUrl = parseContactFormUrl(process.env.NEXT_PUBLIC_CONTACT_FORM_URL);
   return (
-    <LegalPage title="お問い合わせ">
+    <LegalPage siteName={SITE_NAME} title="お問い合わせ">
       <p>
         {SITE_NAME}
         へのご意見・ご質問・不具合のご報告は、Google

@@ -17,7 +17,7 @@ const ESTABLISHED_ON = "2026 年 10 月 18 日";
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="プライバシーポリシー">
+    <LegalPage siteName={SITE_NAME} title="プライバシーポリシー">
       <p>
         {SITE_NAME}
         （以下「当サイト」）での、利用者の情報の扱いについて説明します。
