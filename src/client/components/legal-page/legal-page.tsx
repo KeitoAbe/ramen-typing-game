@@ -1,26 +1,33 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/client/components/site-footer/site-footer";
+import { SiteHeader } from "@/client/components/site-header/site-header";
 
-/** プライバシーポリシーなど、運営まわりのページの共通の枠。h1 とトップページへ戻るリンクを持つ */
+/**
+ * プライバシーポリシーなど、運営まわりのページの共通の枠。
+ * トップページと同じヘッダー・フッターで挟み、h1 とトップページへ戻るリンクを持つ
+ */
 export function LegalPage({
+  siteName,
   title,
   children,
 }: {
+  siteName: string;
   title: string;
   children: ReactNode;
 }) {
   return (
     <>
+      <SiteHeader siteName={siteName} align="column" />
       <main className="flex w-full flex-1 flex-col">
-        <article className="mx-auto w-full max-w-3xl px-5 py-12 text-base leading-body wrap-break-word sm:px-8 sm:py-16">
+        <article className="page-column py-12 text-base leading-body wrap-break-word sm:py-16">
           <Link
             href="/"
             className="text-sm underline underline-offset-4 hover:text-yatai-amber"
           >
             ← ラーメン屋台タイピングに戻る
           </Link>
-          <h1 className="mt-6 border-b-2 border-yatai-wood pb-3 font-display text-2xl leading-heading text-yatai-kinari sm:text-3xl">
+          <h1 className="mt-6 font-display text-2xl leading-heading text-yatai-kinari sm:text-3xl">
             {title}
           </h1>
           <div className="mt-8 space-y-4">{children}</div>

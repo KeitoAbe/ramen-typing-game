@@ -3,7 +3,10 @@ import { SITE_NAME } from "@/app/site-metadata";
 import { buildGameJsonLd, getSiteUrl, serializeJsonLd } from "@/app/site-url";
 import { GuideAd } from "@/client/components/adsense/guide-ad";
 import { StageBottomAd } from "@/client/components/adsense/stage-bottom-ad";
-import { StageSideAd } from "@/client/components/adsense/stage-side-ad";
+import {
+  StageSideAd,
+  stageSideAdIds,
+} from "@/client/components/adsense/stage-side-ad";
 import { GameGuide } from "@/client/components/game-guide/game-guide";
 import { RamenGame } from "@/client/components/ramen-game/ramen-game";
 import { SiteFooter } from "@/client/components/site-footer/site-footer";
@@ -29,7 +32,11 @@ export default async function Home() {
           __html: serializeJsonLd(buildGameJsonLd(getSiteUrl())),
         }}
       />
-      <SiteHeader siteName={SITE_NAME} />
+      <SiteHeader
+        siteName={SITE_NAME}
+        align="stage"
+        withStageSideAd={stageSideAdIds() !== null}
+      />
       <main className="flex w-full flex-1 flex-col">
         <div className="flex w-full justify-center gap-8 pt-4">
           <div className="flex w-full min-w-0 max-w-[960px] flex-col items-center">

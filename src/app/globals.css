@@ -159,8 +159,53 @@
   box-shadow: 0 0.2cqw 0.8cqw rgb(0 0 0 / 0.3);
 }
 
+/*
+ * 舞台の外のページの本文の段。1 行が 40 文字程度に収まる幅で、ページの中央に置く。
+ * ヘッダーのサイト名・紹介・運営まわりのページ・フッターの左端をこの段でそろえる
+ */
+@utility page-column {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 44rem;
+  padding-inline: 1.25rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+}
+
+/* ヘッダーの軒にかかるのれん。提灯の赤の布に、一定の間隔で切れ目（背景が透ける隙間）を入れる */
+@utility noren-fringe {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-yatai-lantern) 0 76px,
+    transparent 76px 80px
+  );
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.2);
+}
+
+/*
+ * ページの背景は、夜の路地の暗い板塀。
+ * 地の色は舞台の夜空（night）より暗い night-deep のままにして、舞台との境目をにじませない。
+ * 縦の板目と、上から差す提灯のほのかな明かりは、どちらもごく薄くして舞台より目立たせない。
+ * 板目は横にだけ変わる模様なので、縦に繰り返しても継ぎ目が出ない
+ */
 body {
-  background: var(--color-yatai-night-deep);
+  background-color: var(--color-yatai-night-deep);
+  background-image:
+    radial-gradient(
+      ellipse 70% 480px at 50% 0,
+      rgb(245 185 66 / 0.07),
+      transparent
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 119px,
+      rgb(0 0 0 / 0.22) 119px 121px,
+      transparent 121px 240px
+    );
+  /* 背景の基準の大きさは画面 1 枚分なので、明かりはページの上に 1 度だけ置き、板目は縦横に繰り返す */
+  background-repeat: no-repeat, repeat;
   color: var(--color-yatai-kinari);
   font-family: var(--font-sans), sans-serif;
 }

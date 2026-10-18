@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <LegalPage title="運営者情報">
+    <LegalPage siteName={SITE_NAME} title="運営者情報">
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[auto_1fr]">
         <dt className="font-bold text-yatai-kinari/75">サイト名</dt>
         <dd>{SITE_NAME}</dd>

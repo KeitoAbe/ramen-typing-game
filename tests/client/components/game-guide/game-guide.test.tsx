@@ -30,6 +30,32 @@ describe("GameGuide", () => {
     }
   });
 
+  it("遊び方は、券売機から伝票までの 4 つの手順と、稼ぐコツに分けて載せる", () => {
+    const steps = html.match(/<ol>(.*?)<\/ol>/)?.[1] ?? "";
+    expect(steps.match(/<li[\s>]/g)).toHaveLength(4);
+    for (const step of [
+      "食券を買う。",
+      "注文をローマ字で打つ。",
+      "麺がのびる前に食べる。",
+      "伝票で成績を見る。",
+    ]) {
+      expect(steps).toContain(step);
+    }
+    for (const tip of [
+      "替え玉で時間を延ばす。",
+      "連続ボーナスを狙う。",
+      "店主のおすすめを逃さない。",
+    ]) {
+      expect(html).toContain(tip);
+    }
+  });
+
+  it("よくある質問は「Q.」「A.」を付けず、質問と答えを dt と dd に分ける", () => {
+    expect(html).not.toContain("Q. ");
+    expect(html).not.toContain("A. ");
+    expect(html).toContain("キーを打っても文字が入らない</dt>");
+  });
+
   it("コースの食券代と時間を、ゲームの設定どおりに載せる", () => {
     expect(html).toContain("3,000 円");
     expect(html).toContain("90 秒");

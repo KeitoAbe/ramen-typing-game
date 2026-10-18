@@ -25,8 +25,10 @@ describe.each([
     expect(metadata.description).toEqual(expect.any(String));
   });
 
-  it("トップページへ戻るリンクとフッターがある", () => {
+  it("トップページと同じヘッダーとフッター、トップページへ戻るリンクがある", () => {
     expect(html).toContain('href="/"');
+    expect(html).toContain("<header");
+    expect(html).toContain("noren-fringe");
     expect(html).toContain("<footer");
   });
 });
