@@ -221,6 +221,10 @@ test.describe("1366×768 のウィンドウ", () => {
   test("券売機・トッピング・プレイ中・結果画面の文字が 12px 以上で舞台からはみ出さず、舞台の四隅まで背景で埋まる", async ({
     page,
   }) => {
+    // 提灯の揺れや湯気は止まらずに動き続け、ヘッドレスのブラウザはそれを毎フレーム CPU で描き直す。
+    // 並列で走らせると CPU を取り合って 30 秒を超えるので、動きを抑える設定で開く。
+    // 動きは文字の大きさや位置を変えず、止めれば動きの途中ではなく収まった位置を測れる
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.clock.install();
     await page.goto("/");
 
@@ -241,13 +245,15 @@ test.describe("1366×768 のウィンドウ", () => {
     await expect(remaining).not.toBeEmpty();
     await expectIntactStage(page);
 
-    // 閉店間際（残り 15 秒を切ると札が替わる）
-    await page.clock.runFor(50_000);
+    // 閉店間際（残り 15 秒を切ると札が替わる）。
+    // runFor は 100ms ごとの tick を数百回起こして描き直すので重い。
+    // ゲームの状態は tick の時刻から決まるので、fastForward で時刻を飛ばし、tick は 1 回だけ起こす
+    await page.clock.fastForward(50_000);
     await expect(page.getByText("閉店間際！")).toBeVisible();
     await expectIntactStage(page);
 
     // 結果画面
-    await page.clock.runFor(11_000);
+    await page.clock.fastForward(11_000);
     await expect(page.getByRole("heading", { name: "御会計" })).toBeVisible();
     await expectIntactStage(page);
   });
