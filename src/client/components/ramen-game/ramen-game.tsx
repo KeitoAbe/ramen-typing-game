@@ -149,6 +149,7 @@ export function RamenGame({ orders }: Props) {
     );
     const stampRecord = recordStampCard(
       storage,
+      stampCard,
       state.course,
       summarizePlay(
         state.stats,
@@ -157,7 +158,7 @@ export function RamenGame({ orders }: Props) {
     );
     setStampCard(stampRecord.card);
     setNewStamps(stampRecord.newStamps);
-  }, [state]);
+  }, [state, stampCard]);
 
   useEffect(() => {
     if (!isPlaying) return;

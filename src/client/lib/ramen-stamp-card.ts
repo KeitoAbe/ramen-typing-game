@@ -202,24 +202,38 @@ export function loadStampCard(
   }
 }
 
+/** 2 枚のカードを合わせる。判子は両方の和、累計の杯数は大きいほうをとる */
+function mergeStampCards(a: StampCard, b: StampCard): StampCard {
+  return {
+    stampedIds: sortStampIds(new Set([...a.stampedIds, ...b.stampedIds])),
+    totalServedCount: Math.max(a.totalServedCount, b.totalServedCount),
+  };
+}
+
 /**
  * プレイの成績で判子を押し、累計の杯数とあわせて保存する。
  * 読み書きに失敗しても例外は投げない（自己ベストの保存と同じ扱い）
  */
 export function recordStampCard(
   storage: PersonalBestStorage | undefined,
+  /** 画面が持っているカード。保存できない環境でも、同じ画面で押した判子と累計を引き継ぐ */
+  currentCard: StampCard,
   course: Course,
   result: PlayResult,
 ): StampCardRecord {
-  let card = emptyStampCard;
+  let stored = emptyStampCard;
   // 読めなかったときに書き込むと、押した判子を消してしまうので書き込まない
   let canWrite = true;
   try {
-    card = parseStampCard(storage?.getItem(STAMP_CARD_STORAGE_KEY) ?? null);
+    stored = parseStampCard(storage?.getItem(STAMP_CARD_STORAGE_KEY) ?? null);
   } catch {
     canWrite = false;
   }
-  const record = stampPlay(card, course, result);
+  const record = stampPlay(
+    mergeStampCards(stored, currentCard),
+    course,
+    result,
+  );
   if (canWrite) {
     try {
       storage?.setItem(STAMP_CARD_STORAGE_KEY, JSON.stringify(record.card));

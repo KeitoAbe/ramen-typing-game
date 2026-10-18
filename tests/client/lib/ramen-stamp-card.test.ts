@@ -231,7 +231,12 @@ describe("loadStampCard", () => {
 describe("recordStampCard", () => {
   it("押した判子と累計の杯数を保存し、再読み込みしても残る", () => {
     const storage = memoryStorage();
-    const first = recordStampCard(storage, course("nami"), play());
+    const first = recordStampCard(
+      storage,
+      emptyStampCard,
+      course("nami"),
+      play(),
+    );
     expect(first.newStamps.map(({ id }) => id)).toEqual(["first-bowl"]);
     expect(loadStampCard(storage)).toEqual({
       stampedIds: ["first-bowl"],
@@ -240,6 +245,7 @@ describe("recordStampCard", () => {
 
     const second = recordStampCard(
       storage,
+      first.card,
       course("nami"),
       play({ bill: 3_000 }),
     );
@@ -252,10 +258,39 @@ describe("recordStampCard", () => {
 
   it("保存先が無くても例外を投げない", () => {
     expect(
-      recordStampCard(undefined, course("nami"), play()).newStamps.map(
-        ({ id }) => id,
-      ),
+      recordStampCard(
+        undefined,
+        emptyStampCard,
+        course("nami"),
+        play(),
+      ).newStamps.map(({ id }) => id),
     ).toEqual(["first-bowl"]);
+  });
+
+  it("保存先が無くても、画面が持っているカードの判子と累計を引き継ぐ", () => {
+    const record = recordStampCard(
+      undefined,
+      playedCard,
+      course("nami"),
+      play(),
+    );
+    expect(record.newStamps).toEqual([]);
+    expect(record.card).toEqual({
+      stampedIds: ["first-bowl"],
+      totalServedCount: 6,
+    });
+  });
+
+  it("保存されたカードと画面のカードを合わせ、判子は和、累計は大きいほうをとる", () => {
+    const storage = memoryStorage(
+      JSON.stringify({ stampedIds: ["nami-cleared"], totalServedCount: 10 }),
+    );
+    const record = recordStampCard(storage, playedCard, course("nami"), play());
+    expect(record.newStamps).toEqual([]);
+    expect(loadStampCard(storage)).toEqual({
+      stampedIds: ["first-bowl", "nami-cleared"],
+      totalServedCount: 13,
+    });
   });
 
   it("読み取りに失敗したときは、保存済みのカードを上書きしない", () => {
@@ -266,7 +301,7 @@ describe("recordStampCard", () => {
       },
       setItem,
     };
-    recordStampCard(storage, course("nami"), play());
+    recordStampCard(storage, emptyStampCard, course("nami"), play());
     expect(setItem).not.toHaveBeenCalled();
   });
 
@@ -278,7 +313,8 @@ describe("recordStampCard", () => {
       },
     };
     expect(
-      recordStampCard(storage, course("nami"), play()).card.stampedIds,
+      recordStampCard(storage, emptyStampCard, course("nami"), play()).card
+        .stampedIds,
     ).toEqual(["first-bowl"]);
   });
 });
