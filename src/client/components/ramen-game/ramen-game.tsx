@@ -81,6 +81,8 @@ export function RamenGame({ orders }: Props) {
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [{ play: playSound, stopAll: stopSounds }] =
     useState(createSoundPlayer);
+  // 判子や自己ベストの音は遅らせて予約しているので、画面を離れたら予約ごと止める
+  useEffect(() => () => stopSounds(), [stopSounds]);
   const [leavingBowl, setLeavingBowl] = useState<LeavingBowl | null>(null);
   const previousStateRef = useRef(state);
   const [shopkeeperMood, setShopkeeperMood] =

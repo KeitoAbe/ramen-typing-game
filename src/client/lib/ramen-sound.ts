@@ -606,7 +606,7 @@ function applyEnvelope(
  * （食券を選ぶクリックのあとなので、鳴らせる）。
  * delaySeconds を渡すと、その秒数だけ遅らせて鳴らす。タイマーを使わず Web Audio の時刻で予約するので、
  * 画面の動きに合わせる音でもゲームの進行を止めない。
- * 予約した音は、効果音をオフにしたときや次のプレイに移るときに stopAll で取り消す
+ * 予約した音は、効果音をオフにしたとき・次のプレイに移るとき・画面を離れるときに stopAll で取り消す
  */
 export function createSoundPlayer(): {
   play: (cue: SoundCue, delaySeconds?: number) => void;
