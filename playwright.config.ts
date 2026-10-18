@@ -20,7 +20,8 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     // シェルに NODE_ENV=development が残っていると、本番ビルドのプリレンダリングが落ちる
     env: { NODE_ENV: "production" },
-    reuseExistingServer: !process.env.CI,
+    // 別のサーバー（開発サーバーや古いビルド）を検証してしまわないよう、ポートが使われていたら失敗させる
+    reuseExistingServer: false,
     timeout: 300_000,
   },
 });
