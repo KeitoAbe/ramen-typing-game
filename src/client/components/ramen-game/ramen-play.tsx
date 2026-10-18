@@ -65,7 +65,7 @@ export function RamenPlay({
 
   return (
     <section className="absolute inset-0">
-      <YataiScene shopkeeperMood={shopkeeperMood} />
+      <YataiScene shopkeeperMood={shopkeeperMood} hasStrayCat />
 
       {/* 残り時間: 左の柱に掛けた丸い時計。閉店間際は文字盤を琥珀色に替える。
           提灯に重ならないよう、提灯の下端より下に掛ける */}

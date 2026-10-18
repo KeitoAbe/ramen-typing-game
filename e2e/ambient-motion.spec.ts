@@ -83,6 +83,21 @@ test("プレイ中、猫は屋根の上を 2 回横切り、丼や注文の札�
   expect(crossings).toEqual({ visibleCount: 2, belowBowlTop: false });
 });
 
+test("猫は画面ごとに数え直さないよう、トッピングの画面には出さず、プレイの画面でだけ出す", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^並/ }).click();
+  await expect(
+    page.getByRole("button", { name: "いただきます" }),
+  ).toBeVisible();
+  await expect(page.locator(CAT)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "いただきます" }).click();
+  await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
+  await expect(page.locator(CAT)).toHaveCount(1);
+});
+
 test("動きを抑える設定では、屋台の背景を動かさず、猫も出さない", async ({
   page,
 }) => {

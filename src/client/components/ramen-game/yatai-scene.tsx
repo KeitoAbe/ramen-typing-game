@@ -330,9 +330,13 @@ const NOREN_CHARS = ["ら", "ー", "め", "ん"] as const;
 
 /**
  * プレイ画面の背景。奥から順に夜空、屋根の向こうを横切る猫、屋台の屋根、提灯、のれん、店主、カウンターを描く。
- * 舞台と同じ 16:9 の座標で描き、舞台いっぱいに広げる
+ * 舞台と同じ 16:9 の座標で描き、舞台いっぱいに広げる。
+ * 猫は画面を出してからの時間で横切るので、1 プレイに 1 度だけ出すプレイの画面でだけ描く（hasStrayCat）
  */
-export function YataiScene({ shopkeeperMood = "normal" }: YataiStallProps) {
+export function YataiScene({
+  shopkeeperMood = "normal",
+  hasStrayCat = false,
+}: YataiStallProps & { hasStrayCat?: boolean }) {
   return (
     <svg
       viewBox="0 0 1280 720"
@@ -341,7 +345,7 @@ export function YataiScene({ shopkeeperMood = "normal" }: YataiStallProps) {
     >
       <YataiDefs />
       <YataiSky />
-      <StrayCat />
+      {hasStrayCat && <StrayCat />}
       <YataiStall shopkeeperMood={shopkeeperMood} />
     </svg>
   );
