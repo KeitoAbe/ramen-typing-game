@@ -59,11 +59,44 @@ jobs:
       - name: Build
         run: pnpm build
 
+  # 本番ビルドをブラウザで開き、券売機から結果画面まで通しで遊ぶ（e2e/）
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      # ビルドとサーバーの起動は playwright.config.ts の webServer が行う
+      - name: E2E test
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   # ブランチ保護の必須チェックはこのジョブだけにする。
   # ジョブを増やしても、ここの needs に足せばブランチ保護の設定を変えずに済む。
   ci-complete:
     if: always()
-    needs: [verify, build]
+    needs: [verify, build, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs
