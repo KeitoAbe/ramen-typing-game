@@ -23,18 +23,29 @@ export function soggyLimitMs(order: Order): number {
   return SOGGY_BASE_MS + keyCount * SOGGY_MS_PER_KEY;
 }
 
-/** 丼が出てからの経過時間が、のびきるまでの時間に達したか */
-export function isSoggy(order: Order, elapsedMs: number): boolean {
-  return elapsedMs >= soggyLimitMs(order);
+/**
+ * 丼が出てからの経過時間が、のびきるまでの時間に達したか。
+ * limitMs は閉店間際などで短くしたときに渡す（省略したら注文から決める）
+ */
+export function isSoggy(
+  order: Order,
+  elapsedMs: number,
+  limitMs: number = soggyLimitMs(order),
+): boolean {
+  return elapsedMs >= limitMs;
 }
 
 /**
  * 丼が出てからの経過時間に応じた値段の倍率。
  * できたては定価の FRESH_PRICE_RATE 倍で、のびかけ（SOGGY_START_RATIO を過ぎたあと）に入ると
- * 定価から MIN_PRICE_RATE 倍まで下がる。のびきったら 0
+ * 定価から MIN_PRICE_RATE 倍まで下がる。のびきったら 0。
+ * limitMs はのびきるまでの時間で、閉店間際などで短くしたときに渡す
  */
-export function bowlPriceRate(order: Order, elapsedMs: number): number {
-  const limitMs = soggyLimitMs(order);
+export function bowlPriceRate(
+  order: Order,
+  elapsedMs: number,
+  limitMs: number = soggyLimitMs(order),
+): number {
   if (elapsedMs >= limitMs) return 0;
   const ratio = Math.max(0, elapsedMs) / limitMs;
   if (ratio <= SOGGY_START_RATIO) {
@@ -55,6 +66,12 @@ export function roundPrice(price: number): number {
 }
 
 /** 完食した丼の値段（10 円単位に丸める）。のびきっていたら 0 */
-export function bowlPrice(order: Order, elapsedMs: number): number {
-  return roundPrice(orderPrice(order) * bowlPriceRate(order, elapsedMs));
+export function bowlPrice(
+  order: Order,
+  elapsedMs: number,
+  limitMs: number = soggyLimitMs(order),
+): number {
+  return roundPrice(
+    orderPrice(order) * bowlPriceRate(order, elapsedMs, limitMs),
+  );
 }

@@ -32,6 +32,11 @@ describe("isSoggy", () => {
     expect(isSoggy(shio, limitMs - 1)).toBe(false);
     expect(isSoggy(shio, limitMs)).toBe(true);
   });
+
+  it("のびきるまでの時間を渡すと、その時間で判定する", () => {
+    expect(isSoggy(shio, 999, 1_000)).toBe(false);
+    expect(isSoggy(shio, 1_000, 1_000)).toBe(true);
+  });
 });
 
 describe("bowlPriceRate", () => {
@@ -62,6 +67,14 @@ describe("bowlPriceRate", () => {
   it("のびきったら 0", () => {
     expect(bowlPriceRate(shio, limitMs)).toBe(0);
     expect(bowlPriceRate(shio, limitMs * 2)).toBe(0);
+  });
+
+  it("のびきるまでの時間を渡すと、その時間に対する割合で値段が下がる", () => {
+    const shortMs = limitMs * 0.7;
+    expect(bowlPriceRate(shio, shortMs * 0.75, shortMs)).toBeCloseTo(
+      bowlPriceRate(shio, limitMs * 0.75),
+    );
+    expect(bowlPriceRate(shio, shortMs, shortMs)).toBe(0);
   });
 });
 
