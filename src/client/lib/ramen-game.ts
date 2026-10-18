@@ -5,7 +5,11 @@ import {
   KAEDAMA_EXTENSION_MS,
   KAEDAMA_NOTICE_MS,
 } from "@/client/lib/ramen-kaedama";
-import { emptyPlayStats, type PlayStats } from "@/client/lib/ramen-result";
+import {
+  countMissedKey,
+  emptyPlayStats,
+  type PlayStats,
+} from "@/client/lib/ramen-result";
 import {
   isSpecialBowlRoll,
   specialBowlPriceRate,
@@ -14,6 +18,7 @@ import {
   createTypingState,
   inputKey,
   isComplete,
+  remainingRomaji,
   type TypingState,
 } from "@/client/lib/romaji/typing";
 import type { Order } from "@/types/order";
@@ -41,6 +46,8 @@ type PlayingState = {
   kaedamaNoticeUntil: number;
   /** いま「替え玉！」を出しているか */
   isKaedamaNoticeShown: boolean;
+  /** いま「半角英数に切り替えて」の案内を出しているか（IME がオンのまま打ったら出し、正しく打てたら消す） */
+  isImeNoticeShown: boolean;
 };
 
 export type RamenGameState =
@@ -65,6 +72,8 @@ export type RamenGameAction =
     } & BowlRoll)
   | ({ type: "key"; key: string; now: number } & BowlRoll)
   | ({ type: "tick"; now: number } & BowlRoll)
+  /** 日本語入力（IME）がオンのままキーが押された。ミスには数えない */
+  | { type: "ime" }
   /** 券売機に戻る */
   | { type: "reset" };
 
@@ -181,6 +190,7 @@ export function ramenGameReducer(
         kaedamaGauge: 0,
         kaedamaNoticeUntil: action.now,
         isKaedamaNoticeShown: false,
+        isImeNoticeShown: false,
       };
     }
     case "reset":
@@ -199,6 +209,10 @@ export function ramenGameReducer(
         isKaedamaNoticeShown: action.now < next.kaedamaNoticeUntil,
       };
     }
+    case "ime":
+      // 案内を出すだけで、時間の進みや打った数には触れない
+      if (state.status !== "playing") return state;
+      return { ...state, isImeNoticeShown: true };
     case "key": {
       if (state.status !== "playing") return state;
       // 時間切れのあとに届いたキーは受け付けない
@@ -210,17 +224,27 @@ export function ramenGameReducer(
       );
       const { state: typing, accepted } = inputKey(current.typing, action.key);
       if (!accepted) {
-        // ミスすると替え玉ゲージは 0 に戻る
+        // ミスすると替え玉ゲージは 0 に戻る。
+        // 打つべきだったキーは、画面に出ている残りのローマ字の先頭（プレイヤーが見ていたもの）で数える
         return {
           ...current,
           kaedamaGauge: 0,
-          stats: { ...current.stats, missCount: current.stats.missCount + 1 },
+          stats: {
+            ...current.stats,
+            missCount: current.stats.missCount + 1,
+            missedKeys: countMissedKey(
+              current.stats.missedKeys,
+              remainingRomaji(current.typing).charAt(0),
+            ),
+          },
         };
       }
       const afterKey = refillIfGaugeFull(
         {
           ...current,
           typing,
+          // 半角英数で正しく打てたら、IME の案内は消す
+          isImeNoticeShown: false,
           stats: {
             ...current.stats,
             correctKeyCount: current.stats.correctKeyCount + 1,
@@ -232,8 +256,9 @@ export function ramenGameReducer(
       if (!isComplete(typing)) return afterKey;
       // 完食したら、出てからの経過時間に応じた値段をお会計に足して次の丼へ。
       // 特別な丼は、その値段にさらに倍率をかける
+      const order = currentOrder(current);
       const price =
-        bowlPrice(currentOrder(current), action.now - current.orderServedAt) *
+        bowlPrice(order, action.now - current.orderServedAt) *
         specialBowlPriceRate(current.isSpecialBowl);
       return serveNext(
         afterKey,
@@ -243,6 +268,7 @@ export function ramenGameReducer(
           specialServedCount:
             stats.specialServedCount + (current.isSpecialBowl ? 1 : 0),
           bill: stats.bill + price,
+          servedBowls: [...stats.servedBowls, { order, price }],
         },
         action.now,
         action.roll,
