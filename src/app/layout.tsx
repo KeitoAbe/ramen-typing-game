@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Dela_Gothic_One, Geist_Mono, Zen_Maru_Gothic } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/site-metadata";
+import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import { GoogleAnalytics } from "@/client/components/google-analytics/google-analytics";
 import { parseGaMeasurementId } from "@/client/lib/analytics";
 import "./globals.css";
@@ -48,6 +49,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       className={`${delaGothicOne.variable} ${zenMaruGothic.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <AdsenseScript />
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         {/* NEXT_PUBLIC_ の値はビルド時に埋め込まれる（Amplify では実行時の環境変数が渡らないため） */}
