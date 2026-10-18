@@ -1,5 +1,5 @@
 import type { RamenGameState } from "@/client/lib/ramen-game";
-import { STREAK_PRICE_RATES } from "@/client/lib/ramen-streak";
+import { streakTierOf } from "@/client/lib/ramen-streak";
 
 /** 演出や効果音のきっかけになる、プレイ中の出来事 */
 export type RamenGameEvent =
@@ -30,11 +30,6 @@ export type RamenGameEvent =
 
 /** 連続ボーナスの倍率が上がった出来事。倍率の低い段から順に並べる */
 const STREAK_UP_EVENTS = ["streakUp1", "streakUp2", "streakUp3"] as const;
-
-/** 連続杯数から、連続ボーナスの何段目か（倍率がかかっていなければ 0）を決める */
-function streakTierOf(streak: number): number {
-  return STREAK_PRICE_RATES.filter(({ from }) => streak >= from).length;
-}
 
 /**
  * 状態の移り変わりから、起きた出来事を取り出す。

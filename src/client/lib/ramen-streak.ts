@@ -14,3 +14,8 @@ export const STREAK_BROKEN_NOTICE_MS = 1_500;
 export function streakPriceRate(streak: number): number {
   return STREAK_PRICE_RATES.find(({ from }) => streak >= from)?.rate ?? 1;
 }
+
+/** 連続杯数から、連続ボーナスの何段目か（倍率がかかっていなければ 0）を決める */
+export function streakTierOf(streak: number): number {
+  return STREAK_PRICE_RATES.filter(({ from }) => streak >= from).length;
+}
