@@ -1,7 +1,8 @@
 import { expect, type Page, test } from "@e2e/fixtures";
 
 // 舞台は全画面にせず、幅 960px（高さ 540px）までの大きさでページの中に置く。
-// その大きさで舞台の中の文字が読めること（12px 以上）と、ページが横にはみ出さないことを確かめる
+// その大きさで舞台の中の文字が読めること（12px 以上）、舞台の四隅まで舞台の背景で埋まっていること、
+// ページが横にはみ出さないことを確かめる
 
 const MIN_FONT_PX = 12;
 
@@ -59,9 +60,37 @@ async function textsOutsideStage(page: Page) {
   });
 }
 
-async function expectReadableStage(page: Page) {
+/**
+ * 舞台の四隅のうち、ページの背景と同じ色で塗られている隅を返す。
+ * そこでは舞台の外と見分けがつかず、舞台の背景が途中で切れて見える
+ */
+async function cornersBlendingIntoPage(page: Page) {
+  return page.getByTestId("game-stage").evaluate((stage) => {
+    const pageBackground = getComputedStyle(document.body).backgroundColor;
+    const bounds = stage.getBoundingClientRect();
+    const corners = {
+      左上: [bounds.left + 2, bounds.top + 2],
+      右上: [bounds.right - 2, bounds.top + 2],
+      左下: [bounds.left + 2, bounds.bottom - 2],
+      右下: [bounds.right - 2, bounds.bottom - 2],
+    } as const;
+    return Object.entries(corners)
+      .filter(([, [x, y]]) => {
+        const top = document.elementFromPoint(x, y);
+        if (!top) return true;
+        const style = getComputedStyle(top);
+        const paint =
+          top instanceof SVGElement ? style.fill : style.backgroundColor;
+        return paint === pageBackground;
+      })
+      .map(([name]) => name);
+  });
+}
+
+async function expectIntactStage(page: Page) {
   expect(await smallTexts(page)).toEqual([]);
   expect(await textsOutsideStage(page)).toEqual([]);
+  expect(await cornersBlendingIntoPage(page)).toEqual([]);
 }
 
 // 広告枠の配置。E2E のビルドには枠ごとにダミーの広告ユニットの ID を渡している（playwright.config.ts）
@@ -181,14 +210,14 @@ test.describe("1366×768 のウィンドウ", () => {
     expect(sideIns.height).toBe(600);
   });
 
-  test("券売機・トッピング・プレイ中・結果画面の文字が 12px 以上で、舞台からはみ出さない", async ({
+  test("券売機・トッピング・プレイ中・結果画面の文字が 12px 以上で舞台からはみ出さず、舞台の四隅まで背景で埋まる", async ({
     page,
   }) => {
     await page.clock.install();
     await page.goto("/");
 
     // 券売機
-    await expectReadableStage(page);
+    await expectIntactStage(page);
 
     // トッピング
     await page.getByRole("button", { name: /^並/ }).click();
@@ -196,23 +225,23 @@ test.describe("1366×768 のウィンドウ", () => {
       page.getByRole("button", { name: "いただきます" }),
     ).toBeVisible();
     await page.getByRole("checkbox").first().check();
-    await expectReadableStage(page);
+    await expectIntactStage(page);
 
     // プレイ中
     await page.getByRole("button", { name: "いただきます" }).click();
     const remaining = page.getByTestId("remaining-romaji");
     await expect(remaining).not.toBeEmpty();
-    await expectReadableStage(page);
+    await expectIntactStage(page);
 
     // 閉店間際（残り 15 秒を切ると札が替わる）
     await page.clock.runFor(50_000);
     await expect(page.getByText("閉店間際！")).toBeVisible();
-    await expectReadableStage(page);
+    await expectIntactStage(page);
 
     // 結果画面
     await page.clock.runFor(11_000);
     await expect(page.getByRole("heading", { name: "御会計" })).toBeVisible();
-    await expectReadableStage(page);
+    await expectIntactStage(page);
   });
 });
 
