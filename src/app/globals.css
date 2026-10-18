@@ -139,6 +139,28 @@
 }
 
 /*
+ * 押せる要素のカーソルは指の形にする（docs/design.md の「カーソル」）。
+ * Tailwind CSS 4 の preflight はボタンのカーソルを既定（矢印）に戻すので、サイト全体の規則として付け直す。
+ * 押せない状態（disabled）では指の形にしない
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input:is(
+      [type="button"],
+      [type="submit"],
+      [type="reset"],
+      [type="checkbox"],
+      [type="radio"]
+    ):not(:disabled),
+  label:has(> input:is([type="checkbox"], [type="radio"]):not(:disabled)),
+  summary,
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/*
  * 舞台の中の、押せない情報を出す面（docs/design.md の「面」）。大きさは舞台の幅（cqw）で決めるので、舞台の中だけで使う。
  * 押せるもの（太い黒枠 + ずらした影）と見分けられるよう、どちらも枠線を付けない
  */

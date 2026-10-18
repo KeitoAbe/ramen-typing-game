@@ -1,6 +1,6 @@
 import { test as base } from "@playwright/test";
 
-export { expect, type Page } from "@playwright/test";
+export { expect, type Locator, type Page } from "@playwright/test";
 
 // E2E のビルドには広告の ID（ダミー）を渡して広告枠を出す（playwright.config.ts）。
 // 本物のアドセンスには問い合わせないよう、スクリプトは空のものに差し替える
