@@ -61,6 +61,8 @@ type PlayingState = {
   orderRemainingMs: number;
   /** いま出ている丼が「店主のおすすめ」の特別な丼か */
   isSpecialBowl: boolean;
+  /** 何杯目（0 始まり）の丼かで乱数を決める関数。あれば action の乱数の代わりに使う（今日のお題） */
+  rollForBowl: ((bowlIndex: number) => number) | null;
   typing: TypingState;
   stats: PlayStats;
   /** 替え玉で延びた分と、激辛のミスで減った分を含む、閉店の時刻 */
@@ -116,6 +118,11 @@ export type RamenGameAction =
       toppings?: readonly ToppingId[];
       orders: readonly Order[];
       now: number;
+      /**
+       * 何杯目（0 始まり）の丼かで乱数を決める関数。渡したら、このプレイでは action の乱数の代わりに使う。
+       * 今日のお題で、打つ速さに関わらず同じ杯に同じ乱数を出すため
+       */
+      rollForBowl?: (bowlIndex: number) => number;
     } & BowlRoll)
   | ({ type: "key"; key: string; now: number } & BowlRoll)
   | ({ type: "tick"; now: number } & BowlRoll)
@@ -158,6 +165,15 @@ function isSpecialRoll(roll: number | undefined): boolean {
   return roll !== undefined && isSpecialBowlRoll(roll);
 }
 
+/** 何杯目の丼を出すときの乱数。rollForBowl があればそれで決め、無ければ action の乱数を使う */
+function bowlRollOf(
+  rollForBowl: PlayingState["rollForBowl"],
+  bowlIndex: number,
+  roll: number | undefined,
+): number | undefined {
+  return rollForBowl ? rollForBowl(bowlIndex) : roll;
+}
+
 /**
  * 丼を出すときに、その丼がのびきるまでの時間を決める。
  * ニンニクマシマシと、閉店間際に出た丼は早くのびる（両方なら掛け合わせる）
@@ -195,7 +211,14 @@ function serveNext(
     orderServedAt: now,
     orderSoggyLimitMs,
     orderRemainingMs: orderSoggyLimitMs,
-    isSpecialBowl: isSpecialRoll(roll),
+    // 平らげた杯と下げられた杯を合わせた数が、次に出す丼の順番（0 始まり）になる
+    isSpecialBowl: isSpecialRoll(
+      bowlRollOf(
+        state.rollForBowl,
+        stats.servedCount + stats.discardedCount,
+        roll,
+      ),
+    ),
     isCleanBowl: true,
     typing: createTypingState(order.reading),
     stats,
@@ -287,6 +310,7 @@ export function ramenGameReducer(
       const [first] = action.orders;
       if (!first) return state;
       const toppings = action.toppings ?? [];
+      const rollForBowl = action.rollForBowl ?? null;
       const endsAt = action.now + action.course.timeLimitMs;
       const orderSoggyLimitMs = servedSoggyLimitMs(
         first,
@@ -304,7 +328,8 @@ export function ramenGameReducer(
         orderServedAt: action.now,
         orderSoggyLimitMs,
         orderRemainingMs: orderSoggyLimitMs,
-        isSpecialBowl: isSpecialRoll(action.roll),
+        isSpecialBowl: isSpecialRoll(bowlRollOf(rollForBowl, 0, action.roll)),
+        rollForBowl,
         typing: createTypingState(first.reading),
         stats: emptyPlayStats,
         endsAt,
