@@ -7,6 +7,7 @@ import {
 } from "@/client/lib/ramen-course";
 import type { PersonalBestRecord } from "@/client/lib/ramen-personal-best";
 import { type PlayResult, topMissedKeys } from "@/client/lib/ramen-result";
+import type { Stamp } from "@/client/lib/ramen-stamp-card";
 import { decideTitle } from "@/client/lib/ramen-title";
 
 /** 結果画面に出す、打ち間違いの多いキーの数 */
@@ -17,6 +18,8 @@ type Props = {
   result: PlayResult;
   /** 自己ベストとの比較。記録が済むまでは null */
   personalBest: PersonalBestRecord | null;
+  /** このプレイで新しく押したスタンプカードの判子。記録が済むまでは空 */
+  newStamps: readonly Stamp[];
   onReplay: () => void;
 };
 
@@ -27,9 +30,16 @@ function balanceColor(balance: number): string {
 
 /**
  * 閉店後の結果画面。夜の屋台を背にお会計の伝票を出し、称号を判子で押す。
- * 右の店主がひとこと添え、自己ベストを更新したら伝票の左に「新記録」ののぼりを立てる
+ * 右の店主がひとこと添え、自己ベストを更新したら伝票の左に「新記録」ののぼりを立てる。
+ * スタンプカードに新しく判子を押したら、吹き出しの下に並べる
  */
-export function RamenResult({ course, result, personalBest, onReplay }: Props) {
+export function RamenResult({
+  course,
+  result,
+  personalBest,
+  newStamps,
+  onReplay,
+}: Props) {
   const balance = courseBalance(result.bill, course);
   const title = decideTitle(result, course);
   const missedKeys = topMissedKeys(result.missedKeys, MISSED_KEY_RANK_LIMIT);
@@ -192,6 +202,30 @@ export function RamenResult({ course, result, personalBest, onReplay }: Props) {
           aria-hidden="true"
           className="absolute -bottom-[1.3cqw] left-[38%] size-[2cqw] rotate-45 border-r-[0.3cqw] border-b-[0.3cqw] border-yatai-sumi bg-yatai-kinari"
         />
+      </div>
+
+      {/* 新しく押した判子: 吹き出しの下・もう一杯の札の上に置く紙片。
+          吹き出しの下端は 390px 幅の舞台でも 53% より上、札の上端は 81% なので、そのあいだに収める。
+          記録は表示のあとに済むので、出たときに読み上げる */}
+      <div aria-live="polite" className="absolute top-[57%] left-[61%] w-[35%]">
+        {newStamps.length > 0 && (
+          <div className="rounded-[0.3cqw] border-[0.25cqw] border-yatai-sumi bg-yatai-kinari px-[1cqw] py-[0.6cqw] text-yatai-sumi shadow-[0.3cqw_0.3cqw_0_rgb(0_0_0/0.35)]">
+            <p className="text-[1.2cqw] leading-tight font-bold">
+              スタンプカードに判子を押しました
+            </p>
+            {/* 判子が 9 個すべて並んでも 3 行に収まり、もう一杯の札に届かない大きさにしている */}
+            <ul className="mt-[0.4cqw] flex flex-wrap gap-[0.4cqw]">
+              {newStamps.map((stamp) => (
+                <li
+                  key={stamp.id}
+                  className="rotate-[-4deg] rounded-[0.5cqw] border-[0.25cqw] border-double border-yatai-lantern px-[0.5cqw] font-display text-[1.1cqw] leading-[1.2] whitespace-nowrap text-yatai-lantern opacity-90 mix-blend-multiply motion-safe:animate-stamp-press"
+                >
+                  {stamp.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* もう一杯: カウンターに置いた赤い木札のボタン */}
