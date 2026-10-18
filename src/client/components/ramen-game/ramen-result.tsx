@@ -7,8 +7,9 @@ import {
 } from "@/client/lib/ramen-course";
 import type { PersonalBestRecord } from "@/client/lib/ramen-personal-best";
 import { type PlayResult, topMissedKeys } from "@/client/lib/ramen-result";
+import { buildShareText, buildXShareUrl } from "@/client/lib/ramen-share";
 import type { Stamp } from "@/client/lib/ramen-stamp-card";
-import { decideTitle } from "@/client/lib/ramen-title";
+import { decideTitle, type RamenTitle } from "@/client/lib/ramen-title";
 
 /** 結果画面に出す、打ち間違いの多いキーの数 */
 const MISSED_KEY_RANK_LIMIT = 3;
@@ -22,6 +23,19 @@ type Props = {
   newStamps: readonly Stamp[];
   onReplay: () => void;
 };
+
+/**
+ * 成績の文を下書きにした X の投稿画面を新しいタブで開く。
+ * デプロイ先が決まっていないので、ゲームの URL はいま開いているページから作る（クエリやハッシュは除く）
+ */
+function shareOnX(course: Course, result: PlayResult, title: RamenTitle) {
+  const gameUrl = `${window.location.origin}${window.location.pathname}`;
+  const shareUrl = buildXShareUrl(
+    buildShareText(course, result, title),
+    gameUrl,
+  );
+  window.open(shareUrl, "_blank", "noopener,noreferrer");
+}
 
 /** お得は赤、損は藍で書いて、ひと目で分かるようにする */
 function balanceColor(balance: number): string {
@@ -228,14 +242,22 @@ export function RamenResult({
         )}
       </div>
 
-      {/* もう一杯: カウンターに置いた赤い木札のボタン */}
-      <div className="absolute top-[81%] left-[64%] flex w-[28%] justify-center">
+      {/* もう一杯と X で共有: カウンターに並べて置いた木札のボタン。吹き出しと同じ幅に収める */}
+      <div className="absolute top-[81%] left-[61%] flex w-[35%] items-stretch gap-[1.5cqw]">
         <button
           type="button"
           onClick={onReplay}
-          className="w-full rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-lantern py-[0.8cqw] font-display text-[2.8cqw] leading-tight tracking-widest text-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-sumi)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-lantern-dark focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
+          className="flex-[3] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-lantern py-[0.8cqw] font-display text-[2.8cqw] leading-tight tracking-widest text-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-sumi)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-lantern-dark focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
         >
           もう一杯
+        </button>
+        <button
+          type="button"
+          onClick={() => shareOnX(course, result, title)}
+          className="flex-[2] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-kinari py-[0.8cqw] text-[1.8cqw] leading-tight font-bold whitespace-nowrap text-yatai-sumi shadow-[0_0.5cqw_0_var(--color-yatai-sumi)] transition-[translate,box-shadow,background-color] duration-75 hover:bg-yatai-amber focus-visible:outline-[0.4cqw] focus-visible:outline-offset-[0.3cqw] focus-visible:outline-yatai-amber active:translate-y-[0.5cqw] active:shadow-none"
+        >
+          X で共有
+          <span className="sr-only">（新しいタブで開きます）</span>
         </button>
       </div>
     </section>
