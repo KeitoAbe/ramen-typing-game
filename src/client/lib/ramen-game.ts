@@ -65,6 +65,8 @@ type PlayingState = {
   streakBrokenNoticeUntil: number;
   /** いま「連続が途切れた」を出しているか */
   isStreakBrokenNoticeShown: boolean;
+  /** いま「半角英数に切り替えて」の案内を出しているか（IME がオンのまま打ったら出し、正しく打てたら消す） */
+  isImeNoticeShown: boolean;
 };
 
 export type RamenGameState =
@@ -89,6 +91,8 @@ export type RamenGameAction =
     } & BowlRoll)
   | ({ type: "key"; key: string; now: number } & BowlRoll)
   | ({ type: "tick"; now: number } & BowlRoll)
+  /** 日本語入力（IME）がオンのままキーが押された。ミスには数えない */
+  | { type: "ime" }
   /** 券売機に戻る */
   | { type: "reset" };
 
@@ -226,6 +230,7 @@ export function ramenGameReducer(
         brokenStreak: 0,
         streakBrokenNoticeUntil: action.now,
         isStreakBrokenNoticeShown: false,
+        isImeNoticeShown: false,
       };
     }
     case "reset":
@@ -245,6 +250,10 @@ export function ramenGameReducer(
         isStreakBrokenNoticeShown: action.now < next.streakBrokenNoticeUntil,
       };
     }
+    case "ime":
+      // 案内を出すだけで、時間の進みや打った数には触れない
+      if (state.status !== "playing") return state;
+      return { ...state, isImeNoticeShown: true };
     case "key": {
       if (state.status !== "playing") return state;
       // 時間切れのあとに届いたキーは受け付けない
@@ -275,6 +284,8 @@ export function ramenGameReducer(
         {
           ...current,
           typing,
+          // 半角英数で正しく打てたら、IME の案内は消す
+          isImeNoticeShown: false,
           stats: {
             ...current.stats,
             correctKeyCount: current.stats.correctKeyCount + 1,

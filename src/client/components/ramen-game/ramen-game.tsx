@@ -9,6 +9,7 @@ import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { GameStage } from "@/client/components/stage/game-stage";
+import { isImeKeyInput } from "@/client/lib/ime-input";
 import {
   COURSES,
   type Course,
@@ -141,6 +142,11 @@ export function RamenGame({ orders }: Props) {
     if (!isPlaying) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+      // IME がオンのままのキーは打鍵として扱わず、半角英数に切り替えるよう案内する
+      if (isImeKeyInput(event)) {
+        dispatch({ type: "ime" });
+        return;
+      }
       if (event.key.length !== 1) return;
       event.preventDefault();
       dispatch({

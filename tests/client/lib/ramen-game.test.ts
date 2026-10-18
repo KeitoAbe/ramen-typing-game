@@ -544,6 +544,56 @@ describe("ramenGameReducer", () => {
     });
   });
 
+  describe("日本語入力（IME）の案内", () => {
+    it("開始したときは案内を出していない", () => {
+      const state = start();
+      if (state.status !== "playing") throw new Error("playing のはず");
+      expect(state.isImeNoticeShown).toBe(false);
+    });
+
+    it("IME がオンのまま打つと案内が出て、ミスにも正しい打鍵にも数えない", () => {
+      const typed = typeKeys(start(), "s");
+      const ime = ramenGameReducer(typed, { type: "ime" });
+      if (ime.status !== "playing" || typed.status !== "playing") {
+        throw new Error("playing のはず");
+      }
+      expect(ime.isImeNoticeShown).toBe(true);
+      expect(ime.stats).toEqual(typed.stats);
+      expect(ime.kaedamaGauge).toBe(typed.kaedamaGauge);
+      expect(ime.typing).toEqual(typed.typing);
+    });
+
+    it("案内が出ていても時間は進む", () => {
+      const ime = ramenGameReducer(start(), { type: "ime" });
+      const ticked = ramenGameReducer(ime, { type: "tick", now: 1_000 });
+      if (ticked.status !== "playing") throw new Error("playing のはず");
+      expect(ticked.remainingMs).toBe(course.timeLimitMs - 1_000);
+      expect(ticked.orderRemainingMs).toBe(soggyLimitMs(orders[0]) - 1_000);
+      expect(ticked.isImeNoticeShown).toBe(true);
+    });
+
+    it("半角英数で正しく打てたら案内は消える", () => {
+      const ime = ramenGameReducer(start(), { type: "ime" });
+      const typed = typeKeys(ime, "s");
+      if (typed.status !== "playing") throw new Error("playing のはず");
+      expect(typed.isImeNoticeShown).toBe(false);
+    });
+
+    it("ミスタイプでは案内は消えない", () => {
+      const ime = ramenGameReducer(start(), { type: "ime" });
+      const missed = typeKeys(ime, "x");
+      if (missed.status !== "playing") throw new Error("playing のはず");
+      expect(missed.stats.missCount).toBe(1);
+      expect(missed.isImeNoticeShown).toBe(true);
+    });
+
+    it("プレイ中でなければ何も変えない", () => {
+      expect(ramenGameReducer(initialRamenGameState, { type: "ime" })).toBe(
+        initialRamenGameState,
+      );
+    });
+  });
+
   it("注文が空なら開始しない", () => {
     const state = ramenGameReducer(initialRamenGameState, {
       type: "start",
