@@ -334,14 +334,15 @@ export function RamenResult({
     RESULT_REVEAL.stampEnd,
     BUBBLE_IN_SECONDS,
   );
+  // 記録の札と行は判子が押されたときに足すので、足したときから動かす
   const recordReveal = revealAnimation(
     "motion-safe:animate-record-pop",
-    RESULT_REVEAL.stampEnd,
+    0,
     RECORD_POP_SECONDS,
   );
   const personalBestReveal = revealAnimation(
     "motion-safe:animate-receipt-row-in",
-    RESULT_REVEAL.stampEnd,
+    0,
     RECEIPT_ROW_IN_SECONDS,
   );
 
@@ -462,12 +463,13 @@ export function RamenResult({
           </RevealRow>
         </dl>
 
-        {/* 記録は表示のあとに済むので、出たときに読み上げる。伝票の下端に寄せる */}
+        {/* 記録は表示のあとに済むので、出たときに読み上げる。伝票の下端に寄せる。
+            読み上げが判子より先に始まらないよう、中身は判子が押されてから足す（演出を飛ばしたときと動きを抑えるときはすぐ足す） */}
         <div
           aria-live="polite"
           className="mt-auto border-t-[0.12cqw] border-dashed border-yatai-sumi pt-[0.5cqw] text-right text-[1.3cqw] font-bold"
         >
-          {personalBest?.isUpdated && (
+          {hasStamped && personalBest?.isUpdated && (
             // 伝票の左に立てるのぼり。伝票（位置の基準）からはみ出して置く。判子が押されたあとに弾んで出る
             <p
               style={recordReveal.style}
@@ -482,7 +484,7 @@ export function RamenResult({
             </p>
           )}
           {/* 自己ベストの行は差し引きの値を明かすので、判子が押されたあとに出す */}
-          {personalBest && (
+          {hasStamped && personalBest && (
             <p
               style={personalBestReveal.style}
               className={personalBestReveal.className}

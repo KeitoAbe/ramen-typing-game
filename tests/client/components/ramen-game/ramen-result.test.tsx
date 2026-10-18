@@ -1,11 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { RamenResult } from "@/client/components/ramen-game/ramen-result";
 import { COURSES } from "@/client/lib/ramen-course";
+import type { PersonalBestRecord } from "@/client/lib/ramen-personal-best";
 import { emptyPlayStats, summarizePlay } from "@/client/lib/ramen-result";
 import { RECEIPT_ROW_COUNT } from "@/client/lib/ramen-result-reveal";
 
 // 最初の描画（結果画面が出た瞬間）は、結果発表の演出の始まりの姿になる
-function render(): string {
+function render(personalBest: PersonalBestRecord | null = null): string {
   const result = summarizePlay(
     {
       ...emptyPlayStats,
@@ -21,7 +22,7 @@ function render(): string {
       course={COURSES[0]}
       toppings={[]}
       result={result}
-      personalBest={null}
+      personalBest={personalBest}
       onRevealSkip={() => {}}
       onReplay={() => {}}
     />,
@@ -58,5 +59,12 @@ describe("RamenResult の結果発表の演出", () => {
     expect(html).toContain("motion-safe:animate-balance-pop");
     expect(html).toContain("motion-safe:animate-stamp-press");
     expect(html).toContain("motion-safe:animate-bubble-in");
+  });
+
+  it("新記録の札と自己ベストの行は、判子が押されるまで足さない（読み上げが判子より先に始まらない）", () => {
+    const html = render({ best: 300, isUpdated: true });
+    expect(html).toContain('aria-live="polite"');
+    expect(html).not.toContain("新記録");
+    expect(html).not.toContain("の自己ベスト");
   });
 });

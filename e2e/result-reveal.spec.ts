@@ -41,7 +41,9 @@ test("結果画面が出ると、成績の数字とお会計は 0 から数え�
 
   // 成績の行が先に数え終わり、お会計はそのあとに数え上がる
   await page.clock.runFor(700);
-  await expect(receiptValue(page, "平らげた杯数")).toContainText("1 杯");
+  await expect(
+    receiptValue(page, "平らげた杯数").locator('[aria-hidden="true"]'),
+  ).toHaveText("1 杯");
   await expect(bill.locator('[aria-hidden="true"]')).toHaveText("0 円");
 
   await page.clock.runFor(3_000);
@@ -78,7 +80,14 @@ test("初めて遊んで自己ベストを更新したら、判子のあとに�
   page,
 }) => {
   await closeAfterOneBowl(page);
+  // 判子が押されるまでは、新記録の札も自己ベストの行も足さない（読み上げが判子より先に始まらない）
+  await page.clock.runFor(2_000);
+  await expect(page.getByText("新記録")).toHaveCount(0);
+  await expect(page.getByText(/の自己ベスト:/)).toHaveCount(0);
+  // 判子を押し終える 2.2 秒のあと、演出が終わる 2.9 秒より前
+  await page.clock.runFor(400);
   await expect(page.getByText("新記録")).toBeVisible();
+  await expect(page.getByText(/の自己ベスト:/)).toBeVisible();
   await expect(
     page.locator('[class~="motion-safe:animate-confetti-fall"]'),
   ).toHaveCount(14);
