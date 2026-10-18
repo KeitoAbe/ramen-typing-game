@@ -1,3 +1,5 @@
+import { roundPrice } from "@/client/lib/ramen-bowl";
+import { CLOSING_RUSH_PRICE_RATE } from "@/client/lib/ramen-closing-rush";
 import type { Course } from "@/client/lib/ramen-course";
 import {
   initialRamenGameState,
@@ -29,10 +31,16 @@ const course: Course = {
 
 type PlayingState = Extract<RamenGameState, { status: "playing" }>;
 
-function start(toppings: readonly ToppingId[] = []): PlayingState {
+/** 始めた時点で閉店間際（残り 15 秒以下）になるコース */
+const closingRushCourse: Course = { ...course, timeLimitMs: 10_000 };
+
+function start(
+  toppings: readonly ToppingId[] = [],
+  startCourse: Course = course,
+): PlayingState {
   const state = ramenGameReducer(initialRamenGameState, {
     type: "start",
-    course,
+    course: startCourse,
     toppings,
     orders,
     now: 0,
@@ -86,12 +94,11 @@ describe("servedPricePopOf", () => {
 
   it("特別な丼・連続・閉店間際・トッピングの倍率を、上乗せとして並べる", () => {
     const before: PlayingState = {
-      ...typeKeys(start(["gekikara", "ninniku"]), "shi"),
+      ...typeKeys(start(["gekikara", "ninniku"], closingRushCourse), "shi"),
       isSpecialBowl: true,
       streak: 9,
-      isClosingRush: true,
     } as PlayingState;
-    // 閉店間際かは直前の状態で決めるので、打つ時刻は丼がのびきる前のまま
+    expect(before.isClosingRush).toBe(true);
     const after = typeKeys(before, "o");
     expect(servedPricePopOf(before, after)?.bonuses).toEqual([
       { kind: "special", label: "おすすめ ×2" },
@@ -99,6 +106,22 @@ describe("servedPricePopOf", () => {
       { kind: "closingRush", label: "閉店間際 ×1.5" },
       { kind: "topping", label: "トッピング ×1.69" },
     ]);
+  });
+
+  it("閉店間際に平らげたら、お会計に足した閉店間際の値段と、その倍率の表示を返す", () => {
+    const normalBefore = typeKeys(start(), "shi");
+    const normalPop = servedPricePopOf(
+      normalBefore,
+      typeKeys(normalBefore, "o"),
+    );
+    const rushBefore = typeKeys(start([], closingRushCourse), "shi");
+    const rushPop = servedPricePopOf(rushBefore, typeKeys(rushBefore, "o"));
+    if (normalPop === null) throw new Error("平らげていない");
+    expect(rushPop).toEqual({
+      id: 1,
+      price: roundPrice(normalPop.price * CLOSING_RUSH_PRICE_RATE),
+      bonuses: [{ kind: "closingRush", label: "閉店間際 ×1.5" }],
+    });
   });
 
   it("ミスした丼は、連続の倍率を上乗せしない", () => {

@@ -40,6 +40,7 @@ import {
   recordPersonalBest,
 } from "@/client/lib/ramen-personal-best";
 import {
+  eatenRatio,
   type ServedPricePop,
   servedPricePopOf,
 } from "@/client/lib/ramen-play-motion";
@@ -197,6 +198,8 @@ export function RamenGame({ orders }: Props) {
       id: bowlIdOf(state.stats),
       order: previous.orders[previous.orderIndex],
       reason,
+      // のびきって下げる丼は、それまでに食べ進めた分の麺を減らしたまま下げる
+      eatenRatio: reason === "eaten" ? 1 : eatenRatio(previous.typing),
     });
   }, [state, isSoundEnabled, playSound]);
 

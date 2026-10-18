@@ -30,6 +30,8 @@ export type LeavingBowl = {
   id: number;
   order: Order;
   reason: "eaten" | "discarded";
+  /** 下げるときに、どこまで食べ進めていたか（0〜1） */
+  eatenRatio: number;
 };
 
 /** 替え玉ゲージに並べる麺玉の数。ゲージがこの数に分けてたまる */
@@ -260,7 +262,7 @@ export function RamenPlay({
             look={bowlStyleOf(leavingBowl.order)}
             freshness={leavingBowl.reason === "eaten" ? 1 : 0}
             isSoggy={leavingBowl.reason === "discarded"}
-            eatenRatio={leavingBowl.reason === "eaten" ? 1 : 0}
+            eatenRatio={leavingBowl.eatenRatio}
           />
         </div>
       )}
@@ -294,6 +296,15 @@ export function RamenPlay({
 
       {/* 平らげた丼の値段: 丼の上から浮かび上がって消える。倍率がかかった丼は琥珀色にして、かかった倍率を添える。
           平らげるたびに作り直して演出をやり直す。消えたあとは透明なまま残し、次に平らげたときに差し替える */}
+      {/* 浮かび上がる値段は見た目だけなので、同じ内容を読み上げ用に置く。
+          注文の切り替わりの読み上げを妨げないよう、自動では読み上げない */}
+      {pricePop && (
+        <p className="sr-only">
+          平らげた丼の値段 {pricePop.price.toLocaleString("ja-JP")} 円
+          {pricePop.bonuses.length > 0 &&
+            `（${pricePop.bonuses.map(({ label }) => label).join("・")}）`}
+        </p>
+      )}
       {pricePop && (
         <div
           key={`price-${pricePop.id}`}
