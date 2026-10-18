@@ -174,6 +174,8 @@ function useIsTouchPrimaryDevice() {
 type Props = {
   courses: readonly Course[];
   onSelect: (course: Course) => void;
+  /** 食券のボタンを押した瞬間に呼ぶ（効果音用）。onSelect は食券が出てくる動きのあとに呼ぶ */
+  onBuy: () => void;
   /** タッチ端末への案内を出したときに呼ぶ（計測用） */
   onTouchNoticeShown: () => void;
 };
@@ -182,6 +184,7 @@ type Props = {
 export function TicketMachine({
   courses,
   onSelect,
+  onBuy,
   onTouchNoticeShown,
 }: Props) {
   // 取出口から出てくる途中の食券。出てくる動きのあとにプレイを始める
@@ -197,6 +200,7 @@ export function TicketMachine({
 
   const buy = (course: Course) => {
     if (issuedCourse !== null) return;
+    onBuy();
     // 動きを抑える設定では食券を出さず、すぐに始める
     if (prefersReducedMotion()) {
       onSelect(course);
