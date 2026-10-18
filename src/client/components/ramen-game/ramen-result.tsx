@@ -5,6 +5,10 @@ import {
   courseBalance,
   formatBalance,
 } from "@/client/lib/ramen-course";
+import {
+  type DailyBestRecord,
+  formatDailyDate,
+} from "@/client/lib/ramen-daily";
 import type { PersonalBestRecord } from "@/client/lib/ramen-personal-best";
 import { type PlayResult, topMissedKeys } from "@/client/lib/ramen-result";
 import { buildShareText, buildXShareUrl } from "@/client/lib/ramen-share";
@@ -22,6 +26,8 @@ type Props = {
   result: PlayResult;
   /** 自己ベストとの比較。記録が済むまでは null */
   personalBest: PersonalBestRecord | null;
+  /** 今日のお題の、その日・そのコースの最高記録との比較。いつものプレイと、記録が済むまでは null */
+  dailyBest: DailyBestRecord | null;
   /** このプレイで新しく押したスタンプカードの判子。記録が済むまでは空 */
   newStamps: readonly Stamp[];
   onReplay: () => void;
@@ -55,6 +61,7 @@ export function RamenResult({
   toppings,
   result,
   personalBest,
+  dailyBest,
   newStamps,
   onReplay,
 }: Props) {
@@ -202,6 +209,20 @@ export function RamenResult({
               </span>
               <span className="text-[1.3cqw] leading-tight [writing-mode:vertical-rl]">
                 自己ベスト更新！
+              </span>
+            </p>
+          )}
+          {dailyBest && (
+            <p>
+              {dailyBest.isUpdated && (
+                <span className="mr-[0.6cqw] rounded-[0.3cqw] bg-yatai-lantern px-[0.4cqw] text-yatai-kinari">
+                  最高記録を更新！
+                </span>
+              )}
+              今日のお題（{formatDailyDate(dailyBest.dateKey)}・{course.name}
+              ）の最高記録:{" "}
+              <span className={balanceColor(dailyBest.best)}>
+                {formatBalance(dailyBest.best)}
               </span>
             </p>
           )}
