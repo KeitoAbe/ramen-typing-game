@@ -34,17 +34,10 @@ function TicketMachineScene() {
       <g transform="translate(540 250) scale(0.6)">
         <YataiStall />
       </g>
-      <rect
-        x={0}
-        y={680}
-        width={1280}
-        height={40}
-        fill="var(--color-yatai-night-deep)"
-      />
 
-      {/* 券売機の脚と本体 */}
-      <rect x={140} y={660} width={40} height={28} fill={SUMI} />
-      <rect x={460} y={660} width={40} height={28} fill={SUMI} />
+      {/* 券売機の脚と本体。脚は舞台の下端まで伸ばす */}
+      <rect x={140} y={660} width={40} height={60} fill={SUMI} />
+      <rect x={460} y={660} width={40} height={60} fill={SUMI} />
       <rect
         x={110}
         y={86}

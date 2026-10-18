@@ -356,19 +356,13 @@ export function YataiStall({ shopkeeperMood = "normal" }: YataiStallProps) {
 
       <Shopkeeper mood={shopkeeperMood} />
 
-      {/* 木のカウンター */}
-      <rect
-        x={0}
-        y={600}
-        width={1280}
-        height={120}
-        fill="var(--color-yatai-night-deep)"
-      />
+      {/* 木のカウンター。脇には夜空を見せる（ページの背景と同じ色で塗ると、舞台の外と見分けられない）。
+          券売機の画面で縮小して置いても舞台の下端まで届くよう、下に長く伸ばしておく */}
       <rect
         x={40}
         y={576}
         width={1200}
-        height={160}
+        height={224}
         fill="var(--color-yatai-wood)"
         {...OUTLINE}
       />
@@ -378,7 +372,7 @@ export function YataiStall({ shopkeeperMood = "normal" }: YataiStallProps) {
           x1={x}
           y1={580}
           x2={x}
-          y2={720}
+          y2={800}
           stroke="var(--color-yatai-wood-dark)"
           strokeWidth={4}
         />
