@@ -81,24 +81,42 @@ export type DailyBestRecord = PersonalBestRecord & {
   dateKey: string;
 };
 
-/** 保存されていた文字列から、その日のコースごとの最高記録を読む。別の日の記録や壊れた値は空として扱う */
-function parseDailyBests(raw: string | null, dateKey: string) {
-  if (raw === null) return {};
+/**
+ * 保存されていた文字列から、その日のコースごとの最高記録を読む。別の日の記録や壊れた値は空として扱う。
+ * 保存されていたのがその日より新しい日の記録なら isNewerSaved を true にする
+ */
+function parseDailyBests(
+  raw: string | null,
+  dateKey: string,
+): { bests: ReturnType<typeof parsePersonalBests>; isNewerSaved: boolean } {
+  const empty = { bests: {}, isNewerSaved: false };
+  if (raw === null) return empty;
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return {};
+    return empty;
   }
-  if (typeof parsed !== "object" || parsed === null) return {};
+  if (typeof parsed !== "object" || parsed === null) return empty;
   const { date, bests } = parsed as Record<string, unknown>;
-  if (date !== dateKey) return {};
-  return parsePersonalBests(JSON.stringify(bests ?? null));
+  if (date !== dateKey) {
+    // 「YYYY-MM-DD」は文字列のまま比べても日付の前後と一致する
+    return {
+      bests: {},
+      isNewerSaved: typeof date === "string" && date > dateKey,
+    };
+  }
+  return {
+    bests: parsePersonalBests(JSON.stringify(bests ?? null)),
+    isNewerSaved: false,
+  };
 }
 
 /**
  * 今日のお題のお得額を、その日・そのコースの最高記録と比べ、更新していれば保存する。
  * 保存するのはその日の記録だけで、日付が変わったら前の日の記録は上書きする。
+ * ただし、もっと新しい日の記録が保存されていたら書き込まない
+ * （前の日に始めたプレイが、別のタブで遊んだ新しい日のプレイより後に閉店したとき、新しい日の記録を消さないため）。
  * 読み書きに失敗しても例外は投げず、記録が無いものとして扱う
  */
 export function recordDailyBest(
@@ -111,10 +129,12 @@ export function recordDailyBest(
   // 読めなかったときに書き込むと、ほかのコースの記録を消してしまうので書き込まない
   let canWrite = true;
   try {
-    bests = parseDailyBests(
+    const saved = parseDailyBests(
       storage?.getItem(DAILY_BEST_STORAGE_KEY) ?? null,
       dateKey,
     );
+    bests = saved.bests;
+    canWrite = !saved.isNewerSaved;
   } catch {
     canWrite = false;
   }

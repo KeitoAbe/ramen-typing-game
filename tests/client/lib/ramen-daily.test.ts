@@ -170,6 +170,17 @@ describe("recordDailyBest", () => {
     });
   });
 
+  it("新しい日の記録が保存されていたら、前の日に始めたプレイの記録では上書きしない", () => {
+    const saved = JSON.stringify({ date: "2026-10-18", bests: { nami: 500 } });
+    const storage = memoryStorage(saved);
+    expect(recordDailyBest(storage, "2026-10-17", "nami", 9_000)).toEqual({
+      best: 9_000,
+      isUpdated: true,
+      dateKey: "2026-10-17",
+    });
+    expect(storage.saved()).toBe(saved);
+  });
+
   it("壊れた値は記録が無いものとして扱う", () => {
     const storage = memoryStorage("{broken");
     expect(recordDailyBest(storage, "2026-10-18", "nami", 100).isUpdated).toBe(
