@@ -53,6 +53,17 @@
   --animate-shopkeeper-cheer: shopkeeper-cheer 0.6s ease-in-out both;
   --animate-confetti-fall: confetti-fall 0.6s ease-in both;
 
+  /* 画面の切り替えの移り変わり（docs/design.md の「画面の切り替え」）。長さは src/client/lib/scene-transition.ts と合わせる。
+     動かす版は motion-safe: で、動きを抑える設定での幕（scene-veil-out）は motion-reduce: で付ける */
+  --animate-scene-veil-out: scene-veil-out 0.3s ease-out both;
+  --animate-ticket-hand-over: ticket-hand-over 0.5s ease-in-out both;
+  --animate-noren-open-left: noren-open-left 0.55s ease-in both;
+  --animate-noren-open-right: noren-open-right 0.55s ease-in both;
+  --animate-lights-out: lights-out 0.3s ease-in both;
+  --animate-receipt-veil-out: scene-veil-out 0.25s ease-out both;
+  --animate-receipt-hand-over: receipt-hand-over 0.25s ease-out both;
+  --animate-back-to-machine: back-to-machine 0.5s ease-in-out both;
+
   /* 屋台の背景の生活感のある動き（docs/design.md の「動き」）。同じく motion-safe: で付ける。
      星の瞬きの長さと始まりは星ごとに style で上書きする */
   --animate-star-twinkle: star-twinkle 3s ease-in-out infinite;
@@ -369,6 +380,99 @@
     }
     to {
       transform: skewX(8deg) translateY(-4%);
+    }
+  }
+
+  /* 画面の切り替えで、夜の色の幕が薄れて新しい画面が見えてくる */
+  @keyframes scene-veil-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* 券売機の取出口（舞台の x 25%, y 80% のあたり）から出た小さな食券が、弧を描いてカウンターの食券の位置へ渡り、
+     置かれたら消えてカウンターの食券と入れ替わる */
+  @keyframes ticket-hand-over {
+    0% {
+      opacity: 1;
+      transform: translate(13cqw, -3cqw) scale(0.65) rotate(0deg);
+    }
+    50% {
+      transform: translate(7cqw, -9cqw) scale(0.9) rotate(8deg);
+    }
+    85% {
+      opacity: 1;
+      transform: translate(0, 0) scale(1) rotate(-2deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(0, 0) scale(1) rotate(-2deg);
+    }
+  }
+
+  /* のれんの布が、上端を支点に押されて少し傾き、左右に分かれて舞台の外へ開く */
+  @keyframes noren-open-left {
+    0% {
+      transform: translateX(0) rotate(0deg);
+    }
+    25% {
+      transform: translateX(-4%) rotate(4deg);
+    }
+    100% {
+      transform: translateX(-105%) rotate(8deg);
+    }
+  }
+
+  @keyframes noren-open-right {
+    0% {
+      transform: translateX(0) rotate(0deg);
+    }
+    25% {
+      transform: translateX(4%) rotate(-4deg);
+    }
+    100% {
+      transform: translateX(105%) rotate(-8deg);
+    }
+  }
+
+  /* 閉店の灯りが落ちる。一度ふっと揺らいでから、舞台が暗くなる */
+  @keyframes lights-out {
+    0% {
+      opacity: 0;
+    }
+    30% {
+      opacity: 0.6;
+    }
+    45% {
+      opacity: 0.25;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* お会計の伝票が、下から差し出される */
+  @keyframes receipt-hand-over {
+    from {
+      opacity: 0;
+      transform: translateY(30%) rotate(3deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+  }
+
+  /* 屋台の前を覆った夜の幕が右へ流れていき、券売機の前が見えてくる */
+  @keyframes back-to-machine {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
     }
   }
 

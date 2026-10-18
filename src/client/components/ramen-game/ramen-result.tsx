@@ -372,12 +372,18 @@ export function RamenResult({
         <StageSign />
       </div>
 
-      {/* お会計の伝票 */}
-      <div className="absolute top-[4%] left-[19%] flex h-[92%] w-[38%] flex-col stage-paper px-[2.2cqw] py-[1.4cqw]">
+      {/* お会計の伝票。閉店の移り変わりの締めとして、画面が出たら下から差し出す（docs/design.md の「画面の切り替え」） */}
+      <div className="absolute top-[4%] left-[19%] flex h-[92%] w-[38%] flex-col stage-paper px-[2.2cqw] py-[1.4cqw] motion-safe:animate-receipt-hand-over">
         <div className="flex items-start justify-between gap-[1cqw]">
           {/* 判子がいちばん長い称号（7 文字）でも、見出しを折り返さずに並べられる大きさにしている */}
           <div className="whitespace-nowrap">
-            <h2 className="font-display text-[3cqw] leading-tight tracking-[0.2em]">
+            {/* 閉店の移り変わりのあと、フォーカスはここに移す。「もう一杯」に移すと、
+                演出を飛ばすつもりの Space・Enter でボタンが押されてしまうため */}
+            <h2
+              data-scene-focus
+              tabIndex={-1}
+              className="font-display text-[3cqw] leading-tight tracking-[0.2em] focus:outline-none"
+            >
               御会計
             </h2>
             <p className="text-[1.25cqw]">本日は閉店しました</p>
