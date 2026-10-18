@@ -426,9 +426,11 @@ export function createAmbiencePlayer(
   // 乱数を使うので、サーバーでのプリレンダリング中には作らず、最初に流すときに作る
   let composer: ReturnType<typeof createBgmComposer> | undefined;
   let charumeraTimes: number[] = [];
-  /** 今のプレイで、環境音を流していた時間（秒）。チャルメラの時刻に使う */
-  let playedSeconds = 0;
-  let lastTickTime = 0;
+  /**
+   * 今のプレイを始めた時刻（Date.now のミリ秒）。チャルメラの時刻を、ゲームの経過時間に合わせる。
+   * 環境音を止めている間（タブが裏に回った・オフにした）もゲームは進むので、流した時間では数えない
+   */
+  let playStartedAt: number | undefined;
   let nextBarTime = 0;
   let nextBubbleTime = 0;
   let nextInsectTime = 0;
@@ -609,8 +611,12 @@ export function createAmbiencePlayer(
     const g = graph;
     try {
       const now = g.context.currentTime;
-      if (isActive) playedSeconds += Math.max(0, now - lastTickTime);
-      lastTickTime = now;
+      const playedSeconds =
+        playStartedAt === undefined ? 0 : (Date.now() - playStartedAt) / 1000;
+      // 流せなかった間に過ぎた時刻は鳴らさない（閉店間際にずれ込ませない）
+      while (charumeraTimes.length > 0 && charumeraTimes[0] < playedSeconds) {
+        charumeraTimes.shift();
+      }
       const horizon = now + LOOKAHEAD_SECONDS;
       while (nextBarTime < horizon) {
         scheduleBar(g, nextBarTime);
@@ -637,7 +643,6 @@ export function createAmbiencePlayer(
 
   const startStreams = (g: Graph) => {
     const now = g.context.currentTime;
-    lastTickTime = now;
     nextBarTime = now + 0.1;
     // 泡と虫の声は、流し始めから少しずらして鳴らし始める
     nextBubbleTime = now + 0.3 + random();
@@ -676,7 +681,7 @@ export function createAmbiencePlayer(
   return {
     startPlay: (playSeconds) => {
       charumeraTimes = planCharumeraTimes(playSeconds, random);
-      playedSeconds = 0;
+      playStartedAt = Date.now();
     },
     setActive: (active) => {
       if (active === isActive) return;

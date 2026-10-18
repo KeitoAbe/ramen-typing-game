@@ -362,6 +362,7 @@ describe("createAmbiencePlayer", () => {
     stopCalls: (number | undefined)[];
     onended: (() => void) | null;
     loop: boolean;
+    type: string;
   };
 
   let context: FakeAudioContext;
@@ -522,6 +523,39 @@ describe("createAmbiencePlayer", () => {
     expect(bgm.ramps.at(-1)?.target).toBe(CLOSING_RUSH_BGM.gainRate);
     player.setClosingRush(false);
     expect(bgm.ramps.at(-1)?.target).toBe(1);
+  });
+
+  /** 音の時刻とタイマー（Date.now）を、そろえて少しずつ進める */
+  function advance(seconds: number) {
+    for (let elapsed = 0; elapsed < seconds; elapsed += 0.25) {
+      context.currentTime += 0.25;
+      jest.advanceTimersByTime(250);
+    }
+  }
+  const charumeraStarts = () =>
+    sources
+      .filter((source) => source.type === "sawtooth")
+      .flatMap((source) => source.started);
+
+  it("チャルメラを、閉店間際より前のプレイ中に鳴らす", () => {
+    const player = createPlayer();
+    player.startPlay(60);
+    player.setActive(true);
+    advance(60);
+    const starts = charumeraStarts();
+    expect(starts.length).toBeGreaterThan(0);
+    expect(Math.max(...starts)).toBeLessThan(60 - 15);
+  });
+
+  it("環境音を止めている間に過ぎたチャルメラの時刻は、流し直しても鳴らさない", () => {
+    const player = createPlayer();
+    player.startPlay(60);
+    // オフのままゲームだけが 45 秒進む（チャルメラの時刻はすべて過ぎている）
+    jest.advanceTimersByTime(45_000);
+    context.currentTime = 45;
+    player.setActive(true);
+    advance(15);
+    expect(charumeraStarts()).toHaveLength(0);
   });
 
   it("stop で、フェードを待たずにすぐ止める", () => {
