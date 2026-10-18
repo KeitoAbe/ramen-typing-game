@@ -7,6 +7,7 @@ import {
   type RamenGameState,
   ramenGameReducer,
 } from "@/client/lib/ramen-game";
+import type { ServedPricePop } from "@/client/lib/ramen-play-motion";
 
 type PlayingState = Extract<RamenGameState, { status: "playing" }>;
 
@@ -22,13 +23,17 @@ function playingState(overrides: Partial<PlayingState> = {}): PlayingState {
   return { ...state, ...overrides };
 }
 
-function render(state: PlayingState): string {
+function render(
+  state: PlayingState,
+  pricePop: ServedPricePop | null = null,
+): string {
   return renderToStaticMarkup(
     <RamenPlay
       state={state}
       bowlId={0}
       leavingBowl={null}
       onLeavingBowlEnd={() => {}}
+      pricePop={pricePop}
       shopkeeperMood="normal"
     />,
   );
@@ -98,5 +103,39 @@ describe("RamenPlay", () => {
       }),
     );
     expect(textOf(html)).toMatch(/閉店間際！ 値段 1\.5 倍・早くのびる/);
+  });
+
+  it("最後に打った文字だけを、弾ませる文字として分けて出す", () => {
+    const state = playingState();
+    const typed = ramenGameReducer(state, { type: "key", key: "s", now: 0 });
+    const html = render(
+      ramenGameReducer(typed, {
+        type: "key",
+        key: "h",
+        now: 0,
+      }) as PlayingState,
+    );
+    expect(html).toMatch(/>s<span[^>]*data-testid="last-typed-romaji"[^>]*>h</);
+  });
+
+  it("平らげた丼の値段と、上乗せした倍率を出す", () => {
+    const html = render(playingState(), {
+      id: 1,
+      price: 1200,
+      bonuses: [
+        { kind: "special", label: "おすすめ ×2" },
+        { kind: "streak", label: "連続 ×1.1" },
+      ],
+    });
+    expect(textOf(html)).toContain("+1,200 円 おすすめ ×2・連続 ×1.1");
+  });
+
+  it("連続ボーナスが ×1.5 に上がったら、札の周りに火の粉を散らす", () => {
+    expect(render(playingState({ streak: 10 }))).toContain(
+      "animate-streak-spark",
+    );
+    expect(render(playingState({ streak: 5 }))).not.toContain(
+      "animate-streak-spark",
+    );
   });
 });

@@ -53,6 +53,183 @@
   --animate-stray-cat: stray-cat 120s linear both;
   --animate-stray-cat-step: stray-cat-step 0.3s ease-in-out infinite alternate;
 
+  /* プレイ中の手応えの動き（docs/design.md の「動き」）。動かす版は motion-safe: で、
+     透明度だけの控えめな版（*-flash / *-fade）は motion-reduce: で付ける */
+  --animate-key-bounce: key-bounce 0.12s ease-out both;
+  --animate-romaji-shake: romaji-shake 0.2s linear both;
+  --animate-miss-flash: soft-flash 0.2s ease-out both;
+  --animate-price-pop: price-pop 1s ease-out both;
+  --animate-price-fade: price-fade 1.2s linear both;
+  --animate-streak-up-1: streak-up-1 0.3s ease-out both;
+  --animate-streak-up-2: streak-up-2 0.45s ease-out both;
+  --animate-streak-up-3: streak-up-3 0.6s ease-out both;
+  --animate-streak-spark: streak-spark 0.8s ease-out both;
+  --animate-streak-flash: soft-flash 0.4s ease-out both;
+  --animate-bowl-glint: bowl-glint 3s 0.3s ease-in-out infinite;
+  --animate-special-sparkle: special-sparkle 1.6s ease-in-out infinite;
+  --animate-lantern-flare: lantern-flare 0.8s ease-in-out infinite alternate;
+
+  /* 正しく打った文字が小さく弾む */
+  @keyframes key-bounce {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-20%) scale(1.25);
+    }
+  }
+
+  /* 打ち間違えると、ローマ字が小さく横に震える */
+  @keyframes romaji-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20%,
+    60% {
+      transform: translateX(-0.4cqw);
+    }
+    40%,
+    80% {
+      transform: translateX(0.4cqw);
+    }
+  }
+
+  /* 動きを抑える設定での、透明度だけの短い明滅 */
+  @keyframes soft-flash {
+    0% {
+      opacity: 0.4;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* 平らげた丼の値段が、ふわっと浮かび上がって消える */
+  @keyframes price-pop {
+    0% {
+      opacity: 0;
+      transform: translateY(40%) scale(0.8);
+    }
+    15% {
+      opacity: 1;
+      transform: translateY(0) scale(1.1);
+    }
+    25% {
+      transform: translateY(0) scale(1);
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-80%) scale(1);
+    }
+  }
+
+  /* 動きを抑える設定では、その場で現れて消えるだけにする */
+  @keyframes price-fade {
+    0% {
+      opacity: 0;
+    }
+    10%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* 連続ボーナスの札が弾む。段が上がるほど大きく、傾けて弾ませる */
+  @keyframes streak-up-1 {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.15);
+    }
+  }
+
+  @keyframes streak-up-2 {
+    0%,
+    100% {
+      transform: scale(1) rotate(0);
+    }
+    40% {
+      transform: scale(1.3) rotate(-4deg);
+    }
+    70% {
+      transform: scale(0.95) rotate(2deg);
+    }
+  }
+
+  @keyframes streak-up-3 {
+    0%,
+    100% {
+      transform: scale(1) rotate(0);
+    }
+    30% {
+      transform: scale(1.45) rotate(-6deg);
+    }
+    55% {
+      transform: scale(0.92) rotate(3deg);
+    }
+    80% {
+      transform: scale(1.05) rotate(-1deg);
+    }
+  }
+
+  /* 札の周りから火の粉が散る。飛ぶ向きは火の粉ごとに --spark-x / --spark-y で渡す */
+  @keyframes streak-spark {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--spark-x), var(--spark-y)) scale(0.3);
+    }
+  }
+
+  /* 特別な丼の上を、斜めの光の筋が走る。走ったあとはしばらく休む（丼の絵の 360×260 の座標） */
+  @keyframes bowl-glint {
+    0% {
+      transform: translateX(-160px);
+    }
+    30%,
+    100% {
+      transform: translateX(520px);
+    }
+  }
+
+  /* 特別な丼の縁で、星形の輝きがきらめく */
+  @keyframes special-sparkle {
+    0%,
+    100% {
+      opacity: 0;
+      transform: scale(0.2) rotate(0);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1) rotate(45deg);
+    }
+  }
+
+  /* 閉店間際に、提灯の灯りが強まって脈打つ */
+  @keyframes lantern-flare {
+    from {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
   /* 星がゆっくり暗くなって、また明るくなる */
   @keyframes star-twinkle {
     0%,

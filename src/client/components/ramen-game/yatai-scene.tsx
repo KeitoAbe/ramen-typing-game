@@ -32,10 +32,14 @@ export const OUTLINE = {
   strokeLinejoin: "round",
 } as const;
 
-type LanternProps = { cx: number; label: readonly [string, string] };
+type LanternProps = {
+  cx: number;
+  label: readonly [string, string];
+  isClosingRush: boolean;
+};
 
-/** 屋根から下がる赤い提灯 */
-function Lantern({ cx, label }: LanternProps) {
+/** 屋根から下がる赤い提灯。閉店間際は灯りが強まって脈打つ */
+function Lantern({ cx, label, isClosingRush }: LanternProps) {
   return (
     // 吊り紐の上端（cx, 200）を支点に揺らす。transform-origin は svg の座標で書く
     <g
@@ -43,6 +47,16 @@ function Lantern({ cx, label }: LanternProps) {
       className="motion-safe:animate-lantern-sway"
     >
       <circle cx={cx} cy={300} r={120} fill="url(#lantern-glow)" />
+      {/* 閉店間際の強い灯り。動きを抑える設定では、脈打たずに灯ったままにする */}
+      <circle
+        cx={cx}
+        cy={300}
+        r={170}
+        fill="url(#lantern-glow)"
+        opacity={isClosingRush ? 1 : 0}
+        style={{ transformOrigin: `${cx}px 300px` }}
+        className={`motion-safe:transition-opacity motion-safe:duration-1000 ${isClosingRush ? "motion-safe:animate-lantern-flare" : ""}`}
+      />
       <line x1={cx} y1={200} x2={cx} y2={232} stroke={SUMI} strokeWidth={5} />
       <ellipse
         cx={cx}
@@ -335,6 +349,7 @@ const NOREN_CHARS = ["ら", "ー", "め", "ん"] as const;
  */
 export function YataiScene({
   shopkeeperMood = "normal",
+  isClosingRush = false,
   hasStrayCat = false,
 }: YataiStallProps & { hasStrayCat?: boolean }) {
   return (
@@ -344,9 +359,12 @@ export function YataiScene({
       className="absolute inset-0 size-full"
     >
       <YataiDefs />
-      <YataiSky />
+      <YataiSky isClosingRush={isClosingRush} />
       {hasStrayCat && <StrayCat />}
-      <YataiStall shopkeeperMood={shopkeeperMood} />
+      <YataiStall
+        shopkeeperMood={shopkeeperMood}
+        isClosingRush={isClosingRush}
+      />
     </svg>
   );
 }
@@ -375,16 +393,40 @@ export function YataiDefs() {
         />
         <stop offset="1" stopColor="var(--color-yatai-amber)" stopOpacity={0} />
       </radialGradient>
+      {/* 閉店間際の夜空。地平に近いほど赤みを帯びる */}
+      <linearGradient id="closing-rush-sky" x1="0" y1="0" x2="0" y2="1">
+        <stop
+          offset="0"
+          stopColor="var(--color-yatai-lantern)"
+          stopOpacity={0.15}
+        />
+        <stop
+          offset="1"
+          stopColor="var(--color-yatai-lantern)"
+          stopOpacity={0.5}
+        />
+      </linearGradient>
     </defs>
   );
 }
 
-/** 舞台いっぱいの夜空と星、月（1280×720 の座標） */
-export function YataiSky() {
+/** 舞台いっぱいの夜空と星、月（1280×720 の座標）。閉店間際は赤みを帯びる */
+export function YataiSky({
+  isClosingRush = false,
+}: {
+  isClosingRush?: boolean;
+}) {
   return (
     <>
       {/* 夜空と星、月 */}
       <rect width={1280} height={720} fill="url(#night-sky)" />
+      <rect
+        width={1280}
+        height={720}
+        fill="url(#closing-rush-sky)"
+        opacity={isClosingRush ? 1 : 0}
+        className="motion-safe:transition-opacity motion-safe:duration-1000"
+      />
       {/* 星はそれぞれ違う長さと始まりで瞬かせ、一斉に点滅させない */}
       {STARS.map(([x, y, r], index) => {
         const { durationS, delayS } = starTwinkleTiming(index);
@@ -409,10 +451,17 @@ export function YataiSky() {
   );
 }
 
-type YataiStallProps = { shopkeeperMood?: ShopkeeperMood };
+type YataiStallProps = {
+  shopkeeperMood?: ShopkeeperMood;
+  /** 閉店間際は提灯の灯りを強める */
+  isClosingRush?: boolean;
+};
 
 /** 屋台の壁・屋根・のれん・提灯・店主・カウンター（1280×720 の座標） */
-export function YataiStall({ shopkeeperMood = "normal" }: YataiStallProps) {
+export function YataiStall({
+  shopkeeperMood = "normal",
+  isClosingRush = false,
+}: YataiStallProps) {
   return (
     <>
       {/* 屋台の奥の、灯りのともった壁 */}
@@ -505,8 +554,8 @@ export function YataiStall({ shopkeeperMood = "normal" }: YataiStallProps) {
         );
       })}
 
-      <Lantern cx={196} label={["中", "華"]} />
-      <Lantern cx={1084} label={["そ", "ば"]} />
+      <Lantern cx={196} label={["中", "華"]} isClosingRush={isClosingRush} />
+      <Lantern cx={1084} label={["そ", "ば"]} isClosingRush={isClosingRush} />
 
       <Shopkeeper mood={shopkeeperMood} />
       <ShopkeeperYuchiri />
