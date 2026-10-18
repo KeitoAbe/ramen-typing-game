@@ -13,14 +13,14 @@ export function LegalPage({
   return (
     <>
       <main className="flex w-full flex-1 flex-col">
-        <article className="mx-auto w-full max-w-3xl px-5 py-12 text-base leading-relaxed wrap-break-word sm:px-8 sm:py-16">
+        <article className="mx-auto w-full max-w-3xl px-5 py-12 text-base leading-body wrap-break-word sm:px-8 sm:py-16">
           <Link
             href="/"
-            className="text-sm text-yatai-amber underline underline-offset-4 hover:text-yatai-kinari"
+            className="text-sm underline underline-offset-4 hover:text-yatai-amber"
           >
             ← ラーメン屋台タイピングに戻る
           </Link>
-          <h1 className="mt-6 border-b-2 border-yatai-wood pb-3 font-display text-2xl leading-snug text-yatai-kinari sm:text-3xl">
+          <h1 className="mt-6 border-b-2 border-yatai-wood pb-3 font-display text-2xl leading-heading text-yatai-kinari sm:text-3xl">
             {title}
           </h1>
           <div className="mt-8 space-y-4">{children}</div>
@@ -41,9 +41,7 @@ export function LegalSection({
 }) {
   return (
     <section className="mt-10 first:mt-0">
-      <h2 className="font-display text-lg leading-snug text-yatai-amber sm:text-xl">
-        {title}
-      </h2>
+      <h2 className="text-lg leading-heading font-bold sm:text-xl">{title}</h2>
       <div className="mt-3 space-y-3">{children}</div>
     </section>
   );
@@ -62,7 +60,7 @@ export function ExternalLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="break-all text-yatai-amber underline underline-offset-4 hover:text-yatai-kinari"
+      className="break-all underline underline-offset-4 hover:text-yatai-amber"
     >
       {children}
       <span className="sr-only">（新しいタブで開きます）</span>

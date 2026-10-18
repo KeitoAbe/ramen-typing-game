@@ -15,11 +15,11 @@ export default function AboutPage() {
   return (
     <LegalPage title="運営者情報">
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[auto_1fr]">
-        <dt className="font-bold text-yatai-amber">サイト名</dt>
+        <dt className="font-bold text-yatai-kinari/75">サイト名</dt>
         <dd>{SITE_NAME}</dd>
-        <dt className="font-bold text-yatai-amber">運営者</dt>
+        <dt className="font-bold text-yatai-kinari/75">運営者</dt>
         <dd>阿部 圭杜</dd>
-        <dt className="font-bold text-yatai-amber">運営形態</dt>
+        <dt className="font-bold text-yatai-kinari/75">運営形態</dt>
         <dd>個人で開発・運営しています</dd>
       </dl>
       <LegalSection title="お問い合わせ">
@@ -27,7 +27,7 @@ export default function AboutPage() {
           ご意見やご質問は、
           <Link
             href="/contact"
-            className="text-yatai-amber underline underline-offset-4 hover:text-yatai-kinari"
+            className="underline underline-offset-4 hover:text-yatai-amber"
           >
             お問い合わせ
           </Link>

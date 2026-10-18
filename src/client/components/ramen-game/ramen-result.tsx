@@ -37,9 +37,9 @@ function shareOnX(course: Course, result: PlayResult, title: RamenTitle) {
   window.open(shareUrl, "_blank", "noopener,noreferrer");
 }
 
-/** お得は赤、損は藍で書いて、ひと目で分かるようにする */
+/** お得は朱、損は藍で書いて、ひと目で分かるようにする */
 function balanceColor(balance: number): string {
-  return balance >= 0 ? "text-yatai-lantern" : "text-yatai-ai";
+  return balance >= 0 ? "text-yatai-lantern-dark" : "text-yatai-ai";
 }
 
 /**
@@ -93,14 +93,14 @@ export function RamenResult({
       </div>
 
       {/* お会計の伝票 */}
-      <div className="absolute top-[4%] left-[19%] flex h-[92%] w-[38%] flex-col rounded-[0.3cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[2.2cqw] py-[1.4cqw] text-yatai-sumi shadow-[0.5cqw_0.5cqw_0_rgb(0_0_0/0.4)]">
+      <div className="absolute top-[4%] left-[19%] flex h-[92%] w-[38%] flex-col stage-paper px-[2.2cqw] py-[1.4cqw]">
         <h2 className="font-display text-[3cqw] leading-tight tracking-[0.4em]">
           御会計
         </h2>
-        <p className="text-[1.25cqw] font-bold">本日は閉店しました</p>
+        <p className="text-[1.25cqw]">本日は閉店しました</p>
 
         {/* 称号の判子: 伝票の右上に、朱肉で斜めに押す。押す動きは傾き（rotate）と別の transform で付ける */}
-        <div className="absolute top-[0.8cqw] right-[1.2cqw] flex rotate-[-10deg] flex-col items-center rounded-[0.8cqw] border-[0.4cqw] border-double border-yatai-lantern px-[0.8cqw] py-[0.3cqw] text-yatai-lantern opacity-90 mix-blend-multiply motion-safe:animate-stamp-press">
+        <div className="absolute top-[0.8cqw] right-[1.2cqw] flex rotate-[-10deg] flex-col items-center rounded-[0.8cqw] border-[0.4cqw] border-double border-yatai-lantern-dark px-[0.8cqw] py-[0.3cqw] text-yatai-lantern-dark opacity-90 mix-blend-multiply motion-safe:animate-stamp-press">
           <span className="text-[1.25cqw] leading-tight font-bold">称号</span>
           <span className="font-display text-[1.8cqw] leading-tight">
             {title.name}
@@ -112,10 +112,10 @@ export function RamenResult({
           {rows.map((row) => (
             <div
               key={row.label}
-              className="col-span-2 grid grid-cols-subgrid border-b-[0.12cqw] border-dashed border-yatai-lantern/50 py-[0.25cqw] whitespace-nowrap last:border-b-0"
+              className="col-span-2 grid grid-cols-subgrid border-b-[0.12cqw] border-dashed border-yatai-sumi/30 py-[0.25cqw] whitespace-nowrap last:border-b-0"
             >
-              <dt className="font-bold">{row.label}</dt>
-              <dd className="text-right font-display">{row.value}</dd>
+              <dt>{row.label}</dt>
+              <dd className="text-right font-bold tabular-nums">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -124,12 +124,12 @@ export function RamenResult({
         <div className="mt-[0.8cqw] flex items-center gap-x-[1cqw] text-[1.25cqw] whitespace-nowrap">
           <h3 className="font-bold">打ち間違いの多いキー</h3>
           {missedKeys.length === 0 ? (
-            <p className="font-bold text-yatai-lantern">打ち間違いなし</p>
+            <p className="font-bold text-yatai-lantern-dark">打ち間違いなし</p>
           ) : (
             <ol className="flex gap-x-[1cqw]">
               {missedKeys.map(({ key, count }) => (
                 <li key={key} className="flex items-center gap-x-[0.3cqw]">
-                  <kbd className="min-w-[1.8cqw] rounded-[0.3cqw] border-[0.12cqw] border-yatai-sumi bg-white/60 px-[0.3cqw] text-center font-display leading-snug">
+                  <kbd className="min-w-[1.8cqw] rounded-[0.3cqw] border-[0.12cqw] border-yatai-sumi bg-white/60 px-[0.3cqw] text-center font-mono font-bold leading-snug">
                     {key.toUpperCase()}
                   </kbd>
                   <span>{count} 回</span>
@@ -168,7 +168,7 @@ export function RamenResult({
         >
           {personalBest?.isUpdated && (
             // 伝票の左に立てるのぼり。伝票（位置の基準）からはみ出して置く
-            <p className="absolute top-[6%] right-[calc(100%+3cqw)] flex h-[70%] w-[6.5cqw] flex-col items-center gap-[1cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-lantern py-[1.2cqw] text-yatai-kinari shadow-[0.4cqw_0.4cqw_0_rgb(0_0_0/0.4)]">
+            <p className="absolute top-[6%] right-[calc(100%+3cqw)] flex h-[70%] w-[6.5cqw] flex-col items-center gap-[1cqw] bg-yatai-amber py-[1.2cqw] text-yatai-sumi shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.3)]">
               <span className="font-display text-[3.4cqw] leading-none [writing-mode:vertical-rl]">
                 新記録
               </span>
@@ -189,14 +189,14 @@ export function RamenResult({
       </div>
 
       {/* 店主のひとこと: 頭の上の吹き出し。看板の下端（文字の行の高さ + 上下の余白 1.6cqw + 上下の枠 0.8cqw）に隙間 0.5cqw をあけて置く */}
-      <div className="absolute top-[max(22%,calc(var(--sign-top)+1.25*max(20px,3.2cqw)+2.9cqw))] left-[61%] w-[35%] rounded-[1.4cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[1.4cqw] py-[0.8cqw] text-yatai-sumi">
-        <p className="text-[1.25cqw] font-bold">店主</p>
+      <div className="absolute top-[max(22%,calc(var(--sign-top)+1.25*max(20px,3.2cqw)+2.9cqw))] left-[61%] w-[35%] rounded-[1.2cqw] bg-yatai-kinari px-[1.4cqw] py-[0.8cqw] text-yatai-sumi shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.3)]">
+        <p className="text-[1.25cqw]">店主</p>
         <p className="text-[1.6cqw] leading-snug font-bold">
           「{title.remark}」
         </p>
         <span
           aria-hidden="true"
-          className="absolute -bottom-[1.3cqw] left-[38%] size-[2cqw] rotate-45 border-r-[0.3cqw] border-b-[0.3cqw] border-yatai-sumi bg-yatai-kinari"
+          className="absolute -bottom-[0.9cqw] left-[38%] size-[2cqw] rotate-45 bg-yatai-kinari"
         />
       </div>
 

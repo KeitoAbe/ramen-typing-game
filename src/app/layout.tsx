@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { Dela_Gothic_One, Geist_Mono, Zen_Maru_Gothic } from "next/font/google";
+import {
+  Dela_Gothic_One,
+  Geist_Mono,
+  Zen_Kaku_Gothic_New,
+} from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/site-metadata";
 import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import { GoogleAnalytics } from "@/client/components/google-analytics/google-analytics";
@@ -13,8 +17,8 @@ const delaGothicOne = Dela_Gothic_One({
   preload: false,
 });
 
-const zenMaruGothic = Zen_Maru_Gothic({
-  variable: "--font-zen-maru-gothic",
+const zenKakuGothicNew = Zen_Kaku_Gothic_New({
+  variable: "--font-zen-kaku-gothic-new",
   weight: ["400", "700"],
   preload: false,
 });
@@ -47,7 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ja"
-      className={`${delaGothicOne.variable} ${zenMaruGothic.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${delaGothicOne.variable} ${zenKakuGothicNew.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <AdsenseScript />

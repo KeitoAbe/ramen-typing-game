@@ -22,10 +22,15 @@
   /* 伝票の「損」の藍色 */
   --color-yatai-ai: #2f5d9b;
 
-  /* 見出し・数字・看板 / 本文と注文の文 / ローマ字 */
+  /* 書体・行間の使い分けは docs/design.md を参照する。
+     看板・大見出し・大きな数字 / 本文とラベル / ローマ字 */
   --font-display: var(--font-dela-gothic-one);
-  --font-sans: var(--font-zen-maru-gothic);
+  --font-sans: var(--font-zen-kaku-gothic-new);
   --font-mono: var(--font-geist-mono);
+
+  /* 舞台の外のページの行間。本文 / 見出し */
+  --leading-body: 1.7;
+  --leading-heading: 1.3;
 
   /* 丼の演出。prefers-reduced-motion のときは motion-safe: で付けないようにする */
   --animate-bowl-serve: bowl-serve 0.3s ease-out both;
@@ -131,6 +136,27 @@
       transform: scale(1);
     }
   }
+}
+
+/*
+ * 舞台の中の、押せない情報を出す面（docs/design.md の「面」）。大きさは舞台の幅（cqw）で決めるので、舞台の中だけで使う。
+ * 押せるもの（太い黒枠 + ずらした影）と見分けられるよう、どちらも枠線を付けない
+ */
+
+/* 木の板: 木目の色の面に生成りの文字。上端だけ明るくして板の厚みを見せる */
+@utility stage-wood-board {
+  border-radius: 0.6cqw;
+  background-color: var(--color-yatai-wood-dark);
+  color: var(--color-yatai-kinari);
+  box-shadow: inset 0 0.2cqw 0 rgb(255 255 255 / 0.12);
+}
+
+/* 紙: 生成りの面に墨の文字。ごく弱い影で背景から浮かせる */
+@utility stage-paper {
+  border-radius: 0.2cqw;
+  background-color: var(--color-yatai-kinari);
+  color: var(--color-yatai-sumi);
+  box-shadow: 0 0.2cqw 0.8cqw rgb(0 0 0 / 0.3);
 }
 
 body {

@@ -36,7 +36,7 @@ const STARS: readonly (readonly [number, number, number])[] = [
 ];
 
 const FONT_FAMILY_DISPLAY = "Dela Gothic One";
-const FONT_FAMILY_BODY = "Zen Maru Gothic";
+const FONT_FAMILY_BODY = "Zen Kaku Gothic New";
 
 type LanternProps = { left: number; label: readonly [string, string] };
 

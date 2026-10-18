@@ -34,9 +34,6 @@ const STACKED_BOWL_MAX = 6;
 // 丼の置き場所（舞台の 1280×720 の座標を百分率にしたもの）。出す丼と下げる丼で同じ位置を使う
 const BOWL_POSITION = "absolute top-[39.5%] left-[35.9%] h-[36.1%] w-[28.2%]";
 
-const WOOD_PLATE =
-  "rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi bg-yatai-kinari text-yatai-sumi shadow-[0_0.4cqw_0_var(--color-yatai-wood-dark)]";
-
 type Props = {
   state: Extract<RamenGameState, { status: "playing" }>;
   /** 丼が替わるたびに変わる値 */
@@ -71,16 +68,16 @@ export function RamenPlay({
     <section className="absolute inset-0">
       <YataiScene shopkeeperMood={shopkeeperMood} />
 
-      {/* 残り時間: 左の柱に掛けた木札の時計。閉店間際は見出しを赤い札に替えて知らせる。
-          赤い札の 2 行目が折り返して下の木札に重ならないよう、右の札との隙間まで幅を取る。
-          赤い札の分だけ背が伸びても下の木札に届かないよう、提灯の下端まで上げる */}
+      {/* 残り時間: 左の柱に掛けた木札の時計。閉店間際は見出しを琥珀色の 2 行に替え、札を縁取って知らせる。
+          2 行目が折り返して下の木札に重ならないよう、右の札との隙間まで幅を取る。
+          2 行の分だけ背が伸びても下の木札に届かないよう、提灯の下端まで上げる */}
       <div
-        className={`${WOOD_PLATE} absolute top-[51%] left-[1%] flex w-[17.5%] flex-col items-center px-[0.5cqw] py-[0.6cqw] ${state.isClosingRush ? "ring-[0.3cqw] ring-yatai-lantern" : ""}`}
+        className={`stage-wood-board absolute top-[51%] left-[1%] flex w-[17.5%] flex-col items-center px-[0.5cqw] py-[0.6cqw] ${state.isClosingRush ? "outline-[0.3cqw] outline-yatai-amber" : ""}`}
       >
         {/* 切り替わりだけを読み上げる。毎秒変わる残り秒数は含めない */}
         <p aria-live="polite" className="text-[1.25cqw] font-bold">
           {state.isClosingRush ? (
-            <span className="flex flex-col items-center rounded-[0.4cqw] bg-yatai-lantern px-[0.5cqw] leading-tight text-yatai-kinari">
+            <span className="flex flex-col items-center leading-tight text-yatai-amber">
               <span>閉店間際！</span>
               <span className="text-[1.25cqw]">
                 値段 {CLOSING_RUSH_PRICE_RATE} 倍・早くのびる
@@ -117,15 +114,13 @@ export function RamenPlay({
 
       {/* 連続杯数: 時計の下に掛けた木札。途切れたときは上の行で知らせる。
           上の行が 1 行に収まるよう、積み上げた丼の手前まで幅を取る */}
-      <div
-        className={`${WOOD_PLATE} absolute top-[67%] left-[1%] flex w-[18.5%] flex-col items-center px-[0.8cqw] py-[0.5cqw]`}
-      >
+      <div className="stage-wood-board absolute top-[67%] left-[1%] flex w-[18.5%] flex-col items-center px-[0.8cqw] py-[0.5cqw]">
         <p aria-live="polite" className="text-[1.25cqw] font-bold">
           {state.isStreakBrokenNoticeShown ? (
             // 途切れるたびに作り直して、読み上げをやり直させる
             <span
               key={state.streakBrokenNoticeUntil}
-              className="text-yatai-lantern"
+              className="text-yatai-amber"
             >
               {state.brokenStreak} 杯の連続が途切れた
             </span>
@@ -142,7 +137,7 @@ export function RamenPlay({
         <p className="text-[1.25cqw] font-bold">
           連続ボーナス{" "}
           <span
-            className={`font-display ${streakRate > 1 ? "text-yatai-lantern" : ""}`}
+            className={`tabular-nums ${streakRate > 1 ? "text-yatai-amber" : ""}`}
           >
             ×{streakRate.toFixed(1)}
           </span>
@@ -151,12 +146,10 @@ export function RamenPlay({
 
       {/* のびるまでの時間: 丼の横に下げた札と、湯気の量。1 行では札に収まらないので、
           残り秒数と「できたて / のびかけ」を分け、後者は湯気と同じ行に並べる */}
-      <div
-        className={`${WOOD_PLATE} absolute top-[46%] left-[19%] flex w-[16.5%] flex-col items-center gap-[0.3cqw] px-[0.6cqw] py-[0.5cqw]`}
-      >
+      <div className="stage-wood-board absolute top-[46%] left-[19%] flex w-[16.5%] flex-col items-center gap-[0.3cqw] px-[0.6cqw] py-[0.5cqw]">
         <p className="text-[1.25cqw] font-bold">
           のびるまで{" "}
-          <span className="font-display">
+          <span className="tabular-nums">
             {Math.ceil(state.orderRemainingMs / 1000)}
           </span>{" "}
           秒
@@ -165,7 +158,7 @@ export function RamenPlay({
           {/* 切り替わりだけを読み上げる。毎秒変わる残り秒数は含めない */}
           <span
             aria-live="polite"
-            className={`text-[1.25cqw] font-bold ${isGettingSoggy ? "text-yatai-lantern" : ""}`}
+            className={`text-[1.25cqw] font-bold ${isGettingSoggy ? "text-yatai-amber" : ""}`}
           >
             {isGettingSoggy ? "のびかけ" : "できたて"}
           </span>
@@ -208,7 +201,7 @@ export function RamenPlay({
         ))}
       </div>
       <div
-        className={`${WOOD_PLATE} absolute top-[82.5%] left-[4%] flex w-[20%] items-baseline justify-center gap-[0.6cqw] py-[0.8cqw]`}
+        className={`stage-wood-board absolute top-[82.5%] left-[4%] flex w-[20%] items-baseline justify-center gap-[0.6cqw] py-[0.8cqw]`}
       >
         <span className="text-[1.4cqw] font-bold">平らげた杯数</span>
         <span className="font-display text-[3.2cqw] leading-none">
@@ -247,12 +240,12 @@ export function RamenPlay({
         {state.isSpecialBowl && (
           <p
             aria-hidden="true"
-            className="absolute -top-[2.2cqw] left-1/2 flex -translate-x-1/2 items-baseline gap-[0.6cqw] rounded-[0.6cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-lantern px-[1cqw] py-[0.3cqw] whitespace-nowrap text-yatai-kinari shadow-[0_0.3cqw_0_var(--color-yatai-sumi)]"
+            className="absolute -top-[2.2cqw] left-1/2 flex -translate-x-1/2 items-baseline gap-[0.6cqw] rounded-[0.6cqw] bg-yatai-amber px-[1cqw] py-[0.3cqw] whitespace-nowrap text-yatai-sumi"
           >
             <span className="font-display text-[1.8cqw] leading-tight">
               店主のおすすめ
             </span>
-            <span className="text-[1.25cqw] font-bold text-yatai-amber">
+            <span className="text-[1.25cqw] font-bold">
               値段 {SPECIAL_BOWL_PRICE_RATE} 倍
             </span>
           </p>
@@ -260,9 +253,7 @@ export function RamenPlay({
       </div>
 
       {/* 注文の文・よみ・ローマ字: 丼の手前の木札 */}
-      <div
-        className={`${WOOD_PLATE} absolute top-[81%] left-[26.5%] flex h-[16.5%] w-[47%] flex-col items-center justify-center`}
-      >
+      <div className="stage-paper absolute top-[81%] left-[26.5%] flex h-[16.5%] w-[47%] flex-col items-center justify-center">
         {/* 注文の切り替わりだけを読み上げる。1 打ごとに変わるローマ字は含めない */}
         <div aria-live="polite" className="flex flex-col items-center">
           {/* 丼ごとに作り直して、同じ注文が続いても新しい注文として読み上げさせる */}
@@ -280,7 +271,7 @@ export function RamenPlay({
           </Fragment>
         </div>
         <p className="font-mono text-[2cqw] leading-tight tracking-wide">
-          <span className="text-yatai-lantern underline decoration-[0.15cqw] underline-offset-[0.3cqw]">
+          <span className="text-yatai-lantern-dark underline decoration-[0.15cqw] underline-offset-[0.3cqw]">
             {typedRomaji(state.typing)}
           </span>
           {/* E2E テストが、これから打つローマ字を読んで打つための目印 */}
@@ -291,9 +282,7 @@ export function RamenPlay({
       </div>
 
       {/* 替え玉ゲージ: カウンターの右に並べた麺玉 */}
-      <div
-        className={`${WOOD_PLATE} absolute top-[81%] left-[75.5%] flex w-[21.5%] flex-col items-center gap-[0.3cqw] px-[0.6cqw] py-[0.5cqw]`}
-      >
+      <div className="stage-wood-board absolute top-[81%] left-[75.5%] flex w-[21.5%] flex-col items-center gap-[0.3cqw] px-[0.6cqw] py-[0.5cqw]">
         <p className="text-[1.25cqw] font-bold">
           替え玉ゲージ（ミスなしで {KAEDAMA_GAUGE_MAX} 打で制限時間が延びる）
         </p>
@@ -336,9 +325,7 @@ export function RamenPlay({
       </div>
       {/* トッピング: 左上の夜空に掛けた札。足していなければ出さない */}
       {toppingNameList.length > 0 && (
-        <div
-          className={`${WOOD_PLATE} absolute top-[1.5cqw] left-[1.5cqw] flex flex-col px-[0.8cqw] py-[0.4cqw]`}
-        >
+        <div className="stage-wood-board absolute top-[1.5cqw] left-[1.5cqw] flex flex-col px-[0.8cqw] py-[0.4cqw]">
           <p className="text-[1.25cqw] font-bold">
             {/* 両方なら 1.3 × 1.3 = 1.69 倍。小数の誤差は表示に出さない */}
             トッピング（値段 ×{Math.round(toppingRate * 100) / 100}）
@@ -347,7 +334,7 @@ export function RamenPlay({
             {toppingNameList.map((name) => (
               <li
                 key={name}
-                className="rounded-[0.4cqw] bg-yatai-lantern px-[0.5cqw] font-display text-[1.4cqw] leading-tight whitespace-nowrap text-yatai-kinari"
+                className="text-[1.4cqw] leading-tight font-bold whitespace-nowrap"
               >
                 {name}
               </li>
@@ -362,10 +349,8 @@ export function RamenPlay({
         className="absolute top-[1.5cqw] left-1/2 -translate-x-1/2"
       >
         {state.isImeNoticeShown && (
-          <p
-            className={`${WOOD_PLATE} flex flex-col items-center px-[1.2cqw] py-[0.5cqw] whitespace-nowrap`}
-          >
-            <span className="text-[1.8cqw] leading-tight font-bold text-yatai-lantern">
+          <p className="stage-paper flex flex-col items-center px-[1.2cqw] py-[0.5cqw] whitespace-nowrap">
+            <span className="text-[1.8cqw] leading-tight font-bold text-yatai-lantern-dark">
               日本語入力がオンになっています
             </span>
             <span className="text-[1.4cqw] leading-tight font-bold">
@@ -384,12 +369,12 @@ export function RamenPlay({
           // 替え玉のたびに作り直して、飛び出す演出をやり直す
           <p
             key={state.stats.kaedamaCount}
-            className="relative origin-left rounded-[1.2cqw] border-[0.3cqw] border-yatai-sumi bg-yatai-kinari px-[0.8cqw] py-[0.5cqw] text-center font-display text-[1.6cqw] leading-tight text-yatai-lantern motion-safe:animate-kaedama-pop"
+            className="relative origin-left rounded-[1.2cqw] bg-yatai-kinari px-[0.8cqw] py-[0.5cqw] text-center text-[1.6cqw] leading-tight font-bold text-yatai-lantern-dark shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.3)] motion-safe:animate-kaedama-pop"
           >
             へい、替え玉！
             <span
               aria-hidden="true"
-              className="absolute top-[30%] -left-[0.9cqw] size-[1.4cqw] rotate-45 border-b-[0.3cqw] border-l-[0.3cqw] border-yatai-sumi bg-yatai-kinari"
+              className="absolute top-[30%] -left-[0.6cqw] size-[1.4cqw] rotate-45 bg-yatai-kinari"
             />
           </p>
         )}
