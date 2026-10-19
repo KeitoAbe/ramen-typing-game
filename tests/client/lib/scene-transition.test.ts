@@ -10,11 +10,7 @@ import {
   sceneTransitionSeconds,
 } from "@/client/lib/scene-transition";
 
-const KINDS: SceneTransitionKind[] = [
-  "hand-ticket",
-  "lights-out",
-  "back-to-machine",
-];
+const KINDS: SceneTransitionKind[] = ["lights-out", "back-to-machine"];
 
 describe("sceneOf", () => {
   it("券売機の前では、食券を持っていなければ券売機、持っていればトッピングの画面にする", () => {
@@ -31,11 +27,14 @@ describe("sceneOf", () => {
 
 describe("sceneTransitionOf", () => {
   it.each<[GameScene, GameScene, SceneTransitionKind]>([
-    ["ticket", "topping", "hand-ticket"],
     ["playing", "result", "lights-out"],
     ["result", "ticket", "back-to-machine"],
   ])("%s から %s へは %s で移る", (from, to, kind) => {
     expect(sceneTransitionOf(from, to)).toBe(kind);
+  });
+
+  it("券売機からトッピングへは、食券が出てきたらそのまま切り替わるよう移り変わりを付けない", () => {
+    expect(sceneTransitionOf("ticket", "topping")).toBeNull();
   });
 
   it("トッピングから開始待ちへは、その場で切り替わるよう移り変わりを付けない", () => {

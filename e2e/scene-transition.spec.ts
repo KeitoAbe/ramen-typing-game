@@ -34,14 +34,11 @@ test("食券を買う・閉店する・もう一杯で、それぞれの移り�
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1_000);
   const overlay = page.getByTestId("scene-transition");
 
-  // 券売機 → トッピング: 食券が出てくるのを待つと、食券が屋台のカウンターへ渡り、終わると最初のトッピングにフォーカスが移る
+  // 券売機 → トッピング: 食券が出てくるのを待つと、食券は飛ばさず、その場で切り替わって最初のトッピングにフォーカスが移る
   await page.getByRole("button", { name: /^並/ }).click();
   await page.clock.runFor(750);
-  await expect(overlay).toBeAttached();
-  expect(await transitionAnimationNames(page)).toContain("ticket-hand-over");
-  await page.clock.runFor(500);
-  await expect(overlay).toHaveCount(0);
   await expect(page.getByRole("checkbox").first()).toBeFocused();
+  await expect(overlay).toHaveCount(0);
   await expect(announcement(page)).toHaveText(/トッピングを選んでください/);
 
   // トッピング → 開始待ち: のれんは出さず、その場で切り替わって始め方の案内にフォーカスが移る
@@ -110,13 +107,11 @@ test("動きを抑える設定では、移り変わりのある切り替えは�
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1_000);
   const overlay = page.getByTestId("scene-transition");
 
+  // 券売機 → トッピングと、トッピング → 開始待ちには、動きを抑える設定でも幕を出さない
   await page.getByRole("button", { name: /^並/ }).click();
-  expect(await transitionAnimationNames(page)).toEqual(["scene-veil-out"]);
-  await page.clock.runFor(300);
-  await expect(overlay).toHaveCount(0);
   await expect(page.getByRole("checkbox").first()).toBeFocused();
+  await expect(overlay).toHaveCount(0);
 
-  // トッピング → 開始待ちには、動きを抑える設定でも幕を出さない
   await page.getByRole("button", { name: "いただきます" }).click();
   await expect(overlay).toHaveCount(0);
 

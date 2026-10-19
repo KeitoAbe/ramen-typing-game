@@ -200,9 +200,10 @@ export function RamenGame({ orders }: Props) {
     };
   }, [sceneTransition]);
 
-  // 開始待ちへは移り変わりを付けないので、切り替わったその場で始め方の案内にフォーカスを移す
+  // トッピングと開始待ちへは移り変わりを付けないので、切り替わったその場で最初のトッピング・始め方の案内にフォーカスを移す
   useEffect(() => {
-    if (shownScene === "waiting") focusSceneStart(sceneRef.current);
+    if (shownScene === "topping" || shownScene === "waiting")
+      focusSceneStart(sceneRef.current);
   }, [shownScene]);
 
   const [shopkeeperMood, setShopkeeperMood] =
@@ -375,7 +376,6 @@ export function RamenGame({ orders }: Props) {
           key={sceneTransition.id}
           kind={sceneTransition.kind}
           isLightsDimming={closingPlay !== null}
-          course={ticketCourse}
         />
       )}
       {/* 画面が替わったことを、スクリーンリーダーに知らせる */}
