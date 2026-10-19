@@ -10,14 +10,29 @@ test("各ページを拡張子なしの URL で開ける", async ({ request }) =
   }
 });
 
-test("存在しないパスを開くと、サイトの 404 のページが出る", async ({
+test("存在しないパスを開くと、日本語の 404 のページが出て、ゲームへ戻れる", async ({
   page,
 }) => {
   const response = await page.goto("/no-such-page");
   expect(response?.status()).toBe(404);
+  await expect(page).toHaveTitle(
+    "ページが見つかりません | ラーメン屋台タイピング",
+  );
   await expect(
-    page.getByRole("heading", { level: 1, name: "404" }),
+    page.getByRole("heading", { level: 1, name: "ページが見つかりません" }),
   ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+
+  await page.getByRole("link", { name: "トップページでゲームを遊ぶ" }).click();
+  await expect(page).toHaveURL("/");
+});
+
+test("404 のページはサイトマップに載らない", async ({ request }) => {
+  const sitemap = await request.get("/sitemap.xml");
+  expect(await sitemap.text()).not.toContain("404");
 });
 
 test("sitemap.xml・robots.txt・ads.txt・OGP 画像・アイコンが出力されている", async ({
