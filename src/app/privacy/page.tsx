@@ -1,17 +1,25 @@
-import type { Metadata } from "next";
+import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
-import { pageTitle, SITE_NAME } from "@/app/site-metadata";
+import { pageMetadata, pageTitle, SITE_NAME } from "@/app/site-metadata";
 import { ExternalLink } from "@/client/components/external-link/external-link";
 import {
   LegalPage,
   LegalSection,
 } from "@/client/components/legal-page/legal-page";
 
-export const metadata: Metadata = {
-  title: pageTitle("プライバシーポリシー"),
-  description: `タイピングゲーム「${SITE_NAME}」のプライバシーポリシーです。ブラウザに保存する情報、アクセス解析（Google アナリティクス）、広告配信（Google アドセンス）での Cookie の扱いを説明します。`,
-  alternates: { canonical: "/privacy" },
-};
+export function generateMetadata(
+  _props: unknown,
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  return pageMetadata(
+    {
+      title: pageTitle("プライバシーポリシー"),
+      description: `タイピングゲーム「${SITE_NAME}」のプライバシーポリシーです。ブラウザに保存する情報、アクセス解析（Google アナリティクス）、広告配信（Google アドセンス）での Cookie の扱いを説明します。`,
+      path: "/privacy",
+    },
+    parent,
+  );
+}
 
 const ESTABLISHED_ON = "2026 年 10 月 18 日";
 

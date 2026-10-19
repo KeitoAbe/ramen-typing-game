@@ -4,7 +4,12 @@ import {
   Geist_Mono,
   Zen_Kaku_Gothic_New,
 } from "next/font/google";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/site-metadata";
+import {
+  SHARED_OPEN_GRAPH,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  TWITTER_CARD,
+} from "@/app/site-metadata";
 import { getSiteUrl } from "@/app/site-url";
 import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import { GoogleAnalytics } from "@/client/components/google-analytics/google-analytics";
@@ -30,20 +35,18 @@ const geistMono = Geist_Mono({
 });
 
 // OGP 画像は opengraph-image.tsx / twitter-image.tsx から自動で入る。
-// 基準 URL（metadataBase）は NEXT_PUBLIC_SITE_URL から取る。正規 URL は各ページで設定する
+// 基準 URL（metadataBase）は NEXT_PUBLIC_SITE_URL から取る。正規 URL と og:url は各ページで pageMetadata を使って設定する
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
+    ...SHARED_OPEN_GRAPH,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    locale: "ja_JP",
   },
   twitter: {
-    card: "summary_large_image",
+    card: TWITTER_CARD,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
   },
