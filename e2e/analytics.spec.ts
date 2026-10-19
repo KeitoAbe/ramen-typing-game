@@ -126,7 +126,10 @@ test("ime_notice_shown は、開始待ちとプレイ中の両方で案内が出
   // 開始待ちで案内を出す
   await pressImeKey(page);
   await expect(imeNotice).toBeVisible();
-  expect(await eventsNamed(page, "ime_notice_shown")).toHaveLength(1);
+  // 計測は描画のあとの effect で送られるので、記録されるまで待つ
+  await expect
+    .poll(async () => (await eventsNamed(page, "ime_notice_shown")).length)
+    .toBe(1);
 
   // そのまま始めて、プレイ中にも案内を出す
   await page.keyboard.press("Enter");
@@ -148,10 +151,12 @@ test("ime_notice_shown は、開始待ちとプレイ中の両方で案内が出
   await pressImeKey(page);
   await expect(imeNotice).toBeVisible();
 
-  expect(await eventsNamed(page, "ime_notice_shown")).toEqual([
-    ["ime_notice_shown", { course_id: "nami" }],
-    ["ime_notice_shown", { course_id: "nami" }],
-  ]);
+  await expect
+    .poll(() => eventsNamed(page, "ime_notice_shown"))
+    .toEqual([
+      ["ime_notice_shown", { course_id: "nami" }],
+      ["ime_notice_shown", { course_id: "nami" }],
+    ]);
 });
 
 test("食券を買ってから、ほかのページに移ると ticket_abandon が 1 回送られる", async ({
