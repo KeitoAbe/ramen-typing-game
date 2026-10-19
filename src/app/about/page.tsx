@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
-import { pageTitle, SITE_NAME } from "@/app/site-metadata";
+import { pageMetadata, pageTitle, SITE_NAME } from "@/app/site-metadata";
 import { ExternalLink } from "@/client/components/external-link/external-link";
 import {
   LegalPage,
@@ -8,11 +8,19 @@ import {
 } from "@/client/components/legal-page/legal-page";
 import { CONTRIBUTING_URL, REPOSITORY_URL } from "@/client/lib/repository";
 
-export const metadata: Metadata = {
-  title: pageTitle("運営者情報"),
-  description: `タイピングゲーム「${SITE_NAME}」の運営者情報です。個人で開発・運営しています。`,
-  alternates: { canonical: "/about" },
-};
+export function generateMetadata(
+  _props: unknown,
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  return pageMetadata(
+    {
+      title: pageTitle("運営者情報"),
+      description: `タイピングゲーム「${SITE_NAME}」の運営者情報です。個人で開発・運営しています。`,
+      path: "/about",
+    },
+    parent,
+  );
+}
 
 export default function AboutPage() {
   return (

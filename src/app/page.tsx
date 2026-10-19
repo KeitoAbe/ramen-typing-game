@@ -1,5 +1,10 @@
-import type { Metadata } from "next";
-import { SITE_NAME } from "@/app/site-metadata";
+import type { Metadata, ResolvingMetadata } from "next";
+import {
+  pageMetadata,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+} from "@/app/site-metadata";
 import { buildGameJsonLd, getSiteUrl, serializeJsonLd } from "@/app/site-url";
 import { GuideAd } from "@/client/components/adsense/guide-ad";
 import { StageBottomAd } from "@/client/components/adsense/stage-bottom-ad";
@@ -13,9 +18,15 @@ import { SiteFooter } from "@/client/components/site-footer/site-footer";
 import { SiteHeader } from "@/client/components/site-header/site-header";
 import { loadOrders } from "@/server/contexts/order/presentation/loaders/load-orders";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-};
+export function generateMetadata(
+  _props: unknown,
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  return pageMetadata(
+    { title: SITE_TITLE, description: SITE_DESCRIPTION, path: "/" },
+    parent,
+  );
+}
 
 export default async function Home() {
   const orders = await loadOrders();

@@ -1,8 +1,27 @@
+import type { ResolvedMetadata } from "next";
 import { renderToStaticMarkup } from "react-dom/server";
-import AboutPage, { metadata as aboutMetadata } from "@/app/about/page";
-import ContactPage, { metadata as contactMetadata } from "@/app/contact/page";
-import PrivacyPage, { metadata as privacyMetadata } from "@/app/privacy/page";
+import AboutPage, {
+  generateMetadata as generateAboutMetadata,
+} from "@/app/about/page";
+import ContactPage, {
+  generateMetadata as generateContactMetadata,
+} from "@/app/contact/page";
+import PrivacyPage, {
+  generateMetadata as generatePrivacyMetadata,
+} from "@/app/privacy/page";
 import { CONTRIBUTING_URL, REPOSITORY_URL } from "@/client/lib/repository";
+
+// ルートで解決済みの OGP 画像（opengraph-image.tsx / twitter-image.tsx から入るもの）の代わり
+const OG_IMAGES = [{ url: "https://example.com/opengraph-image?abc" }];
+const TWITTER_IMAGES = [{ url: "https://example.com/twitter-image?def" }];
+
+function resolveMetadata(generate: typeof generateAboutMetadata) {
+  const parent = Promise.resolve({
+    openGraph: { images: OG_IMAGES },
+    twitter: { images: TWITTER_IMAGES },
+  } as unknown as ResolvedMetadata);
+  return generate({}, parent);
+}
 
 function h1Of(html: string): string {
   expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
@@ -10,20 +29,49 @@ function h1Of(html: string): string {
 }
 
 describe.each([
-  ["プライバシーポリシー", PrivacyPage, privacyMetadata, "/privacy"],
-  ["運営者情報", AboutPage, aboutMetadata, "/about"],
-  ["お問い合わせ", ContactPage, contactMetadata, "/contact"],
-])("%s のページ", (name, Page, metadata, path) => {
+  ["プライバシーポリシー", PrivacyPage, generatePrivacyMetadata, "/privacy"],
+  ["運営者情報", AboutPage, generateAboutMetadata, "/about"],
+  ["お問い合わせ", ContactPage, generateContactMetadata, "/contact"],
+])("%s のページ", (name, Page, generateMetadata, path) => {
   const html = renderToStaticMarkup(<Page />);
 
-  it("自分のパスを正規 URL にしている", () => {
+  it("自分のパスを正規 URL と og:url にしている", async () => {
+    const metadata = await resolveMetadata(generateMetadata);
     expect(metadata.alternates?.canonical).toBe(path);
+    expect(metadata.openGraph?.url).toBe(path);
   });
 
-  it("h1 と、ページ名を含む title・description がある", () => {
+  it("h1 と、ページ名を含む title・description がある", async () => {
+    const metadata = await resolveMetadata(generateMetadata);
     expect(h1Of(html)).toBe(name);
     expect(metadata.title).toBe(`${name} | ラーメン屋台タイピング`);
     expect(metadata.description).toEqual(expect.any(String));
+  });
+
+  it("OGP と Twitter カードの title・description が、ページの title・description と同じ", async () => {
+    const metadata = await resolveMetadata(generateMetadata);
+    expect(metadata.openGraph).toMatchObject({
+      title: metadata.title,
+      description: metadata.description,
+    });
+    expect(metadata.twitter).toMatchObject({
+      title: metadata.title,
+      description: metadata.description,
+    });
+  });
+
+  it("サイト共通の OGP の項目と、ルートの OGP 画像を引き継ぐ", async () => {
+    const metadata = await resolveMetadata(generateMetadata);
+    expect(metadata.openGraph).toMatchObject({
+      siteName: "ラーメン屋台タイピング",
+      locale: "ja_JP",
+      type: "website",
+      images: OG_IMAGES,
+    });
+    expect(metadata.twitter).toMatchObject({
+      card: "summary_large_image",
+      images: TWITTER_IMAGES,
+    });
   });
 
   it("トップページと同じヘッダーとフッター、トップページへ戻るリンクがある", () => {

@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { pageTitle, SITE_NAME } from "@/app/site-metadata";
+import type { Metadata, ResolvingMetadata } from "next";
+import { pageMetadata, pageTitle, SITE_NAME } from "@/app/site-metadata";
 import { ContactEmailLink } from "@/client/components/contact-email/contact-email-link";
 import { LegalPage } from "@/client/components/legal-page/legal-page";
 import {
@@ -7,11 +7,19 @@ import {
   parseContactEmail,
 } from "@/client/lib/contact-email";
 
-export const metadata: Metadata = {
-  title: pageTitle("お問い合わせ"),
-  description: `タイピングゲーム「${SITE_NAME}」へのご意見・ご質問の窓口です。`,
-  alternates: { canonical: "/contact" },
-};
+export function generateMetadata(
+  _props: unknown,
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  return pageMetadata(
+    {
+      title: pageTitle("お問い合わせ"),
+      description: `タイピングゲーム「${SITE_NAME}」へのご意見・ご質問の窓口です。`,
+      path: "/contact",
+    },
+    parent,
+  );
+}
 
 export default function ContactPage() {
   // NEXT_PUBLIC_ の変数はビルド時に値が埋め込まれるので、実行時に環境変数が渡らないホスティングでも読める
