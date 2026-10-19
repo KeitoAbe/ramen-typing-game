@@ -354,9 +354,20 @@ export default async function Image() {
           border: `6px solid ${SUMI}`,
         }}
       />
-      {/* 丼は、湯気が看板にかからないよう端に寄せる */}
+      {/* 丼は、湯気が看板にかからないよう左右の端に寄せる */}
       <div
         style={{ position: "absolute", left: 60, top: 428, display: "flex" }}
+      >
+        <RamenBowl />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          right: 60,
+          top: 428,
+          display: "flex",
+          transform: "scaleX(-1)",
+        }}
       >
         <RamenBowl />
       </div>
