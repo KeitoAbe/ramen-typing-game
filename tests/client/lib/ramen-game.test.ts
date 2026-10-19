@@ -17,7 +17,10 @@ import {
   KAEDAMA_NOTICE_MS,
 } from "@/client/lib/ramen-kaedama";
 import { emptyPlayStats, orderPrice } from "@/client/lib/ramen-result";
-import { STREAK_BROKEN_NOTICE_MS } from "@/client/lib/ramen-streak";
+import {
+  STREAK_BROKEN_NOTICE_MS,
+  streakPriceRate,
+} from "@/client/lib/ramen-streak";
 import {
   GEKIKARA_MISS_PENALTY_MS,
   NINNIKU_SOGGY_RATE,
@@ -951,6 +954,143 @@ describe("ramenGameReducer", () => {
               TOPPING_PRICE_RATE,
           ),
         );
+      });
+    });
+  });
+
+  describe("入力と時間の境界", () => {
+    function playing(state: RamenGameState) {
+      if (state.status !== "playing") throw new Error("playing のはず");
+      return state;
+    }
+
+    it("よみに読点を含む注文は、「、」を , で打って完食できる", () => {
+      const order: Order = {
+        id: "c",
+        text: "大将、うまいね",
+        reading: "たいしょう、うまいね",
+      };
+      const state = ramenGameReducer(initialRamenGameState, {
+        type: "start",
+        course,
+        orders: [order],
+        now: 0,
+      });
+      const served = playing(typeKeys(state, "taishou,umaine"));
+      expect(served.stats.missCount).toBe(0);
+      expect(served.stats.servedCount).toBe(1);
+      expect(served.stats.bill).toBe(bowlPrice(order, 0));
+    });
+
+    it("ちょうどのびきる時刻に前の丼の続きのキーが届くと、前の丼は下げられ、キーは新しい丼に対して判定される", () => {
+      // 2 杯連続で平らげたあと、3 杯目（しお）を「shi」まで打っておく
+      const halfway = playing(typeKeys(start(), "shiomisoshi"));
+      expect(halfway.streak).toBe(2);
+      expect(halfway.kaedamaGauge).toBe(11);
+      const limitMs = soggyLimitMs(orders[0]);
+
+      // 「o」は前の丼の続きだが、新しい丼（みそ）の先頭ではないのでミスになる
+      const missed = playing(typeKeys(halfway, "o", limitMs));
+      expect(missed.stats.discardedCount).toBe(1);
+      expect(missed.stats.servedCount).toBe(2);
+      expect(missed.streak).toBe(0);
+      expect(missed.orderIndex).toBe(1);
+      expect(missed.typing.position).toBe(0);
+      expect(missed.stats.missCount).toBe(1);
+      expect(missed.stats.missedKeys).toEqual({ m: 1 });
+      expect(missed.kaedamaGauge).toBe(0);
+
+      // 新しい丼の先頭のキーなら、新しい丼の 1 打目として受け付ける
+      const accepted = playing(typeKeys(halfway, "m", limitMs));
+      expect(accepted.stats.discardedCount).toBe(1);
+      expect(accepted.stats.missCount).toBe(0);
+      expect(accepted.orderIndex).toBe(1);
+      expect(accepted.typing.committed + accepted.typing.buffer).toBe("m");
+    });
+
+    it("のびきる 1ms 前に最後のキーを打つと、丼はお会計に入り下げられない", () => {
+      const halfway = typeKeys(start(), "shi");
+      const limitMs = soggyLimitMs(orders[0]);
+      const served = playing(typeKeys(halfway, "o", limitMs - 1));
+      expect(served.stats.servedCount).toBe(1);
+      expect(served.stats.discardedCount).toBe(0);
+      expect(served.stats.bill).toBe(bowlPrice(orders[0], limitMs - 1));
+      expect(served.orderIndex).toBe(1);
+    });
+
+    it("丼がのびきって下げられても、替え玉ゲージは変わらない", () => {
+      const halfway = playing(typeKeys(start(), "shi"));
+      const discarded = playing(
+        ramenGameReducer(halfway, {
+          type: "tick",
+          now: soggyLimitMs(orders[0]),
+        }),
+      );
+      expect(discarded.stats.discardedCount).toBe(1);
+      expect(discarded.kaedamaGauge).toBe(halfway.kaedamaGauge);
+    });
+
+    it("閉店間際に替え玉ゲージが満タンになるキーで平らげると、値段は閉店間際の倍率で、替え玉で残り 15 秒を超えたら閉店間際が解ける", () => {
+      // 残り 15 秒で開店し、8 杯ミスなしで平らげる。
+      // しおの 2 杯を「sio」で打ち、最後のみその「o」がちょうど満タンの 30 打目になるようにする
+      const keys = "siomiso".repeat(2) + "shiomiso".repeat(2);
+      expect(keys).toHaveLength(KAEDAMA_GAUGE_MAX);
+      const rush = ramenGameReducer(initialRamenGameState, {
+        type: "start",
+        course: { ...course, timeLimitMs: CLOSING_RUSH_THRESHOLD_MS },
+        orders,
+        now: 0,
+      });
+      const before = playing(typeKeys(rush, keys.slice(0, -1)));
+      expect(before.isClosingRush).toBe(true);
+      expect(before.stats.kaedamaCount).toBe(0);
+
+      const after = playing(typeKeys(before, keys.slice(-1)));
+      expect(after.stats.kaedamaCount).toBe(1);
+      expect(after.stats.servedCount).toBe(8);
+      expect(after.streak).toBe(8);
+      expect(after.stats.bill - before.stats.bill).toBe(
+        roundPrice(
+          bowlPrice(
+            orders[1],
+            0,
+            soggyLimitMs(orders[1]) * CLOSING_RUSH_SOGGY_RATE,
+          ) *
+            streakPriceRate(8) *
+            CLOSING_RUSH_PRICE_RATE,
+        ),
+      );
+      expect(after.remainingMs).toBe(
+        CLOSING_RUSH_THRESHOLD_MS + KAEDAMA_EXTENSION_MS,
+      );
+      expect(after.isClosingRush).toBe(false);
+    });
+
+    describe("激辛で残り時間を使い切る境界", () => {
+      function startGekikara(): RamenGameState {
+        return ramenGameReducer(initialRamenGameState, {
+          type: "start",
+          course,
+          toppings: ["gekikara"],
+          orders,
+          now: 0,
+        });
+      }
+
+      it("残りちょうど 1,000ms でミスすると、その場で閉店し、プレイ時間は開店からミスの時刻まで", () => {
+        const missAt = course.timeLimitMs - GEKIKARA_MISS_PENALTY_MS;
+        const closed = typeKeys(startGekikara(), "x", missAt);
+        if (closed.status !== "closed") throw new Error("closed のはず");
+        expect(closed.stats.missCount).toBe(1);
+        expect(closed.playedMs).toBe(missAt);
+      });
+
+      it("残り 1,001ms でミスしても閉店せず、残り 1ms になる", () => {
+        const missAt = course.timeLimitMs - GEKIKARA_MISS_PENALTY_MS - 1;
+        const missed = playing(typeKeys(startGekikara(), "x", missAt));
+        expect(missed.stats.missCount).toBe(1);
+        expect(missed.remainingMs).toBe(1);
+        expect(missed.endsAt).toBe(missAt + 1);
       });
     });
   });
