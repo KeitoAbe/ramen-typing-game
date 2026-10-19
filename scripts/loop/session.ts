@@ -36,6 +36,11 @@ const DISALLOWED_TOOLS = [
   "Bash(gh release:*)",
   "Bash(gh workflow run:*)",
   "Bash(gh pr merge --admin:*)",
+  // 本番は production ブランチから配信する。昇格は人間だけが行う（docs/loop-engineering.md）
+  "Bash(git push origin production:*)",
+  "Bash(git push origin main:production:*)",
+  "Bash(git push origin HEAD:production:*)",
+  "Bash(git push origin origin/main:production:*)",
 ];
 
 export interface SessionOutcome {
