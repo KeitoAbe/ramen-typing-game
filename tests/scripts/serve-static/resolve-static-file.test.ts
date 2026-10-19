@@ -1,5 +1,6 @@
 import {
   contentTypeOf,
+  isInsideRoot,
   staticFileCandidates,
 } from "@scripts/serve-static/resolve-static-file";
 
@@ -37,6 +38,7 @@ describe("staticFileCandidates", () => {
   it("出力ディレクトリの外を指すパスは探さない", () => {
     expect(staticFileCandidates("/../secret")).toEqual([]);
     expect(staticFileCandidates("/%2e%2e/secret")).toEqual([]);
+    expect(staticFileCandidates("/%5C..%5CREADME.md")).toEqual([]);
   });
 
   it("読めないパスは探さない", () => {
@@ -51,7 +53,26 @@ describe("contentTypeOf", () => {
     expect(contentTypeOf("icon.svg")).toBe("image/svg+xml");
   });
 
-  it("拡張子が無いファイルはバイナリとして返す", () => {
-    expect(contentTypeOf("opengraph-image")).toBe("application/octet-stream");
+  it("拡張子の無い画像のルートは PNG として返す", () => {
+    expect(contentTypeOf("/srv/out/opengraph-image")).toBe("image/png");
+    expect(contentTypeOf("twitter-image")).toBe("image/png");
+    expect(contentTypeOf("apple-icon")).toBe("image/png");
+  });
+
+  it("それ以外の拡張子が無いファイルはバイナリとして返す", () => {
+    expect(contentTypeOf("unknown")).toBe("application/octet-stream");
+  });
+});
+
+describe("isInsideRoot", () => {
+  it("出力ディレクトリの中のファイルは true を返す", () => {
+    expect(isInsideRoot("/srv/out", "/srv/out/about.html")).toBe(true);
+    expect(isInsideRoot("/srv/out", "/srv/out/_next/a.js")).toBe(true);
+  });
+
+  it("出力ディレクトリそのものや、外を指すパスは false を返す", () => {
+    expect(isInsideRoot("/srv/out", "/srv/out")).toBe(false);
+    expect(isInsideRoot("/srv/out", "/srv/README.md")).toBe(false);
+    expect(isInsideRoot("/srv/out", "/srv/out-secret/a.txt")).toBe(false);
   });
 });

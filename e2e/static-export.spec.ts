@@ -38,14 +38,15 @@ test("sitemap.xml・robots.txt・ads.txt・OGP 画像・アイコンが出力さ
     "google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0\n",
   );
 
-  for (const path of [
-    "/opengraph-image",
-    "/twitter-image",
-    "/apple-icon",
-    "/icon.svg",
+  for (const [path, contentType] of [
+    ["/opengraph-image", "image/png"],
+    ["/twitter-image", "image/png"],
+    ["/apple-icon", "image/png"],
+    ["/icon.svg", "image/svg+xml"],
   ]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
+    expect(response.headers()["content-type"], path).toBe(contentType);
     expect((await response.body()).length, path).toBeGreaterThan(0);
   }
 });

@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { join, resolve } from "node:path";
 import {
   contentTypeOf,
+  isInsideRoot,
   NOT_FOUND_FILE,
   staticFileCandidates,
 } from "@scripts/serve-static/resolve-static-file";
@@ -16,6 +17,7 @@ const port = Number(portArg);
 async function findFile(candidates: string[]): Promise<string | null> {
   for (const candidate of candidates) {
     const file = join(root, candidate);
+    if (!isInsideRoot(root, file)) continue;
     const stats = await stat(file).catch(() => null);
     if (stats?.isFile()) return file;
   }
