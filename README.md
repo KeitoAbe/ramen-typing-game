@@ -7,7 +7,11 @@
 
 ## スクリーンショット
 
-<!-- スクリーンショットはあとで追加する -->
+![券売機で食券を選ぶ](docs/images/screenshot-ticket.png)
+
+| 注文を打って平らげる | 閉店後のお会計 |
+|---|---|
+| ![プレイ中の画面](docs/images/screenshot-play.png) | ![結果画面](docs/images/screenshot-result.png) |
 
 ## 遊び方
 
