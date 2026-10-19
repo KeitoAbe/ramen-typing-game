@@ -112,6 +112,53 @@ test("1 プレイの流れで、開始・案内・効果音・終了・共有・
   expect(params.replay).toEqual({ course_id: "nami" });
 });
 
+test("ime_notice_shown は、開始待ちとプレイ中の両方で案内が出ても 1 プレイに 1 回だけ送られ、次のプレイではもう 1 回送られる", async ({
+  page,
+}) => {
+  const imeNotice = page.getByText("日本語入力がオンになっています");
+  await page.clock.install();
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /^並/ }).click();
+  await page.getByRole("button", { name: "いただきます" }).click();
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+
+  // 開始待ちで案内を出す
+  await pressImeKey(page);
+  await expect(imeNotice).toBeVisible();
+  // 計測は描画のあとの effect で送られるので、記録されるまで待つ
+  await expect
+    .poll(async () => (await eventsNamed(page, "ime_notice_shown")).length)
+    .toBe(1);
+
+  // そのまま始めて、プレイ中にも案内を出す
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("remaining-romaji")).not.toBeEmpty();
+  await pressImeKey(page);
+  await expect(
+    page.getByText("半角英数（IME オフ）に切り替えて打ってください"),
+  ).toBeVisible();
+  expect(await eventsNamed(page, "ime_notice_shown")).toHaveLength(1);
+
+  await page.clock.runFor(61_000);
+  await expect(page.getByRole("heading", { name: "御会計" })).toBeVisible();
+
+  // 「もう一杯」から次のプレイで、再び案内を出す
+  await page.getByRole("button", { name: "もう一杯" }).click();
+  await page.getByRole("button", { name: /^並/ }).click();
+  await page.getByRole("button", { name: "いただきます" }).click();
+  await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
+  await pressImeKey(page);
+  await expect(imeNotice).toBeVisible();
+
+  await expect
+    .poll(() => eventsNamed(page, "ime_notice_shown"))
+    .toEqual([
+      ["ime_notice_shown", { course_id: "nami" }],
+      ["ime_notice_shown", { course_id: "nami" }],
+    ]);
+});
+
 test("食券を買ってから、ほかのページに移ると ticket_abandon が 1 回送られる", async ({
   page,
 }) => {
