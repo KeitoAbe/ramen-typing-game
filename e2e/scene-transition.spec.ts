@@ -38,7 +38,9 @@ test("食券を買う・閉店する・もう一杯で、それぞれの移り�
   await page.getByRole("button", { name: /^並/ }).click();
   await page.clock.runFor(750);
   await expect(overlay).toBeAttached();
-  expect(await transitionAnimationNames(page)).toContain("ticket-hand-over");
+  await expect
+    .poll(() => transitionAnimationNames(page))
+    .toContain("ticket-hand-over");
   await page.clock.runFor(500);
   await expect(overlay).toHaveCount(0);
   await expect(page.getByRole("checkbox").first()).toBeFocused();
@@ -59,7 +61,9 @@ test("食券を買う・閉店する・もう一杯で、それぞれの移り�
   await expect(announcement(page)).toHaveText("開店しました");
   await page.clock.fastForward(61_000);
   await expect(overlay).toBeAttached();
-  expect(await transitionAnimationNames(page)).toContain("lights-out");
+  await expect
+    .poll(() => transitionAnimationNames(page))
+    .toContain("lights-out");
   await expect(page.getByRole("heading", { name: "御会計" })).toHaveCount(0);
   // 伝票が出る前には、伝票のことを知らせない
   await expect(announcement(page)).toHaveText("");
@@ -68,7 +72,9 @@ test("食券を買う・閉店する・もう一杯で、それぞれの移り�
 
   await page.clock.runFor(300);
   await expect(page.getByRole("heading", { name: "御会計" })).toBeVisible();
-  expect(await transitionAnimationNames(page)).toContain("scene-veil-out");
+  await expect
+    .poll(() => transitionAnimationNames(page))
+    .toContain("scene-veil-out");
   await page.clock.runFor(300);
   await expect(overlay).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "御会計" })).toBeFocused();
@@ -83,7 +89,9 @@ test("食券を買う・閉店する・もう一杯で、それぞれの移り�
 
   // 結果 → 券売機: 夜の幕が流れ、終わると最初の食券のボタンにフォーカスが移る
   await page.getByRole("button", { name: "もう一杯" }).click();
-  expect(await transitionAnimationNames(page)).toContain("back-to-machine");
+  await expect
+    .poll(() => transitionAnimationNames(page))
+    .toContain("back-to-machine");
   await page.clock.runFor(500);
   await expect(overlay).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^並/ })).toBeFocused();
@@ -111,7 +119,9 @@ test("動きを抑える設定では、移り変わりのある切り替えは�
   const overlay = page.getByTestId("scene-transition");
 
   await page.getByRole("button", { name: /^並/ }).click();
-  expect(await transitionAnimationNames(page)).toEqual(["scene-veil-out"]);
+  await expect
+    .poll(() => transitionAnimationNames(page))
+    .toEqual(["scene-veil-out"]);
   await page.clock.runFor(300);
   await expect(overlay).toHaveCount(0);
   await expect(page.getByRole("checkbox").first()).toBeFocused();
@@ -125,5 +135,7 @@ test("動きを抑える設定では、移り変わりのある切り替えは�
   // 灯りが落ちるのを待たないので、閉店したらすぐに結果画面が出る
   await page.clock.fastForward(61_000);
   await expect(page.getByRole("heading", { name: "御会計" })).toBeVisible();
-  expect(await transitionAnimationNames(page)).toEqual(["scene-veil-out"]);
+  await expect
+    .poll(() => transitionAnimationNames(page))
+    .toEqual(["scene-veil-out"]);
 });
