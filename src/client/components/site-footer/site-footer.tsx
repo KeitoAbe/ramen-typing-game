@@ -25,13 +25,12 @@ export function SiteFooter() {
                 </Link>
               </li>
             ))}
+            <li>
+              <ExternalLink href={REPOSITORY_URL}>GitHub</ExternalLink>
+              <span className="ml-2">オープンソース（MIT）</span>
+            </li>
           </ul>
         </nav>
-        <p className="leading-body">
-          このゲームはオープンソース（MIT ライセンス）です。ソースコードは
-          <ExternalLink href={REPOSITORY_URL}>GitHub のリポジトリ</ExternalLink>
-          で公開しています。
-        </p>
       </div>
     </footer>
   );

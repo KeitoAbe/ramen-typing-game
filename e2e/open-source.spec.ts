@@ -6,14 +6,16 @@ const REPOSITORY_URL = "https://github.com/KeitoAbe/ramen-typing-game";
 const PAGE_PATHS = ["/", "/privacy", "/about", "/contact"];
 
 for (const path of PAGE_PATHS) {
-  test(`${path} のフッターに、オープンソースの一文とリポジトリへのリンクがある`, async ({
+  test(`${path} のフッターのリンクの並びに、オープンソースの表記とリポジトリへのリンクがある`, async ({
     page,
   }) => {
     await page.goto(path);
     const footer = page.getByRole("contentinfo");
-    await expect(footer).toContainText("オープンソース（MIT ライセンス）");
-    const link = footer.getByRole("link", {
-      name: /^GitHub のリポジトリ\s*（新しいタブで開きます）$/,
+    const nav = footer.getByRole("navigation", { name: "サイトの情報" });
+    await expect(nav).toContainText("オープンソース（MIT）");
+    await expect(footer).not.toContainText("このゲームはオープンソース");
+    const link = nav.getByRole("link", {
+      name: /^GitHub\s*（新しいタブで開きます）$/,
     });
     await expect(link).toHaveAttribute("href", REPOSITORY_URL);
     await expect(link).toHaveAttribute("target", "_blank");
@@ -57,7 +59,7 @@ for (const viewport of [
           await page.evaluate(() => document.documentElement.scrollWidth),
         ).toBeLessThanOrEqual(viewport.width);
         const box = await footer
-          .getByText("オープンソース（MIT ライセンス）")
+          .getByText("オープンソース（MIT）")
           .boundingBox();
         expect(box).not.toBeNull();
         expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(
