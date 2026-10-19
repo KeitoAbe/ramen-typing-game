@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   OUTLINE,
   SUMI,
@@ -9,10 +9,6 @@ import {
 import { StageSign } from "@/client/components/stage/stage-sign";
 import type { Course } from "@/client/lib/ramen-course";
 import { prefersReducedMotion } from "@/client/lib/reduced-motion";
-import {
-  isTouchPrimaryDevice,
-  TOUCH_PRIMARY_QUERY,
-} from "@/client/lib/touch-device";
 
 /** 食券が出てきてからプレイを始めるまでの時間。出てくる動き（0.5 秒）のあと少し見せる */
 const TICKET_ISSUE_MS = 750;
@@ -150,53 +146,20 @@ function TicketMachineScene() {
   );
 }
 
-/** 端末の入力の変化（タブレットにマウスをつないだときなど）を見張る */
-function subscribeTouchPrimary(onChange: () => void) {
-  // 判定と同じく、matchMedia が無い環境では見張らない
-  const query = window.matchMedia?.(TOUCH_PRIMARY_QUERY);
-  if (!query) return () => {};
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-/**
- * 主な入力がタッチの端末か。サーバーで描くときと水和（hydration）のときは false にして、
- * 画面の食い違いを起こさない
- */
-function useIsTouchPrimaryDevice() {
-  return useSyncExternalStore(
-    subscribeTouchPrimary,
-    () => isTouchPrimaryDevice(),
-    () => false,
-  );
-}
-
 type Props = {
   courses: readonly Course[];
   onSelect: (course: Course) => void;
   /** 食券のボタンを押した瞬間に呼ぶ（効果音用）。onSelect は食券が出てくる動きのあとに呼ぶ */
   onBuy: () => void;
-  /** タッチ端末への案内を出したときに呼ぶ（計測用） */
-  onTouchNoticeShown: () => void;
 };
 
 /** 開始前の画面。屋台の脇の券売機で食券を買うと、そのコースでプレイが始まる */
-export function TicketMachine({
-  courses,
-  onSelect,
-  onBuy,
-  onTouchNoticeShown,
-}: Props) {
+export function TicketMachine({ courses, onSelect, onBuy }: Props) {
   // 取出口から出てくる途中の食券。出てくる動きのあとにプレイを始める
   const [issuedCourse, setIssuedCourse] = useState<Course | null>(null);
   const issueTimerRef = useRef<number | undefined>(undefined);
-  const isTouchPrimary = useIsTouchPrimaryDevice();
 
   useEffect(() => () => window.clearTimeout(issueTimerRef.current), []);
-
-  useEffect(() => {
-    if (isTouchPrimary) onTouchNoticeShown();
-  }, [isTouchPrimary, onTouchNoticeShown]);
 
   const buy = (course: Course) => {
     if (issuedCourse !== null) return;
@@ -230,21 +193,6 @@ export function TicketMachine({
             </span>
           </div>
         </div>
-      )}
-
-      {/* タッチ端末への案内: 効果音の札と屋台の看板のあいだの夜空に掲げる札。
-          390px 幅でも読めるよう、文字の大きさに下限を付ける */}
-      {isTouchPrimary && (
-        <p className="absolute top-[max(34px,5cqw)] left-[44%] w-[54%] text-center">
-          <span className="inline-flex stage-wood-board flex-col items-center px-[max(6px,1.2cqw)] py-[max(2px,0.5cqw)] font-bold">
-            <span className="text-[max(11px,1.8cqw)] leading-tight text-yatai-amber">
-              PC のキーボードで遊んでください
-            </span>
-            <span className="text-[max(10px,1.4cqw)] leading-tight">
-              タッチ操作では文字を打てません
-            </span>
-          </span>
-        </p>
       )}
 
       {/* 屋台の屋根に載せた看板 */}

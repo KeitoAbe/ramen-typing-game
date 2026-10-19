@@ -11,6 +11,7 @@ import { SceneTransitionOverlay } from "@/client/components/ramen-game/scene-tra
 import { SoundToggle } from "@/client/components/ramen-game/sound-toggle";
 import { TicketMachine } from "@/client/components/ramen-game/ticket-machine";
 import { ToppingSelect } from "@/client/components/ramen-game/topping-select";
+import { TouchNotice } from "@/client/components/ramen-game/touch-notice";
 import { GameStage } from "@/client/components/stage/game-stage";
 import {
   trackImeNoticeShown,
@@ -344,8 +345,9 @@ export function RamenGame({ orders }: Props) {
     });
   }, [state, isSoundEnabled, playSound, ambience]);
 
-  const onStage = (screen: ReactNode) => (
+  const onStage = (screen: ReactNode, above?: ReactNode) => (
     <GameStage
+      above={above}
       corner={
         // 札の高さは 1 枚のときと変えないよう、横に並べる
         <div className="flex gap-[0.8cqw]">
@@ -520,8 +522,8 @@ export function RamenGame({ orders }: Props) {
         courses={COURSES}
         onSelect={setTicketCourse}
         onBuy={() => playCue("ticket")}
-        onTouchNoticeShown={trackTouchNotice}
       />,
+      <TouchNotice onShown={trackTouchNotice} />,
     );
   }
 
