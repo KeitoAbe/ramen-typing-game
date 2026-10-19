@@ -348,19 +348,12 @@ export function RamenPlay({
           key={`romaji-${state.stats.missCount}`}
           className={`font-mono text-[2.4cqw] leading-tight tracking-wide ${state.stats.missCount > 0 ? "motion-safe:animate-romaji-shake motion-reduce:animate-miss-flash" : ""}`}
         >
-          <span className="text-yatai-lantern-dark underline decoration-[0.15cqw] underline-offset-[0.3cqw]">
-            {typed.slice(0, -1)}
-            {/* 最後に打った文字は、打つたびに作り直して弾ませる。
-                inline-block には親の下線が届かないので、下線を付け直す */}
-            {typed !== "" && (
-              <span
-                key={state.stats.correctKeyCount}
-                data-testid="last-typed-romaji"
-                className="inline-block underline decoration-[0.15cqw] underline-offset-[0.3cqw] motion-safe:animate-key-bounce"
-              >
-                {typed.slice(-1)}
-              </span>
-            )}
+          {/* E2E テストが、打った文字が動かないことを確かめるための目印 */}
+          <span
+            data-testid="typed-romaji"
+            className="text-yatai-lantern-dark underline decoration-[0.15cqw] underline-offset-[0.3cqw]"
+          >
+            {typed}
           </span>
           {/* E2E テストが、これから打つローマ字を読んで打つための目印 */}
           <span data-testid="remaining-romaji" className="font-bold">

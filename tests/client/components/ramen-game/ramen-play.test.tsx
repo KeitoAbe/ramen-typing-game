@@ -105,7 +105,7 @@ describe("RamenPlay", () => {
     expect(textOf(html)).toMatch(/閉店間際！ 値段 1\.5 倍・早くのびる/);
   });
 
-  it("最後に打った文字だけを、弾ませる文字として分けて出す", () => {
+  it("打った文字は、最後の 1 文字も分けずにまとめて出す", () => {
     const state = playingState();
     const typed = ramenGameReducer(state, { type: "key", key: "s", now: 0 });
     const html = render(
@@ -115,7 +115,9 @@ describe("RamenPlay", () => {
         now: 0,
       }) as PlayingState,
     );
-    expect(html).toMatch(/>s<span[^>]*data-testid="last-typed-romaji"[^>]*>h</);
+    expect(html).toMatch(
+      /<span[^>]*data-testid="typed-romaji"[^>]*>sh<\/span>/,
+    );
   });
 
   it("平らげた丼の値段と、上乗せした倍率を出す", () => {

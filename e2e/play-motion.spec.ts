@@ -24,7 +24,7 @@ function romajiLine(page: Page) {
   return page.getByTestId("remaining-romaji").locator("..");
 }
 
-test("正しく打つと打った文字が弾み、ミスするとローマ字が横に震え、平らげると値段が浮かび上がる", async ({
+test("正しく打っても打った文字は動かず、ミスするとローマ字が横に震え、平らげると値段が浮かび上がる", async ({
   page,
 }) => {
   await startPlaying(page);
@@ -32,9 +32,9 @@ test("正しく打つと打った文字が弾み、ミスするとローマ字�
     (await page.getByTestId("remaining-romaji").textContent()) ?? "";
 
   await page.keyboard.press(romaji.charAt(0));
-  const lastTyped = page.getByTestId("last-typed-romaji");
-  await expect(lastTyped).toHaveText(romaji.charAt(0));
-  expect(await animationNames(lastTyped)).toContain("key-bounce");
+  const typed = page.getByTestId("typed-romaji");
+  await expect(typed).toHaveText(romaji.charAt(0));
+  expect(await animationNames(typed)).toEqual([]);
 
   await page.keyboard.press("1");
   await expect
@@ -56,9 +56,9 @@ test("動きを抑える設定では、打鍵・ミス・値段を動かさず�
     (await page.getByTestId("remaining-romaji").textContent()) ?? "";
 
   await page.keyboard.press(romaji.charAt(0));
-  const lastTyped = page.getByTestId("last-typed-romaji");
-  await expect(lastTyped).toHaveText(romaji.charAt(0));
-  expect(await animationNames(lastTyped)).toEqual([]);
+  const typed = page.getByTestId("typed-romaji");
+  await expect(typed).toHaveText(romaji.charAt(0));
+  expect(await animationNames(typed)).toEqual([]);
 
   await page.keyboard.press("1");
   await expect
