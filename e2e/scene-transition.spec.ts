@@ -25,7 +25,7 @@ function announcement(page: Page) {
   return page.getByTestId("scene-announcement");
 }
 
-test("食券を買う・のれんをくぐる・閉店する・もう一杯で、それぞれの移り変わりが動き、終わるとフォーカスが次の画面に移る", async ({
+test("食券を買う・閉店する・もう一杯で、それぞれの移り変わりが動き、終わるとフォーカスが次の画面に移る", async ({
   page,
 }) => {
   // 移り変わりを外すのはタイマーなので、時計を止めて、移り変わりの途中を落ち着いて調べる
@@ -44,12 +44,8 @@ test("食券を買う・のれんをくぐる・閉店する・もう一杯で�
   await expect(page.getByRole("checkbox").first()).toBeFocused();
   await expect(announcement(page)).toHaveText(/トッピングを選んでください/);
 
-  // トッピング → 開始待ち: のれんが左右に分かれ、終わると始め方の案内にフォーカスが移る
+  // トッピング → 開始待ち: のれんは出さず、その場で切り替わって始め方の案内にフォーカスが移る
   await page.getByRole("button", { name: "いただきます" }).click();
-  expect(await transitionAnimationNames(page)).toEqual(
-    expect.arrayContaining(["noren-open-left", "noren-open-right"]),
-  );
-  await page.clock.runFor(550);
   await expect(overlay).toHaveCount(0);
   const sign = page.getByText("スペース か Enter で始める").locator("..");
   await expect(sign).toBeFocused();
@@ -94,7 +90,7 @@ test("食券を買う・のれんをくぐる・閉店する・もう一杯で�
   await expect(announcement(page)).toHaveText(/券売機の前に戻りました/);
 });
 
-test("のれんが開ききる前にスペースで始めたら、移り変わりを打ち切ってすぐにプレイの画面を出す", async ({
+test("「いただきます」を押してすぐにスペースで始めると、移り変わりなしでプレイの画面を出す", async ({
   page,
 }) => {
   await page.goto("/");
@@ -105,7 +101,7 @@ test("のれんが開ききる前にスペースで始めたら、移り変わ�
   await expect(page.getByTestId("scene-transition")).toHaveCount(0);
 });
 
-test("動きを抑える設定では、どの切り替えも夜の色の幕が薄れるだけにし、閉店してすぐ結果画面を出す", async ({
+test("動きを抑える設定では、移り変わりのある切り替えは夜の色の幕が薄れるだけにし、閉店してすぐ結果画面を出す", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -120,9 +116,8 @@ test("動きを抑える設定では、どの切り替えも夜の色の幕が�
   await expect(overlay).toHaveCount(0);
   await expect(page.getByRole("checkbox").first()).toBeFocused();
 
+  // トッピング → 開始待ちには、動きを抑える設定でも幕を出さない
   await page.getByRole("button", { name: "いただきます" }).click();
-  expect(await transitionAnimationNames(page)).toEqual(["scene-veil-out"]);
-  await page.clock.runFor(300);
   await expect(overlay).toHaveCount(0);
 
   await page.keyboard.press(" ");

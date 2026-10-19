@@ -57,8 +57,6 @@
      動かす版は motion-safe: で、動きを抑える設定での幕（scene-veil-out）は motion-reduce: で付ける */
   --animate-scene-veil-out: scene-veil-out 0.3s ease-out both;
   --animate-ticket-hand-over: ticket-hand-over 0.5s ease-in-out both;
-  --animate-noren-open-left: noren-open-left 0.55s ease-in both;
-  --animate-noren-open-right: noren-open-right 0.55s ease-in both;
   --animate-lights-out: lights-out 0.3s ease-in both;
   --animate-receipt-veil-out: scene-veil-out 0.25s ease-out both;
   --animate-receipt-hand-over: receipt-hand-over 0.25s ease-out both;
@@ -410,31 +408,6 @@
     100% {
       opacity: 0;
       transform: translate(0, 0) scale(1) rotate(-2deg);
-    }
-  }
-
-  /* のれんの布が、上端を支点に押されて少し傾き、左右に分かれて舞台の外へ開く */
-  @keyframes noren-open-left {
-    0% {
-      transform: translateX(0) rotate(0deg);
-    }
-    25% {
-      transform: translateX(-4%) rotate(4deg);
-    }
-    100% {
-      transform: translateX(-105%) rotate(8deg);
-    }
-  }
-
-  @keyframes noren-open-right {
-    0% {
-      transform: translateX(0) rotate(0deg);
-    }
-    25% {
-      transform: translateX(4%) rotate(-4deg);
-    }
-    100% {
-      transform: translateX(105%) rotate(-8deg);
     }
   }
 
