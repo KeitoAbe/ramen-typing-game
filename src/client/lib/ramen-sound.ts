@@ -625,10 +625,10 @@ export type AudioOutput = {
 };
 
 /**
- * 効果音と環境音・BGM で共有する出口を、最初に使うときに作る関数を返す。
+ * 効果音と環境音で共有する出口を、最初に使うときに作る関数を返す。
  * ブラウザはユーザー操作の前に音を出せないので、AudioContext は最初に鳴らすときに作る
  * （食券を選ぶクリックのあとなので、鳴らせる）。
- * 同じ出口に通すことで、効果音と環境音・BGM が同時に鳴っても最後の圧縮で割れないようにする
+ * 同じ出口に通すことで、効果音と環境音が同時に鳴っても最後の圧縮で割れないようにする
  */
 export function createAudioOutput(): () => AudioOutput {
   let output: AudioOutput | undefined;

@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@e2e/fixtures";
 
-// 環境音・BGM がプレイ中だけ流れ、効果音とは別の札で切り替えられ、設定が再読み込みしても残ることを確かめる。
+// 環境音がプレイ中だけ流れ、効果音とは別の札で切り替えられ、設定が再読み込みしても残ることを確かめる。
 // 音そのものは聞けないので、寸胴の煮える音（繰り返し鳴らし続ける唯一の音源）が鳴り始めたか・止まったかを記録して見る
 
 /** 繰り返し鳴らす音源の start / stop を記録する。今鳴っている数を window.__loopingSources で読む */
@@ -46,7 +46,7 @@ async function setPageVisible(page: Page, visible: boolean) {
   }, visible);
 }
 
-test("環境音・BGM はプレイ中だけ流れ、タブが裏に回ると止まり、結果画面ではフェードして止まる", async ({
+test("環境音はプレイ中だけ流れ、タブが裏に回ると止まり、結果画面ではフェードして止まる", async ({
   page,
 }) => {
   await recordLoopingSources(page);
@@ -82,24 +82,25 @@ test("環境音・BGM はプレイ中だけ流れ、タブが裏に回ると止�
   await expect.poll(() => loopingSources(page)).toBe(0);
 });
 
-test("環境音・BGM の札は効果音とは別に切り替えられ、キーボードでも押せて、再読み込みしても設定が残る", async ({
+test("環境音の札は効果音とは別に切り替えられ、キーボードでも押せて、再読み込みしても設定が残る", async ({
   page,
 }) => {
   await recordLoopingSources(page);
   await page.clock.install();
   await page.goto("/");
 
-  const ambience = page.getByRole("button", { name: /^環境音・BGM/ });
+  // 読み上げでも「環境音」と伝わる
+  const ambience = page.getByRole("button", { name: /^環境音: / });
   const sound = page.getByRole("button", { name: /^効果音/ });
   // 既定はオン
   await expect(ambience).toHaveAttribute("aria-pressed", "true");
-  await expect(ambience).toHaveText("環境音・BGM: オン");
+  await expect(ambience).toHaveText("環境音: オン");
 
   // キーボードで押してオフにする。効果音の札は変わらない
   await ambience.focus();
   await page.keyboard.press("Enter");
   await expect(ambience).toHaveAttribute("aria-pressed", "false");
-  await expect(ambience).toHaveText("環境音・BGM: オフ");
+  await expect(ambience).toHaveText("環境音: オフ");
   await expect(sound).toHaveAttribute("aria-pressed", "true");
 
   // 再読み込みしてもオフのまま
