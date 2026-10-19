@@ -113,3 +113,12 @@ pnpm loop 10                # SUCCESS が 10 回になるまで回す
 ### ドキュメント
 
 [docs/README.md](docs/README.md) から読む。
+
+### 参加のしかた
+
+誰でも Issue と PR を出せる。取り込むかどうかはオーナーが判断する。
+流れと方針は [CONTRIBUTING.md](CONTRIBUTING.md) を、脆弱性の報告は [SECURITY.md](SECURITY.md) を参照。
+
+## ライセンス
+
+[MIT License](LICENSE)

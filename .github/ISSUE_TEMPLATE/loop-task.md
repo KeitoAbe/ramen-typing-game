@@ -1,6 +1,6 @@
 ---
-name: Loop Task
-about: ループ（AI エージェント）が 1 PR で自律実装するタスク。メンバーが起票し、内容を確認してから loop:ready を付ける
+name: Loop Task（メンバー用）
+about: メンバー用。AI のループに渡すタスク（AI エージェントが 1 PR で自律実装する）。外部の方は「不具合の報告」か「要望」を使ってください
 title: ''
 labels: ''
 assignees: ''
