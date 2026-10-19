@@ -14,15 +14,17 @@ describe("SiteFooter", () => {
     expect(html).toContain(">お問い合わせ</a>");
   });
 
-  it("オープンソース（MIT ライセンス）であることが書かれている", () => {
-    expect(html).toContain("オープンソース（MIT ライセンス）");
+  it("オープンソース（MIT）であることを、文章ではなく短い表記で出す", () => {
+    expect(html).toContain("オープンソース（MIT）");
+    expect(html).not.toContain("このゲームはオープンソース");
   });
 
-  it("GitHub のリポジトリへのリンクを、新しいタブで開くと分かる形で出す", () => {
+  it("GitHub へのリンクを、ほかのリンクと並べて、新しいタブで開くと分かる形で出す", () => {
     expect(html).toContain(`href="${REPOSITORY_URL}"`);
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
-    expect(html).toContain("GitHub のリポジトリ");
-    expect(html).toContain("（新しいタブで開きます）");
+    expect(html).toMatch(
+      /<nav aria-label="サイトの情報">.*>GitHub<span class="sr-only">（新しいタブで開きます）<\/span><\/a>.*<\/nav>/,
+    );
   });
 });
