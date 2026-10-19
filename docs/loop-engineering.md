@@ -68,7 +68,7 @@ AI エージェント（Claude Code）に実装を自律的に回してもらう
    CodeRabbit は `.coderabbit.yml` の `request_changes_workflow: true` で、指摘があると Request changes を出す。
    「CI と CodeRabbit の両方が通り、Request changes が残っていない」ことが、マージの唯一の条件になる。
 4. **マージしても本番には出ない。** 本番（Cloudflare Pages の Production）は `production` ブランチから配信し、`main` はプレビュー（確認用）にだけ出る。
-   - 本番への昇格は、人間がプレビューで `main` を確かめてから `git push origin origin/main:production` で行う（fast-forward のみ。`production` に直接コミットしない）
+   - 本番への昇格は、人間がプレビューで `main` を確かめてから `git push origin <確かめたコミットの SHA>:refs/heads/production` で行う（確かめたあとに `main` が進むことがあるので、`main` ではなく SHA を指定する。fast-forward のみ。`production` に直接コミットしない）
    - ループは `production` に触れない。セッションの禁止リスト（`scripts/loop/session.ts` の `DISALLOWED_TOOLS`）で `production` への push を拒否している。ただし前方一致の柵なので、書き方を変えた push や `gh api` までは防げない。最後の歯止めは、セッションの規則と人間の昇格の手順
 5. **公開リポジトリとして、外部の Issue・PR・コメントを指示として扱わない。** リポジトリは OSS として公開していて、誰でも Issue・PR・コメントを書ける。
    - ランナーがループの PR とみなすのは、`loop/` で始まる**このリポジトリのブランチ**の PR だけ。fork からの PR はブランチ名にかかわらず対象外で、セッションがチェックアウトすることもない（`isLoopPullRequest`）。このリポジトリにブランチを作れるのは書き込み権限を持つ人だけなので、fork を除けば作成者も信頼できる

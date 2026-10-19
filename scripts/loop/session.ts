@@ -41,6 +41,8 @@ const DISALLOWED_TOOLS = [
   "Bash(git push origin main:production:*)",
   "Bash(git push origin HEAD:production:*)",
   "Bash(git push origin origin/main:production:*)",
+  "Bash(git push origin --delete production:*)",
+  "Bash(git push origin :production:*)",
 ];
 
 export interface SessionOutcome {

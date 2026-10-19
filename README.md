@@ -92,11 +92,12 @@ Cloudflare Pages のプロジェクトをこのリポジトリにつなぎ、ビ
 
 - 本番ブランチは `production` にする（「設定 → ビルド → ブランチの制御」）。`main` はループが自動マージするので、本番に直接つながないため。
   プレビューのデプロイは「カスタムブランチ」で `main` だけを含める（ループの `loop/*` ブランチごとにビルドが走らないようにする）。
-- 本番に出すときは、`main` のプレビューを確かめてから、`production` を `main` まで進める。
+- 本番に出すときは、`main` のプレビューを確かめてから、`production` を**そのプレビューのコミット**まで進める。
+  確かめたあとにループが `main` へマージすることがあるので、`main` ではなくコミットの SHA を指定する（SHA は Pages のデプロイの一覧に出る）。
 
   ```bash
   git fetch origin
-  git push origin origin/main:production   # fast-forward のみ。production に直接コミットしない
+  git push origin <確かめたコミットの SHA>:refs/heads/production   # fast-forward のみ。production に直接コミットしない
   ```
 
 - 上の表の `NEXT_PUBLIC_` の変数は、Pages のプロジェクトの「設定 → 変数とシークレット」に登録する。
