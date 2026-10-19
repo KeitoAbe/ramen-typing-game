@@ -132,7 +132,7 @@ export function RamenGame({ orders }: Props) {
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [isAmbienceEnabled, setIsAmbienceEnabled] = useState(true);
   const [isPageVisible, setIsPageVisible] = useState(true);
-  // 効果音と環境音・BGM は同じ出口を通して、同時に鳴っても割れないようにする
+  // 効果音と環境音は同じ出口を通して、同時に鳴っても割れないようにする
   const [
     {
       sound: { play: playSound, stopAll: stopSounds },
@@ -220,7 +220,7 @@ export function RamenGame({ orders }: Props) {
     return () => window.clearTimeout(moodTimerRef.current);
   }, []);
 
-  // タブが裏に回ったら環境音・BGM を止め、戻ったら再開する
+  // タブが裏に回ったら環境音を止め、戻ったら再開する
   useEffect(() => {
     const update = () =>
       setIsPageVisible(document.visibilityState === "visible");
@@ -229,7 +229,7 @@ export function RamenGame({ orders }: Props) {
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
 
-  // 環境音・BGM はプレイ中だけ流す。画面が切り替わるときは、プレイヤーの側でフェードする
+  // 環境音はプレイ中だけ流す。画面が切り替わるときは、プレイヤーの側でフェードする
   useEffect(() => {
     ambience.setActive(
       shouldPlayAmbience({
@@ -239,11 +239,6 @@ export function RamenGame({ orders }: Props) {
       }),
     );
   }, [ambience, state.status, isAmbienceEnabled, isPageVisible]);
-
-  const isClosingRushNow = state.status === "playing" && state.isClosingRush;
-  useEffect(() => {
-    ambience.setClosingRush(isClosingRushNow);
-  }, [ambience, isClosingRushNow]);
 
   /** 効果音がオンのときだけ鳴らす */
   const playCue = (cue: SoundCue) => {
@@ -259,7 +254,7 @@ export function RamenGame({ orders }: Props) {
     trackSoundToggle(enabled);
   };
 
-  // 環境音・BGM の切り替えは、効果音の sound_toggle には混ぜず、計測もしない
+  // 環境音の切り替えは、効果音の sound_toggle には混ぜず、計測もしない
   const toggleAmbience = () => {
     const enabled = !isAmbienceEnabled;
     setIsAmbienceEnabled(enabled);
@@ -359,7 +354,7 @@ export function RamenGame({ orders }: Props) {
             onToggle={toggleSound}
           />
           <SoundToggle
-            label="環境音・BGM"
+            label="環境音"
             enabled={isAmbienceEnabled}
             onToggle={toggleAmbience}
           />

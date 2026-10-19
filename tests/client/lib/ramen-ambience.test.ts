@@ -3,22 +3,15 @@ import {
   AMBIENCE_SETTING_STORAGE_KEY,
   AMBIENCE_VOLUMES,
   ambiencePeakVolume,
-  BGM_BARS_PER_PHRASE,
-  BGM_BEAT_SECONDS,
-  BGM_BEATS_PER_BAR,
-  type BgmNote,
   CHARUMERA_NOTES,
   CHARUMERA_SECONDS,
-  CLOSING_RUSH_BGM,
   createAmbiencePlayer,
-  createBgmComposer,
   insectBurstLength,
   loadAmbienceEnabled,
   planBubble,
   planCharumeraTimes,
   planInsectBurst,
   saveAmbienceEnabled,
-  scaleDegreeToFrequency,
   shouldPlayAmbience,
 } from "@/client/lib/ramen-ambience";
 import { CLOSING_RUSH_THRESHOLD_MS } from "@/client/lib/ramen-closing-rush";
@@ -66,6 +59,12 @@ describe("loadAmbienceEnabled / saveAmbienceEnabled", () => {
     expect(loadAmbienceEnabled(storage)).toBe(false);
     saveAmbienceEnabled(storage, true);
     expect(loadAmbienceEnabled(storage)).toBe(true);
+  });
+
+  it("環境音・BGM だったころと同じキーに保存し、オフにしていた人の設定を引き継ぐ", () => {
+    const storage = memoryStorage();
+    storage.setItem("ramen-game:ambience-enabled", "off");
+    expect(loadAmbienceEnabled(storage)).toBe(false);
   });
 
   it("効果音とは別のキーに保存し、効果音の設定を変えない", () => {
@@ -127,7 +126,7 @@ function totalVolume(cue: SoundCue): number {
 }
 
 describe("音量", () => {
-  it("環境音と BGM がすべて同時に最大になっても、いちばん小さい効果音（正しく打った音）の 6 割より小さい", () => {
+  it("環境音がすべて同時に最大になっても、いちばん小さい効果音（正しく打った音）の 6 割より小さい", () => {
     const quietest = Math.min(
       ...(Object.keys(SOUND_PATTERNS) as SoundCue[])
         .filter((cue) => SOUND_PATTERNS[cue].layers.length > 0)
@@ -170,101 +169,14 @@ describe("音量", () => {
       "平らげた直後に閉店する（フェードの途中）",
       ["served", "closingRush", "closed"],
     ],
-  ])("%s: 環境音と BGM が最大でも、合計が 1.0 を超えない", (_name, cues) => {
+  ])("%s: 環境音が最大でも、合計が 1.0 を超えない", (_name, cues) => {
     expect(peakVolume(cues) + ambiencePeakVolume()).toBeLessThanOrEqual(1);
-  });
-
-  it("閉店間際は、BGM の音量とテンポを上げる", () => {
-    expect(CLOSING_RUSH_BGM.gainRate).toBeGreaterThan(1);
-    expect(CLOSING_RUSH_BGM.tempoRate).toBeGreaterThan(1);
   });
 
   it("どの音も、音量が 0 より大きい", () => {
     for (const volume of Object.values(AMBIENCE_VOLUMES)) {
       expect(volume).toBeGreaterThan(0);
     }
-  });
-});
-
-/** 1 節（4 小節）ぶんの旋律を、比べられる文字列にする */
-function phraseKey(bars: BgmNote[][]): string {
-  return JSON.stringify(
-    bars.map((notes) => notes.filter((note) => note.voice === "melody")),
-  );
-}
-
-describe("createBgmComposer", () => {
-  const composer = createBgmComposer(seededRandom(7));
-  const bars = Array.from({ length: 64 }, () => composer.nextBar());
-  const phrases = Array.from(
-    { length: bars.length / BGM_BARS_PER_PHRASE },
-    (_, i) =>
-      bars.slice(i * BGM_BARS_PER_PHRASE, (i + 1) * BGM_BARS_PER_PHRASE),
-  );
-
-  it("どの小節も、低音を 1 つと、旋律を 1 つ以上鳴らす", () => {
-    for (const notes of bars) {
-      expect(notes.filter((note) => note.voice === "bass")).toHaveLength(1);
-      expect(
-        notes.filter((note) => note.voice === "melody").length,
-      ).toBeGreaterThan(0);
-    }
-  });
-
-  it("旋律の音は重ならず、小節からはみ出さない", () => {
-    for (const notes of bars) {
-      const melody = notes.filter((note) => note.voice === "melody");
-      melody.forEach((note, i) => {
-        const next = melody[i + 1];
-        expect(note.beat + note.beats).toBeLessThanOrEqual(
-          next?.beat ?? BGM_BEATS_PER_BAR,
-        );
-      });
-    }
-  });
-
-  it("和風の音階（陽音階: レ・ミ・ソ・ラ・シ）の音だけを使う", () => {
-    const pitchClasses = new Set(
-      bars.flat().map((note) => {
-        const semitones = Math.round(
-          12 * Math.log2(scaleDegreeToFrequency(note.degree) / 293.66),
-        );
-        return ((semitones % 12) + 12) % 12;
-      }),
-    );
-    for (const pitchClass of pitchClasses) {
-      expect([0, 2, 5, 7, 9]).toContain(pitchClass);
-    }
-  });
-
-  it("節の終わりは、主音（レ）に落ち着く", () => {
-    for (const phrase of phrases) {
-      const melody = phrase
-        .at(-1)
-        ?.filter((note) => note.voice === "melody")
-        .at(-1);
-      expect([0, 5]).toContain(melody?.degree);
-    }
-  });
-
-  it("同じ 4 小節がそのまま繰り返されず、16 節のうちほとんどが違う節になる", () => {
-    const keys = phrases.map(phraseKey);
-    expect(new Set(keys).size).toBeGreaterThanOrEqual(keys.length - 2);
-    keys.slice(1).forEach((key, i) => {
-      expect(key).not.toBe(keys[i]);
-    });
-  });
-
-  it("崩しながらも主題を繰り返すので、続く節どうしは旋律の音の多くを共有する（ゆるい繰り返し）", () => {
-    const degreesOf = (phrase: BgmNote[][]) =>
-      phrase
-        .flat()
-        .filter((note) => note.voice === "melody")
-        .map((note) => note.degree);
-    const first = degreesOf(phrases[0]);
-    const second = degreesOf(phrases[1]);
-    const shared = second.filter((degree, i) => first[i] === degree).length;
-    expect(shared / second.length).toBeGreaterThan(0.3);
   });
 });
 
@@ -470,8 +382,6 @@ describe("createAmbiencePlayer", () => {
       time: AMBIENCE_FADE_SECONDS,
     });
     expect(sources.some((source) => source.loop)).toBe(true);
-    // BGM の最初の小節も予約している
-    expect(sources.length).toBeGreaterThan(1);
   });
 
   it("時間が進むと、少し先までの音を予約し足していく", () => {
@@ -481,12 +391,22 @@ describe("createAmbiencePlayer", () => {
     context.currentTime = 10;
     jest.advanceTimersByTime(300);
     expect(sources.length).toBeGreaterThan(before);
-    // 予約は 1 小節ずつなので、小節の頭から 1 小節ぶん先までに収まる
+    // 虫の声はまとまりごとに予約するので、1 まとまり（4 秒足らず）ぶん先までに収まる
     const latestStart = Math.max(...sources.flatMap((s) => s.started));
     expect(latestStart).toBeGreaterThanOrEqual(10);
-    expect(latestStart).toBeLessThanOrEqual(
-      10 + 1 + BGM_BEATS_PER_BAR * BGM_BEAT_SECONDS,
+    expect(latestStart).toBeLessThanOrEqual(10 + 1 + 4);
+  });
+
+  it("BGM（旋律と低音）は鳴らさず、環境音だけを流す", () => {
+    const player = createPlayer();
+    player.startPlay(60);
+    player.setActive(true);
+    advance(60);
+    // 鳴らすのは、寸胴の音（ノイズ）・泡と虫の声（正弦波）・チャルメラ（のこぎり波）だけ
+    const waves = new Set(
+      sources.filter((source) => source.type !== "").map((s) => s.type),
     );
+    expect([...waves].sort()).toEqual(["sawtooth", "sine"]);
   });
 
   it("止めるときは、音量をフェードで 0 に下げてから、すべての音源を止める", () => {
@@ -530,16 +450,6 @@ describe("createAmbiencePlayer", () => {
     player.setActive(true);
     expect(context.resumeCount).toBe(1);
     expect(context.state).toBe("running");
-  });
-
-  it("閉店間際になると BGM の音量を上げ、終わると戻す", () => {
-    const player = createPlayer();
-    player.setActive(true);
-    const bgm = gains[1].gain;
-    player.setClosingRush(true);
-    expect(bgm.ramps.at(-1)?.target).toBe(CLOSING_RUSH_BGM.gainRate);
-    player.setClosingRush(false);
-    expect(bgm.ramps.at(-1)?.target).toBe(1);
   });
 
   /** 音の時刻とタイマー（Date.now）を、そろえて少しずつ進める */
@@ -592,7 +502,6 @@ describe("createAmbiencePlayer", () => {
     expect(() => {
       player.startPlay(60);
       player.setActive(true);
-      player.setClosingRush(true);
       player.setActive(false);
       player.stop();
     }).not.toThrow();

@@ -1,11 +1,11 @@
 type Props = {
-  /** 何の切り替えか（「効果音」「環境音・BGM」）。札の文字になり、読み上げでもこの名前で伝わる */
+  /** 何の切り替えか（「効果音」「環境音」）。札の文字になり、読み上げでもこの名前で伝わる */
   label: string;
   enabled: boolean;
   onToggle: () => void;
 };
 
-/** 効果音や環境音・BGM のオン・オフを切り替えるボタン */
+/** 効果音や環境音のオン・オフを切り替えるボタン */
 export function SoundToggle({ label, enabled, onToggle }: Props) {
   return (
     <button
