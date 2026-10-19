@@ -377,3 +377,64 @@ test.describe("スマホ（390px 幅）", () => {
     await expectAdsApart(page);
   });
 });
+
+// 縦向きのスマホでは舞台が小さく、舞台の中に案内を置くと看板の後ろに隠れる。
+// どの向き・幅でも、案内が最初の画面に収まり、ヘッダーや舞台と重ならず、いちばん手前に描かれることを確かめる
+for (const viewport of [
+  { width: 360, height: 780 },
+  { width: 390, height: 844 },
+  { width: 412, height: 915 },
+  { width: 844, height: 390 },
+  { width: 768, height: 1024 },
+]) {
+  test.describe(`タッチ端末（${viewport.width}×${viewport.height}）`, () => {
+    test.use({ viewport, hasTouch: true, isMobile: true });
+
+    test("遊べない案内が全文見え、ほかの要素と重ならない", async ({ page }) => {
+      await page.goto("/");
+      const notice = page.locator("p", {
+        hasText: "PC のキーボードで遊んでください",
+      });
+      await expect(notice).toBeVisible();
+      await expect(notice).toContainText("タッチ操作では文字を打てません");
+      const noticeBox = await boxOf(notice);
+      expect(noticeBox.x).toBeGreaterThanOrEqual(0);
+      expect(noticeBox.x + noticeBox.width).toBeLessThanOrEqual(viewport.width);
+      expect(noticeBox.y + noticeBox.height).toBeLessThanOrEqual(
+        viewport.height,
+      );
+      expect(
+        isApart(noticeBox, await boxOf(page.getByTestId("game-stage")), 0),
+      ).toBe(true);
+      expect(isApart(noticeBox, await boxOf(page.getByRole("banner")), 0)).toBe(
+        true,
+      );
+      // 2 行それぞれの真ん中で、いちばん手前にあるのが案内の文字であること
+      for (const line of [
+        "PC のキーボードで遊んでください",
+        "タッチ操作では文字を打てません",
+      ]) {
+        const lineBox = await boxOf(notice.getByText(line));
+        const topText = await page.evaluate(
+          ([x, y]) => document.elementFromPoint(x, y)?.textContent,
+          [lineBox.x + lineBox.width / 2, lineBox.y + lineBox.height / 2],
+        );
+        expect(topText).toBe(line);
+      }
+    });
+  });
+}
+
+test.describe("PC", () => {
+  test("遊べない案内は出ない", async ({ page }) => {
+    await page.goto("/");
+    // 案内は水和のあとに出るので、ボタンが効くようになってから確かめる
+    await page.getByRole("button", { name: /^効果音/ }).click();
+    await expect(
+      page.getByRole("button", { name: "効果音: オフ" }),
+    ).toBeVisible();
+    await expect(page.getByText("PC のキーボードで遊んでください")).toHaveCount(
+      0,
+    );
+  });
+});
