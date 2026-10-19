@@ -26,7 +26,7 @@ export function parseSiteUrl(value: string | undefined): string | null {
 
 /**
  * サイトの URL。メタデータの基準 URL・サイトマップ・robots.txt・構造化データで共通に使う。
- * NEXT_PUBLIC_ の変数はビルド時に値が埋め込まれる（Amplify では実行時の環境変数が渡らないため）
+ * NEXT_PUBLIC_ の変数はビルド時に値が埋め込まれる（static export で静的ファイルとして配信するため）
  */
 export function getSiteUrl(): string {
   return parseSiteUrl(process.env.NEXT_PUBLIC_SITE_URL) ?? FALLBACK_SITE_URL;

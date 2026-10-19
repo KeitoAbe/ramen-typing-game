@@ -2,6 +2,8 @@ import { ImageResponse } from "next/og";
 import { OG_IMAGE_ALT, SITE_NAME } from "@/app/site-metadata";
 import { loadOgImageFonts } from "@/server/contexts/shared/presentation/loaders/load-og-image-fonts";
 
+// static export では、静的だと明示しないとビルド時にファイルが出力されない
+export const dynamic = "force-static";
 export const alt = OG_IMAGE_ALT;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

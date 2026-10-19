@@ -13,7 +13,7 @@ type OgImageFont = {
 /**
  * OGP 画像に使う、画面と同じ書体（看板の Dela Gothic One・本文の Zen Kaku Gothic New）を読み込む。
  * 描く文字だけを取り寄せるので、それぞれの書体で描く文字を渡す。
- * キャッシュして、OGP 画像をビルド時に作れるようにする（開くたびに Google Fonts へ取りに行かない）
+ * static export で OGP 画像はビルド時に 1 回だけ作られるので、開くたびに Google Fonts へ取りに行くことはない
  */
 export async function loadOgImageFonts({
   displayText,
@@ -22,7 +22,6 @@ export async function loadOgImageFonts({
   displayText: string;
   bodyText: string;
 }): Promise<OgImageFont[]> {
-  "use cache";
   const [display, body] = await Promise.all([
     loadGoogleFont("Dela Gothic One", 400, displayText),
     loadGoogleFont("Zen Kaku Gothic New", 700, bodyText),

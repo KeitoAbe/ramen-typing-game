@@ -1,0 +1,7 @@
+# Cloudflare Pages の配信のヘッダー。static export の画像のルートは拡張子が無いので、PNG だと明示する
+/opengraph-image
+  Content-Type: image/png
+/twitter-image
+  Content-Type: image/png
+/apple-icon
+  Content-Type: image/png

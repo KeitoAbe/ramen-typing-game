@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "tsx scripts/serve-static/cli.ts out",
     "lint": "biome check",
     "format": "biome check --write",
     "typecheck": "next typegen && tsc --noEmit",
