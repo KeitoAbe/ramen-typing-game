@@ -56,11 +56,11 @@ function Lantern({ left, label }: LanternProps) {
         alignItems: "center",
       }}
     >
-      <div style={{ width: 5, height: 28, background: SUMI }} />
+      <div style={{ width: 5, height: 14, background: SUMI }} />
       <div
         style={{
-          width: 104,
-          height: 128,
+          width: 96,
+          height: 110,
           borderRadius: "50%",
           background: LANTERN,
           border: `6px solid ${SUMI}`,
@@ -70,7 +70,7 @@ function Lantern({ left, label }: LanternProps) {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: FONT_FAMILY_DISPLAY,
-          fontSize: 34,
+          fontSize: 30,
           lineHeight: 1.1,
           color: SUMI,
         }}
@@ -85,7 +85,7 @@ function Lantern({ left, label }: LanternProps) {
 /** 湯気の立つラーメンの丼 */
 function RamenBowl() {
   return (
-    <svg width={220} height={150} viewBox="0 0 220 150" aria-hidden="true">
+    <svg width={176} height={120} viewBox="0 0 220 150" aria-hidden="true">
       {/* 湯気 */}
       <path
         d="M70 40 q-12 -16 0 -32 M110 36 q-12 -16 0 -32 M150 40 q-12 -16 0 -32"
@@ -290,12 +290,12 @@ export default async function Image() {
       <Lantern left={130} label={["中", "華"]} />
       <Lantern left={958} label={["そ", "ば"]} />
 
-      {/* 看板と、遊び方のひとこと */}
+      {/* 看板と、遊び方のひとこと。提灯の下端より下に置き、丼と札の間に収まる幅にする */}
       <div
         style={{
           position: "absolute",
           left: 0,
-          top: 284,
+          top: 282,
           width: "100%",
           display: "flex",
           flexDirection: "column",
@@ -310,7 +310,7 @@ export default async function Image() {
             border: `7px solid ${SUMI}`,
             boxShadow: "0 0 48px rgba(245, 185, 66, 0.6)",
             fontFamily: FONT_FAMILY_DISPLAY,
-            fontSize: 76,
+            fontSize: 64,
             letterSpacing: 6,
             color: KINARI,
           }}
@@ -319,10 +319,10 @@ export default async function Image() {
         </div>
         <div
           style={{
-            marginTop: 22,
+            marginTop: 14,
             fontFamily: FONT_FAMILY_BODY,
             fontWeight: 700,
-            fontSize: 36,
+            fontSize: 30,
             color: KINARI,
             textShadow: `0 3px 0 ${SUMI}`,
           }}
@@ -355,8 +355,9 @@ export default async function Image() {
           border: `6px solid ${SUMI}`,
         }}
       />
+      {/* 丼と札は、湯気が看板に、絵がひとことにかからないよう左右の端に寄せる */}
       <div
-        style={{ position: "absolute", left: 120, top: 398, display: "flex" }}
+        style={{ position: "absolute", left: 60, top: 428, display: "flex" }}
       >
         <RamenBowl />
       </div>
@@ -364,8 +365,8 @@ export default async function Image() {
       <div
         style={{
           position: "absolute",
-          right: 120,
-          top: 440,
+          right: 60,
+          top: 476,
           padding: "8px 28px",
           borderRadius: 10,
           background: KINARI,
