@@ -22,7 +22,6 @@ const SUMI = "#2a1f1a";
 
 const NOREN_CHARS = ["ら", "ー", "め", "ん"] as const;
 const TAGLINE = "注文をローマ字で打って、ラーメンを平らげよう";
-const ROMAJI_SAMPLE = "shouyu";
 
 // 夜空の星の位置（x, y, 直径）。屋根より上に散らす
 const STARS: readonly (readonly [number, number, number])[] = [
@@ -144,7 +143,7 @@ function RamenBowl() {
 export default async function Image() {
   const fonts = await loadOgImageFonts({
     displayText: `${SITE_NAME}${NOREN_CHARS.join("")}中華そば`,
-    bodyText: `${TAGLINE}${ROMAJI_SAMPLE}`,
+    bodyText: TAGLINE,
   });
 
   return new ImageResponse(
@@ -355,30 +354,22 @@ export default async function Image() {
           border: `6px solid ${SUMI}`,
         }}
       />
-      {/* 丼と札は、湯気が看板に、絵がひとことにかからないよう左右の端に寄せる */}
+      {/* 丼は、湯気が看板にかからないよう左右の端に寄せる */}
       <div
         style={{ position: "absolute", left: 60, top: 428, display: "flex" }}
       >
         <RamenBowl />
       </div>
-      {/* 打つローマ字の札 */}
       <div
         style={{
           position: "absolute",
           right: 60,
-          top: 476,
-          padding: "8px 28px",
-          borderRadius: 10,
-          background: KINARI,
-          border: `6px solid ${SUMI}`,
-          fontFamily: FONT_FAMILY_BODY,
-          fontWeight: 700,
-          fontSize: 40,
-          letterSpacing: 4,
-          color: SUMI,
+          top: 428,
+          display: "flex",
+          transform: "scaleX(-1)",
         }}
       >
-        {ROMAJI_SAMPLE}
+        <RamenBowl />
       </div>
     </div>,
     { ...size, fonts },
