@@ -43,6 +43,9 @@ test("券売機から並を遊び、結果画面を見て券売機に戻れる",
   await expect(remaining).toHaveCount(0);
   await expect(page.getByText("スペース か Enter で始める")).toBeVisible();
 
+  // 負荷で実時間が進んでも残り時間がずれないよう、始める前に時計を止め、ここからは明示的に進める
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1_000);
+
   // スペースで始まると、最初の丼が出て、残り時間は制限時間から減り始める。ページはスクロールしない
   const scrollY = await page.evaluate(() => window.scrollY);
   await page.keyboard.press(" ");
@@ -76,6 +79,8 @@ test("券売機から並を遊び、結果画面を見て券売機に戻れる",
 
   // 結果画面から券売機に戻れる
   await page.getByRole("button", { name: "もう一杯" }).click();
+  // 時計を止めているので、券売機へ戻る移り変わり（0.5 秒）を進める
+  await page.clock.runFor(500);
   await expect(page.getByRole("button", { name: /^並/ })).toBeVisible();
 
   expect(errors).toEqual([]);
