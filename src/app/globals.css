@@ -73,7 +73,6 @@
 
   /* プレイ中の手応えの動き（docs/design.md の「動き」）。動かす版は motion-safe: で、
      透明度だけの控えめな版（*-flash / *-fade）は motion-reduce: で付ける */
-  --animate-key-bounce: key-bounce 0.12s ease-out both;
   --animate-romaji-shake: romaji-shake 0.2s linear both;
   --animate-miss-flash: soft-flash 0.2s ease-out both;
   --animate-price-pop: price-pop 1s ease-out both;
@@ -86,17 +85,6 @@
   --animate-bowl-glint: bowl-glint 3s 0.3s ease-in-out infinite;
   --animate-special-sparkle: special-sparkle 1.6s ease-in-out infinite;
   --animate-lantern-flare: lantern-flare 0.8s ease-in-out infinite alternate;
-
-  /* 正しく打った文字が小さく弾む */
-  @keyframes key-bounce {
-    0%,
-    100% {
-      transform: translateY(0) scale(1);
-    }
-    50% {
-      transform: translateY(-20%) scale(1.25);
-    }
-  }
 
   /* 打ち間違えると、ローマ字が小さく横に震える */
   @keyframes romaji-shake {
