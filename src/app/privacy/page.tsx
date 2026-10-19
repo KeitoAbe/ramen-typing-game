@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { pageTitle, SITE_NAME } from "@/app/site-metadata";
+import { ExternalLink } from "@/client/components/external-link/external-link";
 import {
-  ExternalLink,
   LegalPage,
   LegalSection,
 } from "@/client/components/legal-page/legal-page";

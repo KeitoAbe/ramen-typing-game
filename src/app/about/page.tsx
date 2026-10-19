@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { pageTitle, SITE_NAME } from "@/app/site-metadata";
+import { ExternalLink } from "@/client/components/external-link/external-link";
 import {
   LegalPage,
   LegalSection,
 } from "@/client/components/legal-page/legal-page";
+import { CONTRIBUTING_URL, REPOSITORY_URL } from "@/client/lib/repository";
 
 export const metadata: Metadata = {
   title: pageTitle("運営者情報"),
@@ -33,6 +35,25 @@ export default function AboutPage() {
             お問い合わせ
           </Link>
           のページからお送りください。
+        </p>
+      </LegalSection>
+      <LegalSection title="開発に参加する">
+        <p>
+          このゲームはオープンソース（MIT ライセンス）で、ソースコードを
+          <ExternalLink href={REPOSITORY_URL}>GitHub のリポジトリ</ExternalLink>
+          で公開しています。どなたでも、GitHub
+          で不具合の報告（Issue）や改善の提案（PR）を出せます。
+        </p>
+        <p>いただいた報告や提案を取り込むかどうかは、運営者が判断します。</p>
+        <p>
+          サイトの広告収益は運営者に帰属します。開発への貢献に対する報酬や、収益の分配はありません。
+        </p>
+        <p>
+          参加の仕方は、
+          <ExternalLink href={CONTRIBUTING_URL}>
+            参加のしかた（CONTRIBUTING.md）
+          </ExternalLink>
+          にまとめています。
         </p>
       </LegalSection>
     </LegalPage>
