@@ -84,7 +84,7 @@ export function ToppingSelect({ course, onStart }: Props) {
               // 小さな券の形の押せる札。選ぶと押し込まれて、ランプが灯る
               <label
                 key={topping.id}
-                className={`relative flex h-full cursor-pointer flex-col justify-center gap-[0.4cqw] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi px-[1.2cqw] text-yatai-sumi transition-[translate,box-shadow,background-color] duration-75 has-focus-visible:outline-[0.4cqw] has-focus-visible:outline-offset-[0.3cqw] has-focus-visible:outline-yatai-amber ${isChecked ? "translate-y-[0.5cqw] bg-yatai-amber" : "bg-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] hover:bg-yatai-amber/50"}`}
+                className={`relative flex h-full cursor-pointer flex-col justify-center gap-[0.4cqw] rounded-[0.6cqw] border-[0.35cqw] border-yatai-sumi px-[1.2cqw] text-yatai-sumi transition-[translate,box-shadow,background-color] duration-75 has-focus-visible:outline-[0.4cqw] has-focus-visible:outline-offset-[0.3cqw] has-focus-visible:outline-yatai-amber ${isChecked ? "translate-y-[0.5cqw] bg-yatai-amber" : "bg-yatai-kinari shadow-[0_0.5cqw_0_var(--color-yatai-wood-dark)] hover:bg-yatai-amber-pale"}`}
               >
                 {/* 見えないチェックボックスを札いっぱいに広げ、札のどこを押しても切り替わるようにする */}
                 <input

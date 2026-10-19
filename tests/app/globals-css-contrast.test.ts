@@ -47,6 +47,9 @@ const BODY_TEXT_PAIRS: readonly [text: string, background: string][] = [
   ["ai", "kinari"],
   // 琥珀色の札
   ["sumi", "amber"],
+  // 生成りの押せるものにマウスを載せたとき（トッピングの券）
+  ["sumi", "amber-pale"],
+  ["lantern-dark", "amber-pale"],
 ];
 
 /** 大きな文字（看板・いちばん押してほしいボタン）だけに使う組み合わせ。大きな文字の AA の 3:1 以上 */
