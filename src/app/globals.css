@@ -14,6 +14,8 @@
   --color-yatai-lantern: #d9412b;
   --color-yatai-lantern-dark: #a92f1f;
   --color-yatai-amber: #f5b942;
+  /* 生成りと琥珀色の中間。生成りの押せるものにマウスを載せたときの面 */
+  --color-yatai-amber-pale: #f4d085;
   --color-yatai-wood: #8a5a33;
   --color-yatai-wood-dark: #5e3b20;
   --color-yatai-wood-light: #c08a55;
