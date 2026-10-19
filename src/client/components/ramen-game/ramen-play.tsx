@@ -448,15 +448,19 @@ export function RamenPlay({
         className="absolute top-[56.2%] left-[75.7%] w-[14.4%]"
       >
         {state.isKaedamaNoticeShown && (
-          // 替え玉のたびに作り直して、飛び出す演出をやり直す
+          // 替え玉のたびに作り直して、飛び出す演出をやり直す。
+          // 影は drop-shadow にして、本体と三角を 1 つの形として落とす
           <p
             key={state.stats.kaedamaCount}
-            className="relative origin-left rounded-[1.2cqw] bg-yatai-kinari px-[0.8cqw] py-[0.5cqw] text-center text-[1.6cqw] leading-tight font-bold text-yatai-lantern-dark shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.3)] motion-safe:animate-kaedama-pop"
+            className="relative origin-left rounded-[1.2cqw] bg-yatai-kinari px-[0.8cqw] py-[0.5cqw] text-center text-[1.6cqw] leading-tight font-bold text-yatai-lantern-dark drop-shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.3)] motion-safe:animate-kaedama-pop"
           >
             へい、替え玉！
+            {/* 三角: 先を縦の中央に置き、左の縁から 0.9cqw 突き出す。本体の高さは 3cqw（文字 2cqw + 上下の余白 1cqw）で、
+                角の丸み 1.2cqw を除いた左辺のまっすぐな部分は 0.6cqw しかないので、
+                左辺を横切る幅を 0.5cqw に収めて、付け根が角の丸みにかからないようにする */}
             <span
               aria-hidden="true"
-              className="absolute top-[30%] -left-[0.6cqw] size-[1.4cqw] rotate-45 bg-yatai-kinari"
+              className="absolute top-1/2 -left-[0.9cqw] h-[1cqw] w-[1.8cqw] -translate-y-1/2 bg-yatai-kinari [clip-path:polygon(0_50%,100%_0,100%_100%)]"
             />
           </p>
         )}
