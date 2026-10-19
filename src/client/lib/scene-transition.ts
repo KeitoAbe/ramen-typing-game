@@ -9,8 +9,6 @@ export type GameScene = "ticket" | "topping" | "waiting" | "playing" | "result";
 
 /** 画面の切り替えの移り変わり */
 export type SceneTransitionKind =
-  /** 券売機 → トッピング: 券売機から出た食券が屋台のカウンターへ渡る */
-  | "hand-ticket"
   /** プレイ → 結果: 提灯の灯りが落ちて暗くなってから、伝票が差し出される */
   | "lights-out"
   /** 結果 → 券売機: 屋台の前から券売機の前へ戻る */
@@ -38,7 +36,6 @@ export function sceneTransitionOf(
   from: GameScene,
   to: GameScene,
 ): SceneTransitionKind | null {
-  if (from === "ticket" && to === "topping") return "hand-ticket";
   if (from === "playing" && to === "result") return "lights-out";
   if (from === "result" && to === "ticket") return "back-to-machine";
   return null;
@@ -53,7 +50,6 @@ const REDUCED_SCENE_TRANSITION_SECONDS = 0.3;
 
 /** 移り変わりの長さ（globals.css の各 @keyframes の長さ） */
 const SCENE_TRANSITION_SECONDS: Record<SceneTransitionKind, number> = {
-  "hand-ticket": 0.5,
   "lights-out": LIGHTS_OUT_SECONDS + RECEIPT_HAND_OVER_SECONDS,
   "back-to-machine": 0.5,
 };

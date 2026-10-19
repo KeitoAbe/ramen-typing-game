@@ -58,7 +58,6 @@
   /* 画面の切り替えの移り変わり（docs/design.md の「画面の切り替え」）。長さは src/client/lib/scene-transition.ts と合わせる。
      動かす版は motion-safe: で、動きを抑える設定での幕（scene-veil-out）は motion-reduce: で付ける */
   --animate-scene-veil-out: scene-veil-out 0.3s ease-out both;
-  --animate-ticket-hand-over: ticket-hand-over 0.5s ease-in-out both;
   --animate-lights-out: lights-out 0.3s ease-in both;
   --animate-receipt-veil-out: scene-veil-out 0.25s ease-out both;
   --animate-receipt-hand-over: receipt-hand-over 0.25s ease-out both;
@@ -378,26 +377,6 @@
     }
     to {
       opacity: 0;
-    }
-  }
-
-  /* 券売機の取出口（舞台の x 25%, y 80% のあたり）から出た小さな食券が、弧を描いてカウンターの食券の位置へ渡り、
-     置かれたら消えてカウンターの食券と入れ替わる */
-  @keyframes ticket-hand-over {
-    0% {
-      opacity: 1;
-      transform: translate(13cqw, -3cqw) scale(0.65) rotate(0deg);
-    }
-    50% {
-      transform: translate(7cqw, -9cqw) scale(0.9) rotate(8deg);
-    }
-    85% {
-      opacity: 1;
-      transform: translate(0, 0) scale(1) rotate(-2deg);
-    }
-    100% {
-      opacity: 0;
-      transform: translate(0, 0) scale(1) rotate(-2deg);
     }
   }
 
