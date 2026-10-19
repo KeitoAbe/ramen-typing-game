@@ -90,7 +90,18 @@ Cloudflare Pages のプロジェクトをこのリポジトリにつなぎ、ビ
 | 環境変数 `NODE_VERSION` | `24`（Node.js のバージョンの指定。`package.json` の `engines` に合わせる） |
 | 環境変数 `PNPM_VERSION` | `10.32.1`（`package.json` の `packageManager` に合わせる） |
 
-- 上の表の `NEXT_PUBLIC_` の変数は、Pages のプロジェクトの「設定 → 変数とシークレット」に、本番（Production）とプレビュー（Preview）のそれぞれで登録する。
+- 本番ブランチは `production` にする（「設定 → ビルド → ブランチの制御」）。`main` はループが自動マージするので、本番に直接つながないため。
+  プレビューのデプロイは「カスタムブランチ」で `main` だけを含める（ループの `loop/*` ブランチごとにビルドが走らないようにする）。
+- 本番に出すときは、`main` のプレビューを確かめてから、`production` を**そのプレビューのコミット**まで進める。
+  確かめたあとにループが `main` へマージすることがあるので、`main` ではなくコミットの SHA を指定する（SHA は Pages のデプロイの一覧に出る）。
+
+  ```bash
+  git fetch origin
+  git push origin <確かめたコミットの SHA>:refs/heads/production   # fast-forward のみ。production に直接コミットしない
+  ```
+
+- 上の表の `NEXT_PUBLIC_` の変数は、Pages のプロジェクトの「設定 → 変数とシークレット」に登録する。
+  サイトの URL・問い合わせのメールアドレスは本番（Production）とプレビュー（Preview）の両方に、GA4 とアドセンスの ID は本番だけに入れる（確認用のアクセスで計測が汚れるのと、審査を通していないプレビューの URL に広告を出さないため）。
   ビルド時に埋め込まれるので、**変えたら「デプロイを再試行」で再ビルドしないと反映されない**。
 - `/about` などのページは、拡張子なしの URL で配信される（`out/about.html` を Cloudflare Pages が `/about` で返す）。
   存在しないパスには `out/404.html` を 404 で返す。
