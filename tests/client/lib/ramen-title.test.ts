@@ -38,6 +38,57 @@ describe("decideTitle", () => {
     expect(decideTitle(resultOf(bill, accuracy), nami).name).toBe(name);
   });
 
+  it.each([
+    // お会計, 称号
+    [999, "通りすがりの客"],
+    [1_000, "腹ぺこの客"],
+    [2_999, "腹ぺこの客"],
+    [3_000, "常連さん"],
+    [6_499, "常連さん"],
+    [6_500, "麺通"],
+    [12_999, "麺通"],
+    [13_000, "ラーメン評論家"],
+  ])("大盛りでお会計 %d 円・正確率 1 なら「%s」", (bill, name) => {
+    expect(decideTitle(resultOf(bill, 1), oomori).name).toBe(name);
+  });
+
+  it.each([
+    // お会計, 称号
+    [999, "通りすがりの客"],
+    [1_000, "腹ぺこの客"],
+    [1_999, "腹ぺこの客"],
+    [2_000, "常連さん"],
+    [3_999, "常連さん"],
+    [4_000, "麺通"],
+    [5_999, "麺通"],
+    [6_000, "ラーメン評論家"],
+    [7_999, "ラーメン評論家"],
+    [8_000, "屋台の伝説"],
+  ])("特盛りでお会計 %d 円・正確率 1 なら「%s」", (bill, name) => {
+    expect(decideTitle(resultOf(bill, 1), tokumori).name).toBe(name);
+  });
+
+  // お得額は足りていて、正確率がちょうど下限ならその称号、下限未満なら一段下になる
+  it.each([
+    { course: oomori, bill: 6_500, accuracy: 0.9, name: "麺通" },
+    { course: oomori, bill: 6_500, accuracy: 0.899, name: "常連さん" },
+    { course: oomori, bill: 13_000, accuracy: 0.95, name: "ラーメン評論家" },
+    { course: oomori, bill: 13_000, accuracy: 0.949, name: "麺通" },
+    { course: tokumori, bill: 4_000, accuracy: 0.9, name: "麺通" },
+    { course: tokumori, bill: 4_000, accuracy: 0.899, name: "常連さん" },
+    { course: tokumori, bill: 6_000, accuracy: 0.95, name: "ラーメン評論家" },
+    { course: tokumori, bill: 6_000, accuracy: 0.949, name: "麺通" },
+    { course: tokumori, bill: 8_000, accuracy: 0.975, name: "屋台の伝説" },
+    { course: tokumori, bill: 8_000, accuracy: 0.974, name: "ラーメン評論家" },
+  ])("$course.name でお会計 $bill 円・正確率 $accuracy なら「$name」", ({
+    course,
+    bill,
+    accuracy,
+    name,
+  }) => {
+    expect(decideTitle(resultOf(bill, accuracy), course).name).toBe(name);
+  });
+
   it("お得額が足りていても、正確率が足りなければ下の称号になる", () => {
     expect(decideTitle(resultOf(14_000, 0.94), nami).name).toBe("麺通");
     expect(decideTitle(resultOf(14_000, 0.89), nami).name).toBe("常連さん");
