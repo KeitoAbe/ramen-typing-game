@@ -60,7 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         {children}
-        {/* NEXT_PUBLIC_ の値はビルド時に埋め込まれる（Amplify では実行時の環境変数が渡らないため） */}
+        {/* NEXT_PUBLIC_ の値はビルド時に埋め込まれる（static export で静的ファイルとして配信するため） */}
         <GoogleAnalytics
           measurementId={parseGaMeasurementId(
             process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,

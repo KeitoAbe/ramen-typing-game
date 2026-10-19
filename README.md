@@ -54,7 +54,8 @@
 pnpm install
 pnpm dev        # http://localhost:3000
 pnpm verify     # lint / typecheck / test / depcruise / knip
-pnpm build      # 本番ビルド
+pnpm build      # 本番ビルド（static export で out/ に静的ファイル一式を出力する）
+pnpm start      # out/ を Cloudflare Pages と同じ規則で配信する（http://localhost:3100）
 pnpm test:e2e   # 本番ビルドをブラウザで開いて通しで遊ぶ E2E テスト（e2e/）
 ```
 
@@ -73,8 +74,28 @@ E2E テストは初回だけ `pnpm exec playwright install chromium` でブラ�
 | `NEXT_PUBLIC_ADSENSE_STAGE_SIDE_SLOT_ID` | トップページの舞台の右に出す縦長の広告（300×600）の広告ユニットの ID（数字）。幅 1360px 以上のウィンドウでだけ出す | 広告枠を出さず、場所も空けない（パブリッシャー ID が無いときも出さない） |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google アナリティクス 4 の測定 ID（`G-XXXXXXXXXX`）。すべてのページの表示と、プレイの成績・リプレイと共有・つまずき・設定の操作をカスタムイベントで計測する（一覧は [docs/analytics.md](docs/analytics.md)） | GA4 のタグを一切読み込まない |
 
-`NEXT_PUBLIC_` の変数は**ビルド時に値が埋め込まれる**。ホスティング（AWS Amplify など）のコンソールで設定し、変えたら再ビルドする。
-ローカルでは `.env.local` に書く。
+`NEXT_PUBLIC_` の変数は**ビルド時に値が埋め込まれる**。Cloudflare Pages のプロジェクトの設定で登録し、変えたら再ビルドする（下の「デプロイ」）。
+どれも未設定のままでもビルドは通る。ローカルでは `.env.local` に書く。
+
+### デプロイ
+
+DB・認証・サーバーで動く処理が無いので、Next.js の static export で静的ファイルを出力し、Cloudflare Pages で配信する。
+Cloudflare Pages のプロジェクトをこのリポジトリにつなぎ、ビルドの設定を次のようにする。
+
+| 項目 | 値 |
+|------|-----|
+| フレームワークのプリセット | なし（None） |
+| ビルドコマンド | `pnpm build` |
+| ビルドの出力ディレクトリ | `out` |
+| 環境変数 `NODE_VERSION` | `24`（Node.js のバージョンの指定。`package.json` の `engines` に合わせる） |
+| 環境変数 `PNPM_VERSION` | `10.32.1`（`package.json` の `packageManager` に合わせる） |
+
+- 上の表の `NEXT_PUBLIC_` の変数は、Pages のプロジェクトの「設定 → 変数とシークレット」に、本番（Production）とプレビュー（Preview）のそれぞれで登録する。
+  ビルド時に埋め込まれるので、**変えたら「デプロイを再試行」で再ビルドしないと反映されない**。
+- `/about` などのページは、拡張子なしの URL で配信される（`out/about.html` を Cloudflare Pages が `/about` で返す）。
+  存在しないパスには `out/404.html` を 404 で返す。
+- OGP 画像・X 用の画像・アイコンは拡張子の無いファイルとして出力されるので、`public/_headers` で `Content-Type: image/png` を付けている。
+- `ads.txt` は、`NEXT_PUBLIC_ADSENSE_PUBLISHER_ID` があるときだけ出力される。
 
 ### ループを回す
 

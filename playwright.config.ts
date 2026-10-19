@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// 開発サーバー（3000 番）と取り合わないよう、E2E は別のポートで本番ビルドを立てる
+// 開発サーバー（3000 番）と取り合わないよう、E2E は別のポートで本番ビルドを配信する
 const PORT = 3100;
 
 export default defineConfig({
@@ -16,7 +16,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `pnpm build && pnpm start --port ${PORT}`,
+    // 本番と同じく、static export の出力（out/）を Cloudflare Pages と同じ規則の静的サーバーで配信する
+    command: `pnpm build && pnpm start ${PORT}`,
     url: `http://localhost:${PORT}`,
     // シェルに NODE_ENV=development が残っていると、本番ビルドのプリレンダリングが落ちる。
     // 広告枠の配置を確かめるため、ダミーの広告の ID を渡す（スクリプトは e2e/fixtures.ts で差し替える）。

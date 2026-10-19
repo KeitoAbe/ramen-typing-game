@@ -18,8 +18,8 @@ describe("/ads.txt", () => {
     );
   });
 
-  it("パブリッシャー ID が無いときは 404 を返す", () => {
+  it("パブリッシャー ID が無いときは、static export でファイルを書き出させない 410 を返す", () => {
     delete process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID;
-    expect(GET().status).toBe(404);
+    expect(GET().status).toBe(410);
   });
 });
