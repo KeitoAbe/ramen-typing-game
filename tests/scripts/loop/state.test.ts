@@ -1,12 +1,42 @@
 import {
   codeRabbitStatus,
   dependencyStatus,
+  isLoopPullRequest,
   type PullRequestDetails,
   parseDependencies,
   type RawPullRequest,
   requiredCheckStatus,
   toPullRequest,
 } from "@scripts/loop/state";
+
+describe("isLoopPullRequest", () => {
+  it("このリポジトリの loop/ ブランチの PR だけを扱う", () => {
+    expect(
+      isLoopPullRequest({
+        headRefName: "loop/issue-1-x",
+        isCrossRepository: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("fork からの PR は、ブランチ名が loop/ で始まっていても扱わない", () => {
+    expect(
+      isLoopPullRequest({
+        headRefName: "loop/issue-1-x",
+        isCrossRepository: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("loop/ で始まらないブランチの PR は扱わない", () => {
+    expect(
+      isLoopPullRequest({
+        headRefName: "fix/something",
+        isCrossRepository: false,
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("parseDependencies", () => {
   it("「#X のマージ後に着手」だけを依存として読み、重複を除いて昇順にする", () => {

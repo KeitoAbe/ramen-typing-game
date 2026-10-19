@@ -19,6 +19,18 @@ const DEPENDENCY_PATTERN = /#(\d+) のマージ後に着手/g;
 
 // ---------- 整形（純粋関数） ----------
 
+/**
+ * ループが扱ってよい PR か。`loop/` で始まり、このリポジトリのブランチ（fork ではない）であること。
+ * このリポジトリにブランチを作れるのは書き込み権限を持つ人（とその人のトークンで動くループ）だけなので、
+ * fork を除けば作成者も信頼できる。fork の PR はブランチ名をいくらでも付けられるため、名前だけでは判断しない
+ */
+export function isLoopPullRequest(pr: {
+  headRefName: string;
+  isCrossRepository: boolean;
+}): boolean {
+  return pr.headRefName.startsWith(LOOP_BRANCH_PREFIX) && !pr.isCrossRepository;
+}
+
 export interface RawPullRequest {
   number: number;
   title: string;
@@ -227,7 +239,7 @@ function collectMainCi(): LoopState["main"] {
 
 function collectPullRequests(repo: string): LoopPullRequest[] {
   const [owner, name] = repo.split("/");
-  const raws = ghJson<RawPullRequest[]>([
+  const raws = ghJson<(RawPullRequest & { isCrossRepository: boolean })[]>([
     "pr",
     "list",
     "--state",
@@ -235,8 +247,8 @@ function collectPullRequests(repo: string): LoopPullRequest[] {
     "--limit",
     "100",
     "--json",
-    "number,title,headRefName,headRefOid,mergeStateStatus,reviewDecision,autoMergeRequest,statusCheckRollup",
-  ]).filter((pr) => pr.headRefName.startsWith(LOOP_BRANCH_PREFIX));
+    "number,title,headRefName,headRefOid,mergeStateStatus,reviewDecision,autoMergeRequest,statusCheckRollup,isCrossRepository",
+  ]).filter(isLoopPullRequest);
   if (raws.length === 0) return [];
 
   // commits などは gh pr list に含めるとノード数の上限に当たるので、loop PR に絞ってから GraphQL で取る
