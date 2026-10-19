@@ -165,7 +165,7 @@ export function RamenGame({ orders }: Props) {
   if (scene !== shownScene) {
     setShownScene(scene);
     const kind = sceneTransitionOf(shownScene, scene);
-    // 移り変わりの途中で次の画面に移ったら（のれんが開ききる前にスペースで始めたなど）、移り変わりを打ち切る
+    // 移り変わりの途中で次の画面に移ったら、移り変わりを打ち切る
     setSceneTransition((current) =>
       kind === null ? null : { kind, id: (current?.id ?? 0) + 1 },
     );
@@ -199,6 +199,11 @@ export function RamenGame({ orders }: Props) {
       window.clearTimeout(endTimer);
     };
   }, [sceneTransition]);
+
+  // 開始待ちへは移り変わりを付けないので、切り替わったその場で始め方の案内にフォーカスを移す
+  useEffect(() => {
+    if (shownScene === "waiting") focusSceneStart(sceneRef.current);
+  }, [shownScene]);
 
   const [shopkeeperMood, setShopkeeperMood] =
     useState<ShopkeeperMood>("normal");

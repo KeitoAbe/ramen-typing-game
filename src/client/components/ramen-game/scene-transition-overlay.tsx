@@ -53,13 +53,6 @@ export function SceneTransitionOverlay({
           )}
         </>
       )}
-      {kind === "noren" && (
-        // 舞台を覆ったのれんが、真ん中から左右に分かれて開く
-        <div className="hidden motion-safe:block">
-          <NorenPart side="left" text="ら" />
-          <NorenPart side="right" text="麺" />
-        </div>
-      )}
       {kind === "lights-out" && (
         // 灯りが落ちて暗くなった舞台が、伝票が差し出されるのに合わせて明るさを戻す
         <div className="absolute inset-0 hidden bg-yatai-night-deep/65 motion-safe:block motion-safe:animate-receipt-veil-out" />
@@ -68,24 +61,6 @@ export function SceneTransitionOverlay({
         // 屋台の前を覆った夜の幕が右へ流れ、左の券売機の前に戻る
         <div className="absolute inset-0 hidden bg-yatai-night-deep motion-safe:block motion-safe:animate-back-to-machine" />
       )}
-    </div>
-  );
-}
-
-type NorenPartProps = {
-  side: "left" | "right";
-  text: string;
-};
-
-/** のれんの片側の布。上端の竿から垂らし、提灯の赤に生成りの文字を染め抜く */
-function NorenPart({ side, text }: NorenPartProps) {
-  return (
-    <div
-      className={`absolute top-0 flex h-full w-1/2 origin-top items-center justify-center border-yatai-sumi border-t-[1.2cqw] bg-yatai-lantern ${side === "left" ? "left-0 animate-noren-open-left border-r-[0.3cqw]" : "right-0 animate-noren-open-right border-l-[0.3cqw]"}`}
-    >
-      <span className="font-display text-[14cqw] leading-none text-yatai-kinari">
-        {text}
-      </span>
     </div>
   );
 }

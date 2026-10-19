@@ -12,7 +12,6 @@ import {
 
 const KINDS: SceneTransitionKind[] = [
   "hand-ticket",
-  "noren",
   "lights-out",
   "back-to-machine",
 ];
@@ -33,11 +32,14 @@ describe("sceneOf", () => {
 describe("sceneTransitionOf", () => {
   it.each<[GameScene, GameScene, SceneTransitionKind]>([
     ["ticket", "topping", "hand-ticket"],
-    ["topping", "waiting", "noren"],
     ["playing", "result", "lights-out"],
     ["result", "ticket", "back-to-machine"],
   ])("%s から %s へは %s で移る", (from, to, kind) => {
     expect(sceneTransitionOf(from, to)).toBe(kind);
+  });
+
+  it("トッピングから開始待ちへは、その場で切り替わるよう移り変わりを付けない", () => {
+    expect(sceneTransitionOf("topping", "waiting")).toBeNull();
   });
 
   it("開始待ちからプレイへは、すぐに始まるよう移り変わりを付けない", () => {
