@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import AboutPage, { metadata as aboutMetadata } from "@/app/about/page";
 import ContactPage, { metadata as contactMetadata } from "@/app/contact/page";
 import PrivacyPage, { metadata as privacyMetadata } from "@/app/privacy/page";
+import { CONTRIBUTING_URL, REPOSITORY_URL } from "@/client/lib/repository";
 
 function h1Of(html: string): string {
   expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
@@ -65,6 +66,17 @@ describe("運営者情報のページ", () => {
     const html = renderToStaticMarkup(<AboutPage />);
     expect(html).toContain("阿部 圭杜");
     expect(html).toContain("個人で開発・運営しています");
+  });
+
+  it("開発への参加の仕方と、取り込み・収益の方針が書かれている", () => {
+    const html = renderToStaticMarkup(<AboutPage />);
+    expect(html).toContain(">開発に参加する</h2>");
+    expect(html).toContain("不具合の報告（Issue）や改善の提案（PR）");
+    expect(html).toContain("取り込むかどうかは、運営者が判断します");
+    expect(html).toContain("広告収益は運営者に帰属します");
+    expect(html).toContain("収益の分配はありません");
+    expect(html).toContain(`href="${CONTRIBUTING_URL}"`);
+    expect(html).toContain(`href="${REPOSITORY_URL}"`);
   });
 });
 
