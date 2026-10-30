@@ -6,6 +6,7 @@ import {
   SITE_TITLE,
 } from "@/app/site-metadata";
 import { buildGameJsonLd, getSiteUrl, serializeJsonLd } from "@/app/site-url";
+import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import { GuideAd } from "@/client/components/adsense/guide-ad";
 import { StageBottomAd } from "@/client/components/adsense/stage-bottom-ad";
 import {
@@ -43,6 +44,9 @@ export default async function Home() {
           __html: serializeJsonLd(buildGameJsonLd(getSiteUrl())),
         }}
       />
+      {/* 広告枠があるトップページだけでアドセンスのスクリプトを読み込む。
+          他ページ（/about・/contact・/privacy）は広告枠を持たないため読み込まない */}
+      <AdsenseScript />
       <SiteHeader
         siteName={SITE_NAME}
         align="stage"

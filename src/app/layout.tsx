@@ -11,7 +11,6 @@ import {
   TWITTER_CARD,
 } from "@/app/site-metadata";
 import { getSiteUrl } from "@/app/site-url";
-import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import { GoogleAnalytics } from "@/client/components/google-analytics/google-analytics";
 import { parseGaMeasurementId } from "@/client/lib/analytics";
 import "./globals.css";
@@ -58,9 +57,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       className={`${delaGothicOne.variable} ${zenKakuGothicNew.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <AdsenseScript />
-      </head>
       <body className="min-h-full flex flex-col">
         {children}
         {/* NEXT_PUBLIC_ の値はビルド時に埋め込まれる（static export で静的ファイルとして配信するため） */}
