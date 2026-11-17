@@ -27,8 +27,6 @@ export default defineConfig({
       NEXT_PUBLIC_CONTACT_EMAIL: "contact@example.com",
       NEXT_PUBLIC_ADSENSE_PUBLISHER_ID: "ca-pub-0000000000000000",
       NEXT_PUBLIC_ADSENSE_SLOT_ID: "1111111111",
-      NEXT_PUBLIC_ADSENSE_STAGE_BOTTOM_SLOT_ID: "2222222222",
-      NEXT_PUBLIC_ADSENSE_STAGE_SIDE_SLOT_ID: "3333333333",
     },
     // 別のサーバー（開発サーバーや古いビルド）を検証してしまわないよう、ポートが使われていたら失敗させる
     reuseExistingServer: false,

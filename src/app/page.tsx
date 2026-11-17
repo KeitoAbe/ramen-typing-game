@@ -8,11 +8,6 @@ import {
 import { buildGameJsonLd, getSiteUrl, serializeJsonLd } from "@/app/site-url";
 import { AdsenseScript } from "@/client/components/adsense/adsense-script";
 import { GuideAd } from "@/client/components/adsense/guide-ad";
-import { StageBottomAd } from "@/client/components/adsense/stage-bottom-ad";
-import {
-  StageSideAd,
-  stageSideAdIds,
-} from "@/client/components/adsense/stage-side-ad";
 import { GameGuide } from "@/client/components/game-guide/game-guide";
 import { RamenGame } from "@/client/components/ramen-game/ramen-game";
 import { SiteFooter } from "@/client/components/site-footer/site-footer";
@@ -32,9 +27,8 @@ export function generateMetadata(
 export default async function Home() {
   const orders = await loadOrders();
   // 舞台は全画面にせず、決まった大きさ（幅 960px まで）でページの中央に置く。
-  // 開いたときにヘッダー・舞台・舞台の下の広告枠が収まり、その下に紹介（ページの見出しを含む）が続く。
-  // 広告は舞台のすぐ下・広い画面では舞台の右・紹介の後ろに置き、誤クリックを誘わないよう舞台から離す。
-  // 右の枠があるときは、舞台と右の枠をまとめて中央に置く
+  // 開いたときにヘッダーと舞台が収まり、その下に紹介（ページの見出しを含む）が続く。
+  // 広告は、読み物のある紹介の後ろだけに置く。操作が目的の舞台の周囲には置かない
   return (
     <>
       <script
@@ -47,18 +41,12 @@ export default async function Home() {
       {/* 広告枠があるトップページだけでアドセンスのスクリプトを読み込む。
           他ページ（/about・/contact・/privacy）は広告枠を持たないため読み込まない */}
       <AdsenseScript />
-      <SiteHeader
-        siteName={SITE_NAME}
-        align="stage"
-        withStageSideAd={stageSideAdIds() !== null}
-      />
+      <SiteHeader siteName={SITE_NAME} align="stage" />
       <main className="flex w-full flex-1 flex-col">
-        <div className="flex w-full justify-center gap-8 pt-4">
+        <div className="flex w-full justify-center pt-4">
           <div className="flex w-full min-w-0 max-w-[960px] flex-col items-center">
             <RamenGame orders={orders} />
-            <StageBottomAd />
           </div>
-          <StageSideAd />
         </div>
         <GameGuide />
         <GuideAd />

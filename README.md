@@ -76,8 +76,6 @@ E2E テストは初回だけ `pnpm exec playwright install chromium` でブラ�
 | `NEXT_PUBLIC_CONTACT_EMAIL` | お問い合わせを受け付けるメールアドレス（例: `contact@example.com`）。お問い合わせページ（`/contact`）に、宛先と件名が入った状態でメールソフトを開くリンクを出す。収集ボットに拾われにくくするため、サーバーから返す HTML にはアドレスを平文で載せず、ブラウザで表示する | メールの手段を出さずに「準備中」と出す（メールアドレスの形でない値のときも同じ） |
 | `NEXT_PUBLIC_ADSENSE_PUBLISHER_ID` | Google アドセンスのパブリッシャー ID（`ca-pub-…`）。全ページの head にアドセンスのスクリプト（審査用のコードを兼ねる）を読み込み、`/ads.txt` を返す | スクリプト・`/ads.txt`・広告枠のどれも出さない（`/ads.txt` は 404） |
 | `NEXT_PUBLIC_ADSENSE_SLOT_ID` | トップページの紹介の下に出す広告ユニットの ID（数字） | 広告枠を出さない（パブリッシャー ID が無いときも出さない） |
-| `NEXT_PUBLIC_ADSENSE_STAGE_BOTTOM_SLOT_ID` | トップページの舞台のすぐ下に出す横長の広告（728×90、狭い画面では幅に合わせて縮む）の広告ユニットの ID（数字） | 広告枠を出さず、場所も空けない（パブリッシャー ID が無いときも出さない） |
-| `NEXT_PUBLIC_ADSENSE_STAGE_SIDE_SLOT_ID` | トップページの舞台の右に出す縦長の広告（300×600）の広告ユニットの ID（数字）。幅 1360px 以上のウィンドウでだけ出す | 広告枠を出さず、場所も空けない（パブリッシャー ID が無いときも出さない） |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google アナリティクス 4 の測定 ID（`G-XXXXXXXXXX`）。すべてのページの表示と、プレイの成績・リプレイと共有・つまずき・設定の操作をカスタムイベントで計測する（一覧は [docs/analytics.md](docs/analytics.md)） | GA4 のタグを一切読み込まない |
 
 `NEXT_PUBLIC_` の変数は**ビルド時に値が埋め込まれる**。Cloudflare Pages のプロジェクトの設定で登録し、変えたら再ビルドする（下の「デプロイ」）。
