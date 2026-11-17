@@ -93,9 +93,8 @@ async function expectIntactStage(page: Page) {
   expect(await cornersBlendingIntoPage(page)).toEqual([]);
 }
 
-// 広告枠の配置。E2E のビルドには枠ごとにダミーの広告ユニットの ID を渡している（playwright.config.ts）
-const STAGE_BOTTOM_AD_SLOT_ID = "2222222222";
-const STAGE_SIDE_AD_SLOT_ID = "3333333333";
+// 広告枠の配置。E2E のビルドにはダミーの広告ユニットの ID を渡している（playwright.config.ts）。
+// 広告は紹介の後ろの 1 枠だけで、操作が目的の舞台の周囲には置かない
 const GUIDE_AD_SLOT_ID = "1111111111";
 /** 誤クリックを誘わないよう、舞台と広告枠のあいだに空ける距離（px） */
 const MIN_AD_GAP_PX = 24;
@@ -126,28 +125,17 @@ function isApart(a: Box, b: Box, gap: number): boolean {
 }
 
 /**
- * 見えている広告枠が、舞台から 24px 以上離れ、紹介の文章や互いに重ならず、
+ * 広告枠が 1 つだけで、舞台から 24px 以上離れ、紹介の文章と重ならず、
  * ページが横にはみ出さないことを確かめる
  */
-async function expectAdsApart(page: Page) {
+async function expectAdApart(page: Page) {
+  // 舞台の下や右など、紹介の後ろ以外に広告枠が無い
+  await expect(page.locator("ins.adsbygoogle")).toHaveCount(1);
   const stage = await boxOf(page.getByTestId("game-stage"));
   const guide = await boxOf(page.locator("article"));
-  const ads: Box[] = [];
-  for (const slotId of [
-    STAGE_BOTTOM_AD_SLOT_ID,
-    STAGE_SIDE_AD_SLOT_ID,
-    GUIDE_AD_SLOT_ID,
-  ]) {
-    const ad = adOf(page, slotId);
-    if (await ad.isVisible()) ads.push(await boxOf(ad));
-  }
-  for (const [index, ad] of ads.entries()) {
-    expect(isApart(stage, ad, MIN_AD_GAP_PX)).toBe(true);
-    expect(isApart(guide, ad, 0)).toBe(true);
-    for (const other of ads.slice(index + 1)) {
-      expect(isApart(ad, other, 0)).toBe(true);
-    }
-  }
+  const ad = await boxOf(adOf(page, GUIDE_AD_SLOT_ID));
+  expect(isApart(stage, ad, MIN_AD_GAP_PX)).toBe(true);
+  expect(isApart(guide, ad, 0)).toBe(true);
   const viewportWidth = await page.evaluate(
     () => document.documentElement.clientWidth,
   );
@@ -159,7 +147,7 @@ async function expectAdsApart(page: Page) {
 test.describe("1366×768 のウィンドウ", () => {
   test.use({ viewport: { width: 1366, height: 768 } });
 
-  test("ヘッダー・幅 960px の舞台・舞台の下の広告枠がスクロールせずに見え、その下に紹介が始まる", async ({
+  test("ヘッダー・幅 960px の舞台がスクロールせずに見え、その下に紹介が始まる", async ({
     page,
   }) => {
     await page.goto("/");
@@ -171,35 +159,24 @@ test.describe("1366×768 のウィンドウ", () => {
 
     const headerBox = await boxOf(header);
     const stageBox = await boxOf(page.getByTestId("game-stage"));
-    const bottomAdBox = await boxOf(adOf(page, STAGE_BOTTOM_AD_SLOT_ID));
-    const sideAdBox = await boxOf(adOf(page, STAGE_SIDE_AD_SLOT_ID));
     const guideBox = await boxOf(page.locator("article"));
 
     expect(stageBox.width).toBe(960);
     expect(stageBox.height).toBe(540);
-    // 舞台と右の縦長の枠をまとめて左右の中央に置く（スクロールバーの幅だけずれてもよい）
+    // 舞台を左右の中央に置く（スクロールバーの幅だけずれてもよい）
     const viewportWidth = await page.evaluate(
       () => document.documentElement.clientWidth,
     );
-    const groupCenter = (stageBox.x + sideAdBox.x + sideAdBox.width) / 2;
-    expect(Math.abs(groupCenter - viewportWidth / 2)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(stageBox.x + stageBox.width / 2 - viewportWidth / 2),
+    ).toBeLessThanOrEqual(1);
     expect(headerBox.y + headerBox.height).toBeLessThanOrEqual(stageBox.y);
-    // 舞台のすぐ下の横長の枠（728×90）まで、開いたときの画面の中に見える
-    expect(bottomAdBox.width).toBe(728);
-    expect(bottomAdBox.y + bottomAdBox.height).toBeLessThanOrEqual(768);
-    // 紹介の領域は広告枠の下から始まる
-    expect(guideBox.y).toBeGreaterThanOrEqual(
-      bottomAdBox.y + bottomAdBox.height,
-    );
-    // 舞台の下の広告枠から紹介の見出しまでは 48〜64px に詰める
-    const h1Box = await boxOf(page.getByRole("heading", { level: 1 }));
-    const gap = h1Box.y - (bottomAdBox.y + bottomAdBox.height);
-    expect(gap).toBeGreaterThanOrEqual(48);
-    expect(gap).toBeLessThanOrEqual(64);
+    // 紹介の領域は舞台の下から始まる
+    expect(guideBox.y).toBeGreaterThanOrEqual(stageBox.y + stageBox.height);
     // ヘッダーのサイト名は舞台の左端にそろえる
     const logoBox = await boxOf(header.getByRole("link"));
     expect(Math.abs(logoBox.x - stageBox.x)).toBeLessThanOrEqual(1);
-    await expectAdsApart(page);
+    await expectAdApart(page);
   });
 
   test("広告枠は読み込みの前から場所を確保していて、決まった高さを持つ", async ({
@@ -207,15 +184,10 @@ test.describe("1366×768 のウィンドウ", () => {
   }) => {
     await page.goto("/");
     // スクリプトは空のものに差し替えているので、広告が入らない状態の大きさを見る
-    const bottomIns = await boxOf(
-      page.locator(`ins[data-ad-slot="${STAGE_BOTTOM_AD_SLOT_ID}"]`),
+    const ins = await boxOf(
+      page.locator(`ins[data-ad-slot="${GUIDE_AD_SLOT_ID}"]`),
     );
-    const sideIns = await boxOf(
-      page.locator(`ins[data-ad-slot="${STAGE_SIDE_AD_SLOT_ID}"]`),
-    );
-    expect(bottomIns.height).toBe(90);
-    expect(sideIns.width).toBe(300);
-    expect(sideIns.height).toBe(600);
+    expect(ins.height).toBe(280);
   });
 
   test("券売機・トッピング・プレイ中・結果画面の文字が 12px 以上で舞台からはみ出さず、舞台の四隅まで背景で埋まる", async ({
@@ -275,25 +247,10 @@ test.describe("1366×768 のウィンドウ", () => {
 test.describe("1920px 幅のウィンドウ", () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
 
-  test("舞台の右に縦長の広告枠があり、どの広告枠も舞台や紹介と重ならない", async ({
+  test("広い画面でも舞台の右に広告枠は出ず、舞台は中央でサイト名と左端がそろう", async ({
     page,
   }) => {
     await page.goto("/");
-    const stageBox = await boxOf(page.getByTestId("game-stage"));
-    const sideAdBox = await boxOf(adOf(page, STAGE_SIDE_AD_SLOT_ID));
-    await expect(adOf(page, STAGE_BOTTOM_AD_SLOT_ID)).toBeVisible();
-    expect(sideAdBox.x).toBeGreaterThanOrEqual(stageBox.x + stageBox.width);
-    await expectAdsApart(page);
-  });
-});
-
-test.describe("幅 1360px より狭いウィンドウ", () => {
-  test.use({ viewport: { width: 1280, height: 800 } });
-
-  test("舞台の右の縦長の広告枠は出さず、舞台を中央に置く", async ({ page }) => {
-    await page.goto("/");
-    await expect(adOf(page, STAGE_BOTTOM_AD_SLOT_ID)).toBeVisible();
-    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeHidden();
     const stageBox = await boxOf(page.getByTestId("game-stage"));
     const viewportWidth = await page.evaluate(
       () => document.documentElement.clientWidth,
@@ -301,32 +258,17 @@ test.describe("幅 1360px より狭いウィンドウ", () => {
     expect(
       Math.abs(stageBox.x + stageBox.width / 2 - viewportWidth / 2),
     ).toBeLessThanOrEqual(1);
-    // 右の枠が隠れても、ヘッダーのサイト名は舞台の左端にそろう
     const logoBox = await boxOf(page.getByRole("banner").getByRole("link"));
     expect(Math.abs(logoBox.x - stageBox.x)).toBeLessThanOrEqual(1);
-    await expectAdsApart(page);
+    await expectAdApart(page);
   });
 
-  test("あとからウィンドウを広げると、右の縦長の枠を出して広告を一度だけ要求する", async ({
-    page,
-  }) => {
+  test("広告は紹介の後ろの枠だけを一度要求する", async ({ page }) => {
     await page.goto("/");
     // スクリプトは空のものに差し替えているので、要求（push）は配列に残る
-    const requestCount = () =>
-      page.evaluate(() => window.adsbygoogle?.length ?? 0);
-    // 舞台の下の枠と紹介の後ろの枠だけを要求し、隠している右の枠は要求しない
-    await expect.poll(requestCount).toBe(2);
-
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeVisible();
-    await expect.poll(requestCount).toBe(3);
-
-    // 狭めて広げ直しても、同じ枠に二度は要求しない
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeHidden();
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeVisible();
-    expect(await requestCount()).toBe(3);
+    await expect
+      .poll(() => page.evaluate(() => window.adsbygoogle?.length ?? 0))
+      .toBe(1);
   });
 });
 
@@ -367,14 +309,13 @@ test.describe("スマホ（390px 幅）", () => {
     ).toBeLessThanOrEqual(390);
   });
 
-  test("舞台の下の広告枠は幅に合わせて縮み、舞台や紹介と重ならない", async ({
+  test("紹介の後ろの広告枠は幅に合わせて縮み、舞台や紹介と重ならない", async ({
     page,
   }) => {
     await page.goto("/");
-    const bottomAdBox = await boxOf(adOf(page, STAGE_BOTTOM_AD_SLOT_ID));
-    expect(bottomAdBox.width).toBeLessThanOrEqual(390);
-    await expect(adOf(page, STAGE_SIDE_AD_SLOT_ID)).toBeHidden();
-    await expectAdsApart(page);
+    const adBox = await boxOf(adOf(page, GUIDE_AD_SLOT_ID));
+    expect(adBox.width).toBeLessThanOrEqual(390);
+    await expectAdApart(page);
   });
 });
 

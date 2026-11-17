@@ -19,18 +19,8 @@ describe("SiteHeader", () => {
     expect(html).toMatch(/<div aria-hidden="true" class="noren-fringe/);
   });
 
-  it("舞台の右に広告枠があるときだけ、同じ幅を右に空けてサイト名を舞台の左端にそろえる", () => {
-    const spacer = "w-[300px]";
-    expect(html).not.toContain(spacer);
-    expect(
-      renderToStaticMarkup(
-        <SiteHeader
-          siteName="ラーメン屋台タイピング"
-          align="stage"
-          withStageSideAd
-        />,
-      ),
-    ).toContain(spacer);
+  it("トップページでは、サイト名を幅 960px の舞台の左端にそろえる", () => {
+    expect(html).toContain("max-w-[960px]");
   });
 
   it("運営まわりのページでは、本文の段の左端にそろえる", () => {
